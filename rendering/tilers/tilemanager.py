@@ -29,15 +29,32 @@ def get_shifted_tiles(img, nframes, dx, dy, reverse=False, sin=True):
         images += images[::-1][1:-1]
     return images
 
+def get_radiuses(nframes, initial_value, increment, reverse=False, sin=True):
+    values = []
+    if sin:
+        current = initial_value
+    else:
+        current = 0
+    for i in range(nframes):
+        if sin:
+            delta = increment*math.sin(2.*math.pi*i/float(nframes))
+        else:
+            delta = increment
+        current += delta
+        values.append(int(current))
+    if reverse:
+        values = values[::-1][1:-1]
+    return values
+
 class TileManager:
 
-    def __init__(self, grasses, waters, cell_size, cell_radius):
-        assert len(grasses) == len(waters)
+    def __init__(self, grasses, waters, radiuses, cell_size):
+        assert len(grasses) == len(waters) == len(radiuses)
         self.tilers = []
         self.nframes = len(grasses)
         for n in range(self.nframes):
             tiler = BeachTiler(grasses[n], waters[n])
-            tiler.make(size=(cell_size,)*2, radius=cell_radius)
+            tiler.make(size=(cell_size,)*2, radius=radiuses[n])
             self.tilers.append(tiler)
         self.time = 0
         self.current_frame = 0

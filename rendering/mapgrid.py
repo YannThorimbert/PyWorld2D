@@ -3,6 +3,9 @@ from thorpy.gamestools.grid import PygameGrid
 
 #pour eviter de tj faire des tuples, ne pas heriter de PygameGrid et faire moi meme
 
+from thorpy import Monitor
+monitor = Monitor()
+
 WATER = 1
 GRASS = 0
 
@@ -10,7 +13,7 @@ VON_NEUMANN = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 MOORE = [(1, 1), (1, -1), (-1, 1), (-1, -1)] + VON_NEUMANN
 
 def get_material(h):
-    if h < 0.605:
+    if h < 0.6:
         return WATER
     else:
         return GRASS
@@ -76,16 +79,24 @@ class MapGrid(PygameGrid):
             else:
                 self[x,y].type = "s"
 
-    def draw_cell(self, screen, coord, x0, y0, tm):
+    def draw_cell(self, screen, xpix, ypix, coord, x0, y0, imgs):
         x,y = coord
         if self.is_inside(coord):
-            img = tm.get_tile(self[coord].type)
+            img = imgs[self[coord].type]
         else:
             img = self.black_img
         rect = self.get_rect_at_coord((x-x0,y-y0))
+        rect.move_ip(-xpix, -ypix)
         screen.blit(img, rect)
 
-    def draw(self, screen, x0, w, y0, h, tm):
+    def draw(self, screen, xpix, ypix, x0, w, y0, h, imgs):
+        x0 -= 1
+        y0 -= 1
+        w += 1
+        h += 1
         for x in range(x0,x0+w):
             for y in range(y0,y0+h):
-                self.draw_cell(screen, (x,y), x0, y0, tm)
+                self.draw_cell(screen, xpix, ypix, (x,y), x0, y0, imgs)
+
+    def show(self):
+        monitor.show()
