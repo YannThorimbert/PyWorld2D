@@ -1,5 +1,6 @@
 import pygame
 from thorpy.gamestools.grid import PygameGrid
+from rendering.tilers.tilemanager import get_couple
 
 #pour eviter de tj faire des tuples, ne pas heriter de PygameGrid et faire moi meme
 
@@ -9,36 +10,48 @@ monitor = Monitor()
 WATER = 1
 GRASS = 0
 
-VON_NEUMANN = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-MOORE = [(1, 1), (1, -1), (-1, 1), (-1, -1)] + VON_NEUMANN
-
-def get_material(h):
-    if h < 0.6:
-        return WATER
-    else:
-        return GRASS
-
 class Cell:
 
-    def __init__(self, h):
+    def __init__(self, h, material_couples):
+        self.couple = get_couple(h, material_couples)
+        self.tilers = self.couple.tilers
         self.h = h
-        self.material = get_material(h)
+        if h > self.couple.transition:
+            self.value = 0
+            self.material = self.couple.grass
+        else:
+            self.value = 1
+            self.material = self.couple.water
         self.type = None
+        self.imgs = None
 
 class MapGrid(PygameGrid):
 
-    def __init__(self, hmap, cell_size, topleft=(0,0)):
+    def __init__(self, hmap, material_couples, actual_frame):
+        cell_size = material_couples[0].cell_size
+        self.actual_frame = actual_frame
         PygameGrid.__init__(self, len(hmap), len(hmap[0]),
-                cell_size=(cell_size, cell_size), topleft=topleft, value=None)
-        self.refresh_cell_heights(hmap)
+                cell_size=(cell_size, cell_size), topleft=actual_frame.topleft,
+                value=None)
+        self.refresh_cell_heights(hmap, material_couples)
         self.black_img = pygame.Surface((cell_size,cell_size))
         self.current_x = 0
         self.current_y = 0
+        #
+        self.nframes = len(material_couples[0].tilers)
+        self.t = 0
+        self.tot_time = 0
+        self.frame_slowness = 20
 
-    def refresh_cell_heights(self, hmap):
+    def next_frame(self):
+        self.tot_time += 1
+        if self.tot_time % self.frame_slowness == 0:
+            self.t = (self.t+1) % self.nframes
+
+    def refresh_cell_heights(self, hmap, material_couples):
         assert len(hmap) == self.nx and len(hmap[0]) == self.ny
         for x,y in self:
-            self[x,y] = Cell(hmap[x][y])
+            self[x,y] = Cell(hmap[x][y], material_couples)
 
     def get_cell_at(self, x,y):
         if self.is_inside((x,y)):
@@ -46,27 +59,40 @@ class MapGrid(PygameGrid):
         else:
             return None
 
-    def get_cell_material_at(self, x, y, x0, y0):
+##    def get_cell_value_at(self, x, y, x0, y0):
+##        cell = self.get_cell_at(x,y)
+##        if cell is None:
+##            return self[x0,y0].value #then returns the same as demanding
+##        return cell.value
+
+    def get_cell_value_at(self, x, y, x0, y0):
         cell = self.get_cell_at(x,y)
+        cell0 = self[x0,y0]
         if cell is None:
-            return self[x0,y0].material
-        return cell.material
+            return cell0.value #then returns the same as demanding
+        else:
+            if cell.couple is cell0.couple:
+                return cell0.value
+            elif cell.couple.transition > cell0.couple.transition:
+                return GRASS
+            else:
+                return WATER
 
     def refresh_cell_types(self):
         for x,y in self:
-            if self[x,y].material == GRASS:
-                t = self.get_cell_material_at(x,y-1,x,y)
-                b = self.get_cell_material_at(x,y+1,x,y)
-                l = self.get_cell_material_at(x-1,y,x,y)
-                r = self.get_cell_material_at(x+1,y,x,y)
+            cell = self[x,y]
+            if cell.value == GRASS:
+                t = self.get_cell_value_at(x,y-1,x,y)
+                b = self.get_cell_value_at(x,y+1,x,y)
+                l = self.get_cell_value_at(x-1,y,x,y)
+                r = self.get_cell_value_at(x+1,y,x,y)
                 n = t*"t" + b*"b" + l*"l" + r*"r"
                 if not n:
-                    n = "c" #remplacer "c" par "" dans tiler!
-                #
-                tl = self.get_cell_material_at(x-1,y-1,x,y)
-                tr = self.get_cell_material_at(x+1,y-1,x,y)
-                bl = self.get_cell_material_at(x-1,y+1,x,y)
-                br = self.get_cell_material_at(x+1,y+1,x,y)
+                    n = "c"
+                tl = self.get_cell_value_at(x-1,y-1,x,y)
+                tr = self.get_cell_value_at(x+1,y-1,x,y)
+                bl = self.get_cell_value_at(x-1,y+1,x,y)
+                br = self.get_cell_value_at(x+1,y+1,x,y)
                 if tl and not(t) and not(l):
                     n += "k"
                 if tr and not(t) and not(r):
@@ -75,28 +101,29 @@ class MapGrid(PygameGrid):
                     n += "y"
                 if br and not(b) and not(r):
                     n += "z"
-                self[x,y].type = n
+                cell.type = n
             else:
-                self[x,y].type = "s"
+                cell.type = "s"
+            cell.imgs = [cell.tilers[t].imgs[cell.type] for t in range(self.nframes)]
 
-    def draw_cell(self, screen, xpix, ypix, coord, x0, y0, imgs):
+    def draw_cell(self, screen, xpix, ypix, coord, x0, y0):
         x,y = coord
         if self.is_inside(coord):
-            img = imgs[self[coord].type]
+            img = self[coord].imgs[self.t]
         else:
             img = self.black_img
         rect = self.get_rect_at_coord((x-x0,y-y0))
         rect.move_ip(-xpix, -ypix)
         screen.blit(img, rect)
 
-    def draw(self, screen, xpix, ypix, x0, w, y0, h, imgs):
+    def draw(self, screen, xpix, ypix, x0, w, y0, h):
         x0 -= 1
         y0 -= 1
         w += 1
         h += 1
         for x in range(x0,x0+w):
             for y in range(y0,y0+h):
-                self.draw_cell(screen, xpix, ypix, (x,y), x0, y0, imgs)
+                self.draw_cell(screen, xpix, ypix, (x,y), x0, y0)
 
     def show(self):
         monitor.show()

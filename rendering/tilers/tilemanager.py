@@ -1,5 +1,6 @@
 import math
 import pygame
+import thorpy
 
 from rendering.tilers.beachtiler import BeachTiler
 from rendering.tilers.basetiler import BaseTiler
@@ -46,24 +47,55 @@ def get_radiuses(nframes, initial_value, increment, reverse=False, sin=True):
         values = values[::-1][1:-1]
     return values
 
-class TileManager:
 
-    def __init__(self, grasses, waters, radiuses, cell_size):
-        assert len(grasses) == len(waters) == len(radiuses)
-        self.tilers = []
-        self.nframes = len(grasses)
-        for n in range(self.nframes):
-            tiler = BeachTiler(grasses[n], waters[n])
-            tiler.make(size=(cell_size,)*2, radius=radiuses[n])
-            self.tilers.append(tiler)
-        self.time = 0
-        self.current_frame = 0
-        self.frame_slowness = 20
+def get_tilers(grasses, waters, radiuses, cell_size):
+    assert len(grasses) == len(waters) == len(radiuses)
+    tilers = []
+    nframes = len(grasses)
+    for n in range(nframes):
+        tiler = BeachTiler(grasses[n], waters[n])
+        tiler.make(size=(cell_size,)*2, radius=radiuses[n])
+        tilers.append(tiler)
+    return tilers
 
-    def next_frame(self):
-        self.time += 1
-        if self.time % self.frame_slowness == 0:
-            self.current_frame = (self.current_frame+1)%self.nframes
+def get_material_couples(materials, radiuses, cell_size):
+    materials.sort(key=lambda x:x.hmax)
+    couples = []
+    nframes = len(materials[0].imgs)
+    assert len(radiuses) == nframes
+    for i in range(len(materials)-1):
+        assert nframes == len(materials[i+1].imgs)
+        couple = MaterialCouple(materials[i],materials[i+1],radiuses,cell_size)
+        couples.append(couple)
+    return couples
 
-    def get_tile(self, name):
-        return self.tilers[self.current_frame].imgs[name]
+def get_couple(h, couples):
+    if h < 0.:
+        return couples[0]
+    else:
+        for couple in couples:
+            if couple.grass.hmax > h:
+                return couple
+    return couples[-1]
+
+class Material:
+
+    def __init__(self, name, hmax, imgs):
+        self.name = name
+        self.hmax = hmax
+        self.imgs = imgs
+
+class MaterialCouple:
+
+    def __init__(self, material1, material2, radiuses, cell_size):
+        assert material1.hmax != material2.hmax
+        if material1.hmax > material2.hmax:
+            self.grass, self.water = material1, material2
+        else:
+            self.grass, self.water = material2, material1
+        self.tilers = get_tilers(self.grass.imgs, self.water.imgs,
+                                 radiuses, cell_size)
+        self.transition = self.water.hmax
+        self.cell_size = cell_size
+
+
