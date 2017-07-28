@@ -6,8 +6,14 @@ from rendering.tilers.beachtiler import BeachTiler
 from rendering.tilers.basetiler import BaseTiler
 from rendering.tilers.roundtiler import RoundTiler
 
+def get_mixed_tiles(img1, img2, alpha_img_2):
+    i1 = img1.copy()
+    i2 = img2.copy()
+    i2.set_alpha(alpha_img_2)
+    i1.blit(i2,(0,0))
+    return i1
 
-def get_shifted_tiles(img, nframes, dx, dy, reverse=False, sin=True):
+def get_shifted_tiles(img, nframes, dx=0, dy=0, reverse=False, sin=True):
     w, h = img.get_size()
     s = pygame.Surface((2*w,2*h))
     s.blit(img, (0,0))
@@ -58,10 +64,11 @@ def get_tilers(grasses, waters, radiuses, cell_size):
         tilers.append(tiler)
     return tilers
 
-def get_material_couples(materials, radiuses, cell_size):
+def get_material_couples(materials, radiuses):
     materials.sort(key=lambda x:x.hmax)
     couples = []
     nframes = len(materials[0].imgs)
+    cell_size = materials[0].imgs[0].get_width()
     assert len(radiuses) == nframes
     for i in range(len(materials)-1):
         assert nframes == len(materials[i+1].imgs)
@@ -97,5 +104,31 @@ class MaterialCouple:
                                  radiuses, cell_size)
         self.transition = self.water.hmax
         self.cell_size = cell_size
+
+##screen.fill((255,255,255))
+##x = 0
+##y = 0
+##i = 0
+##tiler = tilemanager.tilers[0]
+##keys = list(tiler.imgs.keys())
+##keys.sort()
+##for key in keys:
+##    img = tiler.imgs[key]
+##    rect = img.get_rect()
+##    rect.topleft = (x,y)
+##    screen.blit(img, rect.topleft)
+##    pygame.draw.rect(screen, (0,0,0), rect, 1)
+##    text = thorpy.make_text(key+" "+str(i), font_color=(255,255,255),
+##                            font_size=CELL_SIZE//4)
+##    text.set_center(rect.center)
+##    text.blit()
+##    x += CELL_SIZE
+##    if x >= W - CELL_SIZE:
+##        x = 0
+##        y += CELL_SIZE
+##    i += 1
+####    print(i,x,y)
+##pygame.display.flip()
+##app.pause()
 
 

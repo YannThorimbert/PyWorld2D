@@ -65,15 +65,17 @@ class MapGrid(PygameGrid):
 ##            return self[x0,y0].value #then returns the same as demanding
 ##        return cell.value
 
-    def get_cell_value_at(self, x, y, x0, y0):
-        cell = self.get_cell_at(x,y)
-        cell0 = self[x0,y0]
-        if cell is None:
-            return cell0.value #then returns the same as demanding
+    def get_neighbour_value_at(self, x, y, x0, y0):
+        neighbour = self.get_cell_at(x,y)
+        origin = self[x0,y0]
+        if x0 == 2 and y0 == 1:
+            print("Couples", neighbour.couple, origin.couple)
+        if neighbour is None:
+            return origin.value #then returns the same as demanding
         else:
-            if cell.couple is cell0.couple:
-                return cell0.value
-            elif cell.couple.transition > cell0.couple.transition:
+            if neighbour.material is origin.material:
+                return origin.value
+            elif neighbour.material.hmax > origin.material.hmax:
                 return GRASS
             else:
                 return WATER
@@ -82,17 +84,20 @@ class MapGrid(PygameGrid):
         for x,y in self:
             cell = self[x,y]
             if cell.value == GRASS:
-                t = self.get_cell_value_at(x,y-1,x,y)
-                b = self.get_cell_value_at(x,y+1,x,y)
-                l = self.get_cell_value_at(x-1,y,x,y)
-                r = self.get_cell_value_at(x+1,y,x,y)
+                t = self.get_neighbour_value_at(x,y-1,x,y)
+                b = self.get_neighbour_value_at(x,y+1,x,y)
+                l = self.get_neighbour_value_at(x-1,y,x,y)
+                r = self.get_neighbour_value_at(x+1,y,x,y)
                 n = t*"t" + b*"b" + l*"l" + r*"r"
                 if not n:
                     n = "c"
-                tl = self.get_cell_value_at(x-1,y-1,x,y)
-                tr = self.get_cell_value_at(x+1,y-1,x,y)
-                bl = self.get_cell_value_at(x-1,y+1,x,y)
-                br = self.get_cell_value_at(x+1,y+1,x,y)
+                tl = self.get_neighbour_value_at(x-1,y-1,x,y)
+                tr = self.get_neighbour_value_at(x+1,y-1,x,y)
+                bl = self.get_neighbour_value_at(x-1,y+1,x,y)
+                br = self.get_neighbour_value_at(x+1,y+1,x,y)
+                if x == 2 and y == 1:
+                    print(cell.h)
+                    print(t,b,l,r)
                 if tl and not(t) and not(l):
                     n += "k"
                 if tr and not(t) and not(r):
