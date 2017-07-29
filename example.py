@@ -7,7 +7,7 @@ from rendering.mapgrid import MapGrid
 import gui.parameters as guip
 import gui.elements as gui
 
-
+##thorpy.application.SHOW_FPS = True
 
 #ergonomie => click sur cell pour + d'infos.
 #coord et alt affiches en bas en txt!
@@ -15,24 +15,21 @@ import gui.elements as gui
 #pas mettre de titre. a la place, quand contenu vide, juste ecrire le titre.
 #le location name, s'il existe, remplace le material name
 
-#probleme : effet d'escalier pour S > MAX_MAP_SIZE (facteur change de signe)
-
-#quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
-
-
-##thorpy.application.SHOW_FPS = True
-
-#zoom: on genere les tilers de MAX_CELLSIZE a MIN_CELLSIZE
-#   quand zoom change, cell.imgs pointe juste vers un autre #cell.imgs devient un dict ?
+#en + de presser sur shift, on peut aussi juste rester clicke sur map pour la bouger
 
 #objets : arbres, sapins(+ grand h), montagnes, villages, chateaux, murailles.
 #materials: chemin, riviere (eau peu profonde) (a generer?)
 
-
-#effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, précipitations
-
 #finalement: editeur.
 #pas oublier curseur juste dans coins
+
+#v2:
+#quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
+
+#zoom: on genere les tilers de MAX_CELLSIZE a MIN_CELLSIZE
+#   quand zoom change, cell.imgs pointe juste vers un autre #cell.imgs devient un dict ?
+
+#effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, précipitations
 
 #surface preproduites ? Lourd en memoire mais cool en perfs...
 ## ==> a faire en cas de problemes de perfs ingame
@@ -45,48 +42,70 @@ def sgn(x):
     return 0
 
 def get_dpix():
-    return (camposx - rmouse.x)*CELL_SIZE, (camposy - rmouse.y)*CELL_SIZE
+    return (camposx - rcam.x)*CELL_SIZE, (camposy - rcam.y)*CELL_SIZE
 
 def draw_grid():
     xpix, ypix = get_dpix()
     mg.draw(screen, xpix, ypix, mg.current_x, NXRENDER, mg.current_y, NYRENDER)
 
-def set_current_pos():
-    rmap = e_hmap.get_rect()
-##    rmouse.clamp_ip(rmap)
-    x, y = rmouse.topleft
-    xm, ym = rmap.topleft
-    mg.current_x = int((x-xm)/scale_factor)
-    mg.current_y = int((y-ym)/scale_factor)
+def set_mg_pos_from_rcam():
+    mg.current_x = int(rcam.x)
+    mg.current_y = int(rcam.y)
 
-def set_campos_from_rmouse():
-    global camposx, camposy #ici epsx = 0
-    camposx = float(rmouse.left)
-    camposy = float(rmouse.top)
+def set_campos_from_rcam():
+    global camposx, camposy #ici dpix = 0
+    camposx = float(rcam.left)
+    camposy = float(rcam.top)
 
-def set_rmouse_from_campos():
-    rmouse.top = int(camposy)
-    rmouse.left = int(camposx)
+def set_rcam_from_campos():
+    rcam.top = int(camposy)
+    rcam.left = int(camposx)
+
+def set_rcam_from_rmouse():
+    rminimap = e_hmap.get_rect()
+    #dc/ws = dm/ms ==> dc = dm*ws/ms
+    rcam.x = (rmouse.x - rminimap.x)*WORLD_SIZE[0]/MINIMAP_SIZE[0]
+    rcam.y = (rmouse.y - rminimap.y)*WORLD_SIZE[1]/MINIMAP_SIZE[1]
+
+def set_rmouse_from_rcam():
+    rminimap = e_hmap.get_rect()
+    rmouse.x = rcam.x*MINIMAP_SIZE[0]/WORLD_SIZE[0] + rminimap.x
+    rmouse.y = rcam.y*MINIMAP_SIZE[1]/WORLD_SIZE[1] + rminimap.y
+##    rmouse.x = rcam.x//scale_factor + rminimap.x
+##    rmouse.y = rcam.y/scale_factor + rminimap.y
 
 def move_cam(dx,dy):
     global camposx, camposy
     camposx += dx
     camposy += dy
-    set_rmouse_from_campos()
+    set_rcam_from_campos()
+
+def func_reac_click(e):
+    if e.button == 1: #left click
+        if box_hmap.get_rect().collidepoint(e.pos):
+            center_cam_on(e.pos)
+
+def center_cam_on(pos):
+    if box_hmap.get_rect().collidepoint(pos):
+        rmouse.center = pos
+        set_rcam_from_rmouse()
+        set_mg_pos_from_rcam()
+        set_campos_from_rcam()
 
 def func_reac_mousemotion(e):
-    if pygame.key.get_mods() & pygame.KMOD_CTRL:
+##    if pygame.key.get_mods() & pygame.KMOD_CTRL:
+    if pygame.mouse.get_pressed()[0]:
         if box_hmap.get_rect().collidepoint(e.pos):
-            rmouse.center = e.pos
-            set_current_pos()
-            set_campos_from_rmouse()
+            center_cam_on(e.pos)
+        elif MAP_RECT.collidepoint(e.pos):
+            move_cam(-e.rel[0],-e.rel[1]) #ameliorer!
+            set_mg_pos_from_rcam()
 
-def process_mouse_navigation():
+def process_mouse_navigation(): #cam can move even with no mousemotion!
     if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
         pos = pygame.mouse.get_pos()
         d = V2(pos) - MAP_RECT.center
         intensity = 2e-8*d.length_squared()**1.5
-##        print(intensity)
         if intensity > 1.:
             intensity = 1.
         d.normalize_ip()
@@ -94,7 +113,7 @@ def process_mouse_navigation():
         dy = intensity*d.y
         dx, dy = correct_move(dx, dy)
         move_cam(dx,dy)
-        set_current_pos()
+        set_mg_pos_from_rcam()
 
 def correct_move(dx,dy):
     if mg.current_x + NXRENDER > mg.nx + 2 and dx > 0:
@@ -111,6 +130,7 @@ def draw():
     draw_grid()
     screen.blit(frame_map, (0,0))
     box.blit()
+    set_rmouse_from_rcam()
     pygame.draw.rect(screen, (255,255,255), rmouse, 1)
     #
     mousepos = pygame.mouse.get_pos()
@@ -121,8 +141,6 @@ def draw():
             cell = mg[coord]
             if cell_info.cell is not cell:
                 cell_info.update_and_draw(cell, coord)
-##        print(x,y)
-##        print("Coord =",(x,y), "h =",hmap[x][y], "Material =", cell.material.name)
     pygame.display.flip()
 
 
@@ -174,62 +192,13 @@ def load_image(fn):
 
 
 W, H = 900, 600
-S = 128
-CELL_SIZE = 25
-CELL_RADIUS = CELL_SIZE//8
-MAX_MAP_SIZE_PIX = 64, 64
-
-FPS = 80
-
-MENU_SIZE = (200, H)
-MENU_RECT = pygame.Rect((0,0),MENU_SIZE)
-MENU_RECT.right = W
-assert MENU_RECT.w > MAX_MAP_SIZE_PIX[0]
-
-NOT_MENU_RECT = pygame.Rect((0,0),(MENU_RECT.left,MENU_RECT.bottom))
-
-NXRENDER = NOT_MENU_RECT.w//CELL_SIZE - 1
-NYRENDER = NOT_MENU_RECT.h//CELL_SIZE - 1
-MAP_SIZE = NXRENDER*CELL_SIZE, NYRENDER*CELL_SIZE
-MAP_RECT = pygame.Rect((0,0), MAP_SIZE)
-MAP_RECT.centery = H//2
-MAP_RECT.centerx = (W - MENU_RECT.w)//2
-CELL_RECT = pygame.Rect(0,0,CELL_SIZE,CELL_SIZE)
-
-frame_map = pygame.Surface(NOT_MENU_RECT.size)
-frame_map.fill((200,200,200))
-pygame.draw.rect(frame_map, (255,255,255), MAP_RECT)
-frame_map.set_colorkey((255,255,255))
-
 app = thorpy.Application((W,H), "PyWorld2D example")
 screen = thorpy.get_screen()
 
-print("Building hmap")
-hmap = ng.generate_terrain(S, chunk=(1310,14)) #1310,14, S=64
-##hmap = grow_map(hmap)
-ng.normalize(hmap)
-hmap[2][1] = 0.7
-hmap[S-1][S-1] = 1.
-img_hmap = ng.build_surface(hmap)
+CELL_SIZE = 20
+CELL_RADIUS = CELL_SIZE//8
+CELL_RECT = pygame.Rect(0,0,CELL_SIZE,CELL_SIZE)
 
-###possibility to use other sizes
-##new_img_hmap = pygame.Surface((256,100))
-##new_img_hmap.blit(img_hmap, (0,0))
-##img_hmap = new_img_hmap
-
-w,h = img_hmap.get_size()
-if w >= h and w > MAX_MAP_SIZE_PIX[0]:
-    M = MAX_MAP_SIZE_PIX[0]
-    scale_factor = M / w
-    sy = int(MAX_MAP_SIZE_PIX[1]*h/w)
-    img_hmap = pygame.transform.smoothscale(img_hmap, (M,sy))
-elif w < h and h > MAX_MAP_SIZE_PIX[1]:
-    M = MAX_MAP_SIZE_PIX[1]
-    scale_factor = M / h
-    sx = int(MAX_MAP_SIZE_PIX[0]*w/h)
-    img_hmap = pygame.transform.smoothscale(img_hmap, (sx,M))
-else:
-    scale_factor = 1. #to update if (un)zoom the map!!!
 
 ################################################################################
 
@@ -281,10 +250,84 @@ snow2 = tm.Material("Snow", float("inf"), snows2)
 materials = [deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
 material_couples = tm.get_material_couples(materials, radiuses)
 
+
+################################################################################
+#WORLD : total map (img_hmap)
+#MINIMAP : minimap, shows the world
+#MAP : part of the world displayed in the view port
+
+S = 128
+MAX_MINIMAP_SIZE = 128
+
+##REDUC = MAX_WORLD_SIZEc // MAX_MINIMAP_SIZE
+MAX_MINIMAP_SIZE = (MAX_MINIMAP_SIZE,)*2
+
+FPS = 80
+MENU_SIZE = (200, H)
+MENU_RECT = pygame.Rect((0,0),MENU_SIZE)
+MENU_RECT.right = W
+BOX_HMAP_MARGIN = 20
+
+if MENU_RECT.w < MAX_MINIMAP_SIZE[0] + BOX_HMAP_MARGIN*2:
+    s = MENU_RECT.w - BOX_HMAP_MARGIN*2 - 2
+    MAX_MINIMAP_SIZE = (s,s)
+
+VIEWPORT_RECT = pygame.Rect((0,0),(MENU_RECT.left,MENU_RECT.bottom))
+
+NXRENDER = VIEWPORT_RECT.w//CELL_SIZE - 1
+NYRENDER = VIEWPORT_RECT.h//CELL_SIZE - 1
+MAP_SIZE = NXRENDER*CELL_SIZE, NYRENDER*CELL_SIZE
+MAP_RECT = pygame.Rect((0,0), MAP_SIZE)
+MAP_RECT.centery = H//2
+MAP_RECT.centerx = (W - MENU_RECT.w)//2
+
+frame_map = pygame.Surface(VIEWPORT_RECT.size)
+frame_map.fill((200,200,200))
+pygame.draw.rect(frame_map, (255,255,255), MAP_RECT)
+frame_map.set_colorkey((255,255,255))
+
+
+print("Building hmap")
+hmap = ng.generate_terrain(S, chunk=(1310,14)) #1310,14, S=64
+##hmap = grow_map(hmap)
+ng.normalize(hmap)
+hmap[2][1] = 0.7
+hmap[S-1][S-1] = 1.
+img_hmap = ng.build_surface(hmap)
+
+#possibility to use other sizes
+new_img_hmap = pygame.Surface((S,S//3))
+new_img_hmap.blit(img_hmap, (0,0))
+img_hmap = new_img_hmap
+
+WORLD_SIZE = img_hmap.get_size() #can differ from hmap!
+
+w,h = WORLD_SIZE
+if w >= h and w > MAX_MINIMAP_SIZE[0]:
+    M = MAX_MINIMAP_SIZE[0]
+    scale_factor = M / w #scale factor is always smaller or equal to 1
+    size_y = int(MAX_MINIMAP_SIZE[1]*h/w)
+    img_hmap = pygame.transform.smoothscale(img_hmap, (M,size_y))
+elif w < h and h > MAX_MINIMAP_SIZE[1]:
+    M = MAX_MINIMAP_SIZE[1]
+    scale_factor = M / h
+    size_x = int(MAX_MINIMAP_SIZE[0]*w/h)
+    img_hmap = pygame.transform.smoothscale(img_hmap, (size_x,M))
+else:
+    scale_factor = 1. #to update if (un)zoom the map!!!
+
+MINIMAP_SIZE = img_hmap.get_size() #can differ from WORLD_SIZE !
+
+camposx, camposy = 0., 0.
+rcam = pygame.Rect(0, 0, NXRENDER, NYRENDER)
+rmouse = pygame.Rect(0, 0, int(MINIMAP_SIZE[0]*NXRENDER/WORLD_SIZE[0]),
+                            int(MINIMAP_SIZE[1]*NYRENDER/WORLD_SIZE[1]))
+
+
 ################################################################################
 screen.fill(thorpy.style.DEF_COLOR)
 
-mg = MapGrid(hmap, material_couples, MAP_RECT)
+mg = MapGrid(hmap, material_couples, MAP_RECT, WORLD_SIZE)
 mg.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
 print("Refreshing cell types")
 mg.refresh_cell_types()
@@ -292,35 +335,26 @@ mg.refresh_cell_types()
 ################################################################################
 
 
-camposx, camposy = 0., 0.
-rmouse = pygame.Rect(0, 0, NXRENDER*scale_factor, NYRENDER*scale_factor)
 
 e_hmap = thorpy.Image.make(img_hmap)
 e_hmap.stick_to("screen", "right", "right", False)
 e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEMOTION, func_reac_mousemotion))
+e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONDOWN, func_reac_click))
 thorpy.add_time_reaction(e_hmap, func_reac_time)
 box_hmap = thorpy.Box.make([e_hmap])
-box_hmap.fit_children((20,20))
-
+box_hmap.fit_children((BOX_HMAP_MARGIN,)*2)
 
 cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size) #material, coord, alt, img, name
 unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size) #type, name, life, food, img
 misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size)
 
-##import gui.elements as gui
-##e_infos = thorpy.Image.make(gui.get_rounded_frame_img((100,100), 5, (0,0,0), 2))#, colorkey=(255,255,255))
-##e_infos.add_elements([e_mat_name, e_coord, e_altitude])
-##thorpy.store(e_infos)
-
-
 ##menu_button = thorpy.make_button("Quit", thorpy.functions.quit_menu_func)
 menu_button = thorpy.make_menu_button() #==> load, save, settings
 ##quit_button = thorpy.make_button("Quit", thorpy.functions.quit_menu_func)
-box = thorpy.Element.make(elements=[box_hmap, thorpy.Line.make(MENU_RECT.w-20),
-                                    misc_info.e, cell_info.e, unit_info.e,
-##                                    misc_info.e, thorpy.Line.make(MENU_RECT.w-20),
-##                                    cell_info.e, thorpy.Line.make(MENU_RECT.w-20),
-##                                    unit_info.e, thorpy.Line.make(MENU_RECT.w-20),
+box = thorpy.Element.make(elements=[box_hmap, #thorpy.Line.make(MENU_RECT.w-20),
+                                    misc_info.e, #thorpy.Line.make(MENU_RECT.w-20),
+                                    cell_info.e, #thorpy.Line.make(MENU_RECT.w-20),
+                                    unit_info.e, #thorpy.Line.make(MENU_RECT.w-20),
                                     menu_button],
                             size=MENU_RECT.size)
 thorpy.store(box)
@@ -328,7 +362,7 @@ box.stick_to("screen","right","right")
 
 
 rmouse.topleft = e_hmap.get_rect().topleft
-set_campos_from_rmouse()
+set_campos_from_rcam()
 
 thorpy.makeup.add_basic_help(box_hmap, "Hold CTRL to move camera on miniature map")
 m = thorpy.Menu([box],fps=FPS)

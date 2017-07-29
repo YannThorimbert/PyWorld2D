@@ -31,11 +31,16 @@ class Cell:
 
 class MapGrid(PygameGrid):
 
-    def __init__(self, hmap, material_couples, actual_frame):
+    def __init__(self, hmap, material_couples, actual_frame, restrict_size=None):
         cell_size = material_couples[0].cell_size
         self.actual_frame = actual_frame
-        PygameGrid.__init__(self, len(hmap), len(hmap[0]),
-                cell_size=(cell_size, cell_size), topleft=actual_frame.topleft,
+        if restrict_size is None:
+            nx, ny = len(hmap), len(hmap[0])
+        else:
+            nx, ny= restrict_size
+        PygameGrid.__init__(self, nx, ny,
+                cell_size=(cell_size, cell_size),
+                topleft=actual_frame.topleft,
                 value=None)
         self.refresh_cell_heights(hmap, material_couples)
         self.black_img = pygame.Surface((cell_size,cell_size))
@@ -53,7 +58,7 @@ class MapGrid(PygameGrid):
             self.t = (self.t+1) % self.nframes
 
     def refresh_cell_heights(self, hmap, material_couples):
-        assert len(hmap) == self.nx and len(hmap[0]) == self.ny
+##        assert len(hmap) == self.nx and len(hmap[0]) == self.ny
         for x,y in self:
             self[x,y] = Cell(hmap[x][y], material_couples)
 
@@ -63,17 +68,9 @@ class MapGrid(PygameGrid):
         else:
             return None
 
-##    def get_cell_value_at(self, x, y, x0, y0):
-##        cell = self.get_cell_at(x,y)
-##        if cell is None:
-##            return self[x0,y0].value #then returns the same as demanding
-##        return cell.value
-
     def get_neighbour_value_at(self, x, y, x0, y0):
         neighbour = self.get_cell_at(x,y)
         origin = self[x0,y0]
-        if x0 == 2 and y0 == 1:
-            print("Couples", neighbour.couple, origin.couple)
         if neighbour is None:
             return origin.value #then returns the same as demanding
         else:
