@@ -7,12 +7,20 @@ from rendering.mapgrid import MapGrid
 import gui.parameters as guip
 import gui.elements as gui
 
-#ergonomie => click
 
-#thorpy: recenter()
+
+#ergonomie => click sur cell pour + d'infos.
+#coord et alt affiches en bas en txt!
+#plus de box sur info cell, juste bouton
+#pas mettre de titre. a la place, quand contenu vide, juste ecrire le titre.
+#le location name, s'il existe, remplace le material name
+
+#probleme : effet d'escalier pour S > MAX_MAP_SIZE (facteur change de signe)
+
+#quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
+
 
 ##thorpy.application.SHOW_FPS = True
-#visualiseur de map dans menu. Faire un nouveau painter et tout mettre dans ce style ?
 
 #zoom: on genere les tilers de MAX_CELLSIZE a MIN_CELLSIZE
 #   quand zoom change, cell.imgs pointe juste vers un autre #cell.imgs devient un dict ?
@@ -109,10 +117,10 @@ def draw():
     if MAP_RECT.collidepoint(mousepos):
         coord = get_coord_at_pix(mousepos)
         if mg.is_inside(coord):
+            pygame.draw.rect(screen, (0,0,0), get_rect_at_pix(mousepos), 1)
             cell = mg[coord]
             if cell_info.cell is not cell:
-                pygame.draw.rect(screen, (0,0,0), get_rect_at_pix(mousepos), 1)
-                cell_info.update_and_draw(cell)
+                cell_info.update_and_draw(cell, coord)
 ##        print(x,y)
 ##        print("Coord =",(x,y), "h =",hmap[x][y], "Material =", cell.material.name)
     pygame.display.flip()
@@ -166,10 +174,10 @@ def load_image(fn):
 
 
 W, H = 900, 600
-S = 32
+S = 128
 CELL_SIZE = 25
 CELL_RADIUS = CELL_SIZE//8
-MAX_MAP_SIZE_PIX = 128, 128
+MAX_MAP_SIZE_PIX = 64, 64
 
 FPS = 80
 
@@ -180,9 +188,8 @@ assert MENU_RECT.w > MAX_MAP_SIZE_PIX[0]
 
 NOT_MENU_RECT = pygame.Rect((0,0),(MENU_RECT.left,MENU_RECT.bottom))
 
-WRENDER = W-MENU_RECT.w
-HRENDER = H
-NXRENDER,NYRENDER = WRENDER//CELL_SIZE - 1, HRENDER//CELL_SIZE - 1
+NXRENDER = NOT_MENU_RECT.w//CELL_SIZE - 1
+NYRENDER = NOT_MENU_RECT.h//CELL_SIZE - 1
 MAP_SIZE = NXRENDER*CELL_SIZE, NYRENDER*CELL_SIZE
 MAP_RECT = pygame.Rect((0,0), MAP_SIZE)
 MAP_RECT.centery = H//2
@@ -295,15 +302,10 @@ thorpy.add_time_reaction(e_hmap, func_reac_time)
 box_hmap = thorpy.Box.make([e_hmap])
 box_hmap.fit_children((20,20))
 
-e_cell_infos_title = thorpy.make_text("Cell infos", guip.TFS, guip.TFC)
-e_coord = thorpy.make_text("(x;y)")
-e_altitude = thorpy.make_text("Altitude: h")
-e_mat_img = thorpy.Image.make( mg[0,0].imgs[0])
-e_mat_name = thorpy.make_text("Material name", guip.NFS, guip.NFC)
-e_mat = thorpy.Clickable.make(elements=[e_mat_name, e_mat_img])
-thorpy.store(e_mat)
-e_mat.fit_children()
-cell_info = gui.CellInfo(MAX_MAP_SIZE_PIX, CELL_RECT.size)
+
+cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size) #material, coord, alt, img, name
+unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size) #type, name, life, food, img
+misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size)
 
 ##import gui.elements as gui
 ##e_infos = thorpy.Image.make(gui.get_rounded_frame_img((100,100), 5, (0,0,0), 2))#, colorkey=(255,255,255))
@@ -311,10 +313,17 @@ cell_info = gui.CellInfo(MAX_MAP_SIZE_PIX, CELL_RECT.size)
 ##thorpy.store(e_infos)
 
 
-quit_button = thorpy.make_button("Quit", thorpy.functions.quit_menu_func)
-box = thorpy.Element.make(elements=[box_hmap, cell_info.e, quit_button],
+##menu_button = thorpy.make_button("Quit", thorpy.functions.quit_menu_func)
+menu_button = thorpy.make_menu_button() #==> load, save, settings
+##quit_button = thorpy.make_button("Quit", thorpy.functions.quit_menu_func)
+box = thorpy.Element.make(elements=[box_hmap, thorpy.Line.make(MENU_RECT.w-20),
+                                    misc_info.e, cell_info.e, unit_info.e,
+##                                    misc_info.e, thorpy.Line.make(MENU_RECT.w-20),
+##                                    cell_info.e, thorpy.Line.make(MENU_RECT.w-20),
+##                                    unit_info.e, thorpy.Line.make(MENU_RECT.w-20),
+                                    menu_button],
                             size=MENU_RECT.size)
-thorpy.store(box, gap=40)
+thorpy.store(box)
 box.stick_to("screen","right","right")
 
 

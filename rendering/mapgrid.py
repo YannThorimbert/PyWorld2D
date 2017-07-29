@@ -24,6 +24,10 @@ class Cell:
             self.material = self.couple.water
         self.type = None
         self.imgs = None
+        self.name = ""
+
+    def get_altitude(self):
+        return (self.h-0.6)*2e4
 
 class MapGrid(PygameGrid):
 
