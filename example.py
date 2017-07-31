@@ -9,22 +9,19 @@ import gui.elements as gui
 
 ##thorpy.application.SHOW_FPS = True
 
-#ergonomie => click sur cell pour + d'infos.
-#coord et alt affiches en bas en txt!
-#plus de box sur info cell, juste bouton
-#pas mettre de titre. a la place, quand contenu vide, juste ecrire le titre.
-#le location name, s'il existe, remplace le material name
-
-#en + de presser sur shift, on peut aussi juste rester clicke sur map pour la bouger
 
 #objets : arbres, sapins(+ grand h), montagnes, villages, chateaux, murailles.
+#units: (herite de objet)
 #materials: chemin, riviere (eau peu profonde) (a generer?)
 
-#finalement: editeur.
-#pas oublier curseur juste dans coins
+#cell.get_image() pour 2 raisons: 1) zoom, 2) personnaliser les images ==> attribut img, et changement de method plutot que if else
+
+#finalement: editeur, load/save/quit
 
 #v2:
 #quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
+
+#ridged noise
 
 #zoom: on genere les tilers de MAX_CELLSIZE a MIN_CELLSIZE
 #   quand zoom change, cell.imgs pointe juste vers un autre #cell.imgs devient un dict ?
@@ -47,6 +44,7 @@ def get_dpix():
 def draw_grid():
     xpix, ypix = get_dpix()
     mg.draw(screen, xpix, ypix, mg.current_x, NXRENDER, mg.current_y, NYRENDER)
+    screen.blit(frame_map, (0,0))
 
 def set_mg_pos_from_rcam():
     mg.current_x = int(rcam.x)
@@ -80,10 +78,34 @@ def move_cam(dx,dy):
     camposy += dy
     set_rcam_from_campos()
 
+
+def get_cell(pix):
+    if MAP_RECT.collidepoint(pix):
+        coord = get_coord_at_pix(pix)
+        if mg.is_inside(coord):
+            return mg[coord]
+
 def func_reac_click(e):
     if e.button == 1: #left click
         if box_hmap.get_rect().collidepoint(e.pos):
             center_cam_on(e.pos)
+##        else:
+##            cell = get_cell(e.pos)
+##            if cell:
+##                want_cell_info = cell, e.pos
+##                cell_info.launch_em(cell, e.pos, MAP_RECT)
+
+def func_reac_unclick(e):
+    global cell_clicked
+    if e.button == 1:
+        cell = get_cell(e.pos)
+        if cell:
+            if cell is not cell_clicked:
+                if not cell_info.launched:
+                    cell_clicked = cell
+                    cell_info.launch_em(cell, e.pos, MAP_RECT)
+        cell_clicked = None
+
 
 def center_cam_on(pos):
     if box_hmap.get_rect().collidepoint(pos):
@@ -92,14 +114,17 @@ def center_cam_on(pos):
         set_mg_pos_from_rcam()
         set_campos_from_rcam()
 
+cell_clicked = None
 def func_reac_mousemotion(e):
+    global cell_clicked
 ##    if pygame.key.get_mods() & pygame.KMOD_CTRL:
     if pygame.mouse.get_pressed()[0]:
         if box_hmap.get_rect().collidepoint(e.pos):
             center_cam_on(e.pos)
         elif MAP_RECT.collidepoint(e.pos):
-            move_cam(-e.rel[0],-e.rel[1]) #ameliorer!
+            move_cam(-e.rel[0]/CELL_SIZE,-e.rel[1]/CELL_SIZE)
             set_mg_pos_from_rcam()
+            cell_clicked = get_cell(e.pos)
 
 def process_mouse_navigation(): #cam can move even with no mousemotion!
     if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
@@ -126,29 +151,43 @@ def correct_move(dx,dy):
         dy = 0
     return dx, dy
 
-def draw():
-    draw_grid()
-    screen.blit(frame_map, (0,0))
-    box.blit()
-    set_rmouse_from_rcam()
-    pygame.draw.rect(screen, (255,255,255), rmouse, 1)
-    #
+def update_cell_info():
     mousepos = pygame.mouse.get_pos()
-    if MAP_RECT.collidepoint(mousepos):
-        coord = get_coord_at_pix(mousepos)
-        if mg.is_inside(coord):
-            pygame.draw.rect(screen, (0,0,0), get_rect_at_pix(mousepos), 1)
-            cell = mg[coord]
-            if cell_info.cell is not cell:
-                cell_info.update_and_draw(cell, coord)
-    pygame.display.flip()
+    cell = get_cell(mousepos)
+    if cell:
+##        pygame.draw.rect(screen, (0,0,0), get_rect_at_pix(mousepos), 1)
+        rcursor = img_cursor.get_rect()
+        rcursor.center = get_rect_at_pix(mousepos).center
+        screen.blit(img_cursor, rcursor)
+        if cell_info.cell is not cell:
+            cell_info.update_e(cell)
 
+
+def draw():
+    set_rmouse_from_rcam()
+    #blit map and its frame
+    draw_grid()
+    #update right pane
+    update_cell_info()
+    #blit right pane and draw rect on minimap
+    box.blit()
+    pygame.draw.rect(screen, (255,255,255), rmouse, 1)
+
+def draw_no_update():
+    draw_grid()
+    box.blit()
+    pygame.draw.rect(screen, (255,255,255), rmouse, 1)
 
 def func_reac_time():
+    global img_cursor, idx_cursor
     process_mouse_navigation()
     draw()
+    pygame.display.flip()
     #
     mg.next_frame()
+    if mg.tot_time%cursor_slowness == 0:
+        idx_cursor = (idx_cursor+1)%len(cursors)
+        img_cursor = cursors[idx_cursor]
 
 
 def get_rect_at_coord(coord):
@@ -332,6 +371,8 @@ mg.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
 print("Refreshing cell types")
 mg.refresh_cell_types()
 
+mg.cells[3][3].name = "Roflburg"
+
 ################################################################################
 
 
@@ -340,18 +381,24 @@ e_hmap = thorpy.Image.make(img_hmap)
 e_hmap.stick_to("screen", "right", "right", False)
 e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEMOTION, func_reac_mousemotion))
 e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONDOWN, func_reac_click))
+e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONUP, func_reac_unclick))
 thorpy.add_time_reaction(e_hmap, func_reac_time)
+e_title_hmap = guip.get_title("Map")
 box_hmap = thorpy.Box.make([e_hmap])
 box_hmap.fit_children((BOX_HMAP_MARGIN,)*2)
+topbox = thorpy.make_group([e_title_hmap, box_hmap], "v")
 
-cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size) #material, coord, alt, img, name
-unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size) #type, name, life, food, img
-misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size)
+cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap) #material, coord, alt, img, name
+
+unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap) #type, name, life, food, img
+misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
+
+##e_help.stick_to(VIEWPORT_RECT, "bottom", "bottom", False)
 
 ##menu_button = thorpy.make_button("Quit", thorpy.functions.quit_menu_func)
 menu_button = thorpy.make_menu_button() #==> load, save, settings
 ##quit_button = thorpy.make_button("Quit", thorpy.functions.quit_menu_func)
-box = thorpy.Element.make(elements=[box_hmap, #thorpy.Line.make(MENU_RECT.w-20),
+box = thorpy.Element.make(elements=[topbox, #thorpy.Line.make(MENU_RECT.w-20),
                                     misc_info.e, #thorpy.Line.make(MENU_RECT.w-20),
                                     cell_info.e, #thorpy.Line.make(MENU_RECT.w-20),
                                     unit_info.e, #thorpy.Line.make(MENU_RECT.w-20),
@@ -361,6 +408,11 @@ thorpy.store(box)
 box.stick_to("screen","right","right")
 
 
+cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
+idx_cursor = 0
+img_cursor = cursors[idx_cursor]
+cursor_slowness = int(0.3*FPS)
+
 rmouse.topleft = e_hmap.get_rect().topleft
 set_campos_from_rcam()
 
@@ -369,5 +421,7 @@ m = thorpy.Menu([box],fps=FPS)
 m.play()
 
 app.quit()
+
+#pour FS: ajouter un info box quand on click sur material name, quand on click sur une cellule
 
 

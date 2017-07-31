@@ -12,10 +12,11 @@ GRASS = 0
 
 class Cell:
 
-    def __init__(self, h, material_couples):
+    def __init__(self, h, coord, material_couples):
         self.couple = get_couple(h, material_couples)
         self.tilers = self.couple.tilers
         self.h = h
+        self.coord = coord
         if h > self.couple.transition:
             self.value = 0
             self.material = self.couple.grass
@@ -26,8 +27,12 @@ class Cell:
         self.imgs = None
         self.name = ""
 
+
     def get_altitude(self):
         return (self.h-0.6)*2e4
+
+    def get_img(self): #todo
+        pass
 
 class MapGrid(PygameGrid):
 
@@ -56,11 +61,12 @@ class MapGrid(PygameGrid):
         self.tot_time += 1
         if self.tot_time % self.frame_slowness == 0:
             self.t = (self.t+1) % self.nframes
+            return True
 
     def refresh_cell_heights(self, hmap, material_couples):
 ##        assert len(hmap) == self.nx and len(hmap[0]) == self.ny
         for x,y in self:
-            self[x,y] = Cell(hmap[x][y], material_couples)
+            self[x,y] = Cell(hmap[x][y], (x,y), material_couples)
 
     def get_cell_at(self, x,y):
         if self.is_inside((x,y)):
@@ -96,9 +102,6 @@ class MapGrid(PygameGrid):
                 tr = self.get_neighbour_value_at(x+1,y-1,x,y)
                 bl = self.get_neighbour_value_at(x-1,y+1,x,y)
                 br = self.get_neighbour_value_at(x+1,y+1,x,y)
-                if x == 2 and y == 1:
-                    print(cell.h)
-                    print(t,b,l,r)
                 if tl and not(t) and not(l):
                     n += "k"
                 if tr and not(t) and not(r):
