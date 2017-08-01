@@ -1,5 +1,8 @@
 import thorpy
 
+#menus
+FRAME_MAP_COLOR = thorpy.style.DEF_COLOR
+
 #titles
 TFS = thorpy.style.TITLE_FONT_SIZE
 TFC = thorpy.style.TITLE_FONT_COLOR

@@ -96,7 +96,7 @@ def func_reac_mousemotion(e):
         if box_hmap.get_rect().collidepoint(e.pos):
             cam.center_on(e.pos)
         elif cam.map_rect.collidepoint(e.pos):
-            delta = -V2(e.rel)/cam.cell_size
+            delta = -V2(e.rel)/cam.cell_rect.w #assuming square cells
             cam.move(delta)
             cam.set_mg_pos_from_rcam()
             cell_clicked = cam.get_cell(e.pos)
@@ -120,28 +120,30 @@ def load_image(fn):
     return pygame.transform.smoothscale(img, CELL_RECT.size)
 
 
+#arbitrary constants
 W, H = 900, 600
 FPS = 80
+CELL_SIZE = 20
+BOX_HMAP_MARGIN = 20 #box of the minimap
+MENU_WIDTH = 200
+MAX_MINIMAP_SIZE = 128
+S = 128
+
 app = thorpy.Application((W,H), "PyWorld2D example")
 screen = thorpy.get_screen()
 
-CELL_SIZE = 20
+#compute derived constants
 CELL_RADIUS = CELL_SIZE//8
 CELL_RECT = pygame.Rect(0,0,CELL_SIZE,CELL_SIZE)
-S = 128
-MAX_MINIMAP_SIZE = 128
 MAX_MINIMAP_SIZE = (MAX_MINIMAP_SIZE,)*2
-MENU_SIZE = (200, H)
+MENU_SIZE = (MENU_WIDTH, H)
 MENU_RECT = pygame.Rect((0,0),MENU_SIZE)
 MENU_RECT.right = W
-BOX_HMAP_MARGIN = 20
-
 if MENU_RECT.w < MAX_MINIMAP_SIZE[0] + BOX_HMAP_MARGIN*2:
     s = MENU_RECT.w - BOX_HMAP_MARGIN*2 - 2
     MAX_MINIMAP_SIZE = (s,s)
-
 VIEWPORT_RECT = pygame.Rect((0,0),(MENU_RECT.left,MENU_RECT.bottom))
-
+################################################################################
 print("Building hmap")
 hmap = ng.generate_terrain(S, chunk=(1310,14)) #1310,14, S=64
 ng.normalize(hmap)
@@ -149,35 +151,18 @@ hmap[2][1] = 0.7
 hmap[S-1][S-1] = 1.
 img_hmap = ng.build_surface(hmap)
 
-#possibility to use other sizes
+#possibility to use other sizes:
 new_img_hmap = pygame.Surface((S,S//3))
 new_img_hmap.blit(img_hmap, (0,0))
 img_hmap = new_img_hmap
-
-WORLD_SIZE = img_hmap.get_size() #can differ from hmap size!
-
-
-
-w,h = WORLD_SIZE
-if w >= h and w > MAX_MINIMAP_SIZE[0]:
-    M = MAX_MINIMAP_SIZE[0]
-    scale_factor = M / w #scale factor is always smaller or equal to 1
-    size_y = int(MAX_MINIMAP_SIZE[1]*h/w)
-    img_hmap = pygame.transform.smoothscale(img_hmap, (M,size_y))
-elif w < h and h > MAX_MINIMAP_SIZE[1]:
-    M = MAX_MINIMAP_SIZE[1]
-    scale_factor = M / h
-    size_x = int(MAX_MINIMAP_SIZE[0]*w/h)
-    img_hmap = pygame.transform.smoothscale(img_hmap, (size_x,M))
-else:
-    scale_factor = 1. #to update if (un)zoom the map!!!
-
-MINIMAP_SIZE = img_hmap.get_size() #can differ from WORLD_SIZE !
 ################################################################################
+
+cam = Camera()
+cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
+
 
 ################################################################################
 #USER DEFINED MATERIALS
-
 NFRAMES = 16
 WATER = "./rendering/tiles/water1.png"
 SAND = "./rendering/tiles/sand1.jpg"
@@ -225,29 +210,20 @@ materials = [deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, 
 material_couples = tm.get_material_couples(materials, radiuses)
 
 ################################################################################
-
-cam = Camera()
-cam.set_parameters(WORLD_SIZE, CELL_SIZE, VIEWPORT_RECT, MINIMAP_SIZE)
-
-################################################################################
-screen.fill(thorpy.style.DEF_COLOR)
-
-mg = MapGrid(hmap, material_couples, cam.map_rect, WORLD_SIZE)
+mg = MapGrid(hmap, material_couples, cam.map_rect, cam.world_size)
 mg.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
 print("Refreshing cell types")
 mg.refresh_cell_types()
-
 mg.cells[3][3].name = "Roflburg"
-
 cam.set_map_data(mg)
 
 ################################################################################
+cell_clicked = None
+
 frame_map = pygame.Surface(VIEWPORT_RECT.size)
-frame_map.fill((200,200,200))
+frame_map.fill(guip.FRAME_MAP_COLOR)
 pygame.draw.rect(frame_map, (255,255,255), cam.map_rect)
 frame_map.set_colorkey((255,255,255))
-
-cell_clicked = None
 
 e_hmap = thorpy.Image.make(img_hmap)
 e_hmap.stick_to("screen", "right", "right", False)
@@ -262,15 +238,11 @@ box_hmap = thorpy.Box.make([e_hmap])
 box_hmap.fit_children((BOX_HMAP_MARGIN,)*2)
 topbox = thorpy.make_group([e_title_hmap, box_hmap], "v")
 
-cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap) #material, coord, alt, img, name
-unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap) #type, name, life, food, img
+cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
+unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
 misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
 
-##e_help.stick_to(VIEWPORT_RECT, "bottom", "bottom", False)
-
-##menu_button = thorpy.make_button("Quit", thorpy.functions.quit_menu_func)
 menu_button = thorpy.make_menu_button() #==> load, save, settings
-##quit_button = thorpy.make_button("Quit", thorpy.functions.quit_menu_func)
 box = thorpy.Element.make(elements=[topbox, #thorpy.Line.make(MENU_RECT.w-20),
                                     misc_info.e, #thorpy.Line.make(MENU_RECT.w-20),
                                     cell_info.e, #thorpy.Line.make(MENU_RECT.w-20),
@@ -281,16 +253,13 @@ thorpy.store(box)
 box.stick_to("screen","right","right")
 
 
-cam.e_hmap = e_hmap
-cam.box_hmap = box_hmap
+cam.set_elements(e_hmap, box_hmap)
 
 cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
 idx_cursor = 0
 img_cursor = cursors[idx_cursor]
 cursor_slowness = int(0.3*FPS)
 
-cam.rmouse.topleft = e_hmap.get_rect().topleft
-cam.set_campos_from_rcam()
 
 thorpy.makeup.add_basic_help(box_hmap, "Hold CTRL to move camera on miniature map")
 m = thorpy.Menu([box],fps=FPS)

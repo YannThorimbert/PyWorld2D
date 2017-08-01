@@ -43,7 +43,7 @@ class MapGrid(PygameGrid):
             nx, ny = len(hmap), len(hmap[0])
         else:
             nx, ny= restrict_size
-        PygameGrid.__init__(self, nx, ny,
+        PygameGrid.__init__(self, int(nx), int(ny),
                 cell_size=(cell_size, cell_size),
                 topleft=actual_frame.topleft,
                 value=None)
