@@ -9,12 +9,14 @@ import gui.elements as gui
 
 ##thorpy.application.SHOW_FPS = True
 
+#finir le chantier de cam
+#cell.get_image() pour 2 raisons: 1) zoom, 2) personnaliser les images ==> attribut img, et changement de method plutot que if else
 
 #objets : arbres, sapins(+ grand h), montagnes, villages, chateaux, murailles.
 #units: (herite de objet)
 #materials: chemin, riviere (eau peu profonde) (a generer?)
 
-#cell.get_image() pour 2 raisons: 1) zoom, 2) personnaliser les images ==> attribut img, et changement de method plutot que if else
+
 
 #finalement: editeur, load/save/quit
 
