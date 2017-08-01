@@ -54,25 +54,24 @@ def get_radiuses(nframes, initial_value, increment, reverse=False, sin=True):
     return values
 
 
-def get_tilers(grasses, waters, radiuses, cell_size):
-    assert len(grasses) == len(waters) == len(radiuses)
+def get_tilers(grasses, waters, radius, cell_size):
+    assert len(grasses) == len(waters)
     tilers = []
     nframes = len(grasses)
     for n in range(nframes):
         tiler = BeachTiler(grasses[n], waters[n])
-        tiler.make(size=(cell_size,)*2, radius=radiuses[n])
+        tiler.make(size=(cell_size,)*2, radius=radius)
         tilers.append(tiler)
     return tilers
 
-def get_material_couples(materials, radiuses):
+def get_material_couples(materials, radius):
     materials.sort(key=lambda x:x.hmax)
     couples = []
     nframes = len(materials[0].imgs)
     cell_size = materials[0].imgs[0].get_width()
-    assert len(radiuses) == nframes
     for i in range(len(materials)-1):
         assert nframes == len(materials[i+1].imgs)
-        couple = MaterialCouple(materials[i],materials[i+1],radiuses,cell_size)
+        couple = MaterialCouple(materials[i],materials[i+1],radius,cell_size)
         couples.append(couple)
     return couples
 
@@ -94,14 +93,14 @@ class Material:
 
 class MaterialCouple:
 
-    def __init__(self, material1, material2, radiuses, cell_size):
+    def __init__(self, material1, material2, radius, cell_size):
         assert material1.hmax != material2.hmax
         if material1.hmax > material2.hmax:
             self.grass, self.water = material1, material2
         else:
             self.grass, self.water = material2, material1
         self.tilers = get_tilers(self.grass.imgs, self.water.imgs,
-                                 radiuses, cell_size)
+                                 radius, cell_size)
         self.transition = self.water.hmax
         self.cell_size = cell_size
 

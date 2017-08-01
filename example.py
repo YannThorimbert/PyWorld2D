@@ -117,17 +117,19 @@ def process_mouse_navigation(): #cam can move even with no mousemotion!
 
 def load_image(fn):
     img = thorpy.load_image(fn)
-    return pygame.transform.smoothscale(img, CELL_RECT.size)
+    return pygame.transform.smoothscale(img, (ZOOM_CELL_SIZES[0],)*2)
 
 
 #arbitrary constants
 W, H = 900, 600
 FPS = 80
-CELL_SIZE = 20
 BOX_HMAP_MARGIN = 20 #box of the minimap
 MENU_WIDTH = 200
 MAX_MINIMAP_SIZE = 128
-S = 128
+S = 128 #size of the produced hmap (to be completed with croping!)
+CELL_SIZE = 32
+ZOOM_CELL_SIZES = [32, 25, 20, 16, 12]
+NFRAMES = 16 #number of different tiles for one material (used for moving water)
 
 app = thorpy.Application((W,H), "PyWorld2D example")
 screen = thorpy.get_screen()
@@ -162,52 +164,49 @@ cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
 
 
 ################################################################################
-#USER DEFINED MATERIALS
-NFRAMES = 16
-WATER = "./rendering/tiles/water1.png"
-SAND = "./rendering/tiles/sand1.jpg"
-GRASS1 = "./rendering/tiles/grass1.png"
-GRASS2 = "./rendering/tiles/grass7.png"
-ROCK = "./rendering/tiles/rock1.png"
-WHITE = pygame.Surface(CELL_RECT.size)
-BLACK = WHITE.copy()
-WHITE.fill((255,255,255))
-
-##radiuses = get_radiuses(NFRAMES, initial_value=CELL_RADIUS-3, increment=1)
-radiuses = tm.get_radiuses(NFRAMES, initial_value=CELL_RADIUS, increment=0)
-
-deepwater = tm.get_mixed_tiles(load_image(WATER),BLACK,127)
+#Here we arbitrary choose how to interpret height as type of terrain
+water = "./rendering/tiles/water1.png"
+sand = "./rendering/tiles/sand1.jpg"
+grass = "./rendering/tiles/grass1.png"
+rock = "./rendering/tiles/rock1.png"
+#simple images
+water_img = load_image(water)
+sand_img = load_image(sand)
+grass_img = load_image(grass)
+rock_img = load_image(rock)
+black_img = pygame.Surface((ZOOM_CELL_SIZES[0],)*2)
+white_img = black_img.copy()
+white_img.fill((255,255,255))
+#mixed images
+deepwater = tm.get_mixed_tiles(water_img, black_img, 127)
+mediumwater = tm.get_mixed_tiles(water_img, black_img,50)
+shore = tm.get_mixed_tiles(sand_img, water_img, 127)  #alpha of water is 127
+thinsnow = tm.get_mixed_tiles(rock_img, white_img, 160)
+#we use a dict for convenienece
+tiles = {}
+#build tiles
 deepwaters = tm.get_shifted_tiles(deepwater, NFRAMES, dx=CELL_SIZE//10, dy=CELL_SIZE//8)
-
-mediumwater = tm.get_mixed_tiles(load_image(WATER),BLACK,50)
 mediumwaters = tm.get_shifted_tiles(mediumwater, NFRAMES, dx=CELL_SIZE//10, dy=CELL_SIZE//8)
-
-waters = tm.get_shifted_tiles(load_image(WATER), NFRAMES, dx=CELL_SIZE//10, dy=CELL_SIZE//8)
-
-shore = tm.get_mixed_tiles(load_image(SAND), load_image(WATER), 127)
+waters = tm.get_shifted_tiles(water_img, NFRAMES, dx=CELL_SIZE//10, dy=CELL_SIZE//8)
 shores = tm.get_shifted_tiles(shore, NFRAMES, dx=CELL_SIZE//10, dy=CELL_SIZE//8)
-
-sands = tm.get_shifted_tiles(load_image(SAND), NFRAMES, dx=0, dy=0)
-grasses1 = tm.get_shifted_tiles(load_image(GRASS1), NFRAMES)
-##grasses2 = tm.get_shifted_tiles(load_image(GRASS2), NFRAMES)
-rocks = tm.get_shifted_tiles(load_image(ROCK), NFRAMES)
-
-thinsnow = tm.get_mixed_tiles(load_image(ROCK), WHITE, 160)
+sands = tm.get_shifted_tiles(sand_img, NFRAMES, dx=0, dy=0)
+grasses = tm.get_shifted_tiles(grass_img, NFRAMES)
+rocks = tm.get_shifted_tiles(rock_img, NFRAMES)
 snows1 = tm.get_shifted_tiles(thinsnow, NFRAMES)
-snows2 = tm.get_shifted_tiles(WHITE, NFRAMES)
-
+snows2 = tm.get_shifted_tiles(white_img, NFRAMES)
+#build materials
 deepwater = tm.Material("Deep water", 0.1, deepwaters)
 mediumwater = tm.Material("Medium water", 0.4, mediumwaters)
 water = tm.Material("Water", 0.55, waters)
 shore = tm.Material("Shallow water", 0.6, shores)
-sand = tm.Material("Sand", 0.62, sands) #means sand below 0.65
-badlands = tm.Material("Grass", 0.8, grasses1)
+sand = tm.Material("Sand", 0.62, sands) #means sand below 0.62
+badlands = tm.Material("Grass", 0.8, grasses)
 rock = tm.Material("Rock", 0.83, rocks)
 snow1 = tm.Material("Thin snow", 0.9, snows1)
 snow2 = tm.Material("Snow", float("inf"), snows2)
 
 materials = [deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
-material_couples = tm.get_material_couples(materials, radiuses)
+material_couples = tm.get_material_couples(materials, CELL_RADIUS)
 
 ################################################################################
 mg = MapGrid(hmap, material_couples, cam.map_rect, cam.world_size)
@@ -261,13 +260,11 @@ img_cursor = cursors[idx_cursor]
 cursor_slowness = int(0.3*FPS)
 
 
-thorpy.makeup.add_basic_help(box_hmap, "Hold CTRL to move camera on miniature map")
+thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
 m = thorpy.Menu([box],fps=FPS)
 m.play()
 
 app.quit()
 
 #pour FS: ajouter un info box quand on click sur material name, quand on click sur une cellule
-
-
 
