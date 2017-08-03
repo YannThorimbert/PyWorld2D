@@ -9,8 +9,6 @@ import gui.elements as gui
 from rendering.camera import Camera
 
 ##thorpy.application.SHOW_FPS = True
-#actual_frame and frame_map depends on zoom!!
-#refresh cell heights a separer
 
 #peut etre que marche pas sans numpy a cause du beach tiler.
 #Dans ce cas, favoriser la hmap issue de version numpy
@@ -40,15 +38,20 @@ from rendering.camera import Camera
 
 
 def set_zoom(level):
-    global CURRENT_ZOOM_LEVEL, img_cursor, cursors
+    global CURRENT_ZOOM_LEVEL, img_cursor, cursors, frame_map
     CURRENT_ZOOM_LEVEL = level
     refresh_derived_constants()
     cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
-    mg.set_zoom(level)
-    #
+    lm.set_zoom(level)
+    #cursor
     cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
     idx_cursor = 0
     img_cursor = cursors[idx_cursor]
+    #
+    unblit_map()
+    draw_no_update()
+
+
 
 def increment_zoom(value):
     global CURRENT_ZOOM_LEVEL
@@ -66,6 +69,9 @@ def update_cell_info():
         screen.blit(img_cursor, rcursor)
         if cell_info.cell is not cell:
             cell_info.update_e(cell)
+
+def unblit_map():
+    pygame.draw.rect(screen, (0,0,0), cam.map_rect)
 
 def draw():
     cam.set_rmouse_from_rcam()
@@ -90,8 +96,8 @@ def func_reac_time():
     draw()
     pygame.display.flip()
     #
-    mg.next_frame()
-    if mg.tot_time%cursor_slowness == 0:
+    lm.next_frame()
+    if lm.tot_time%cursor_slowness == 0:
         idx_cursor = (idx_cursor+1)%len(cursors)
         img_cursor = cursors[idx_cursor]
 
@@ -153,7 +159,7 @@ BOX_HMAP_MARGIN = 20 #box of the minimap
 MENU_WIDTH = 200
 MAX_WANTED_MINIMAP_SIZE = 128
 S = 128 #size of the produced hmap (to be completed with croping!)
-ZOOM_CELL_SIZES = [32, 25, 20, 16, 12]
+ZOOM_CELL_SIZES = [32, 25, 20, 16, 12, 8, 4]
 ##ZOOM_CELL_SIZES = [20]
 CURRENT_ZOOM_LEVEL = 0
 CELL_RADIUS_DIVIDER = 8 #cell_radius = cell_size//radius_divider
@@ -222,7 +228,7 @@ snow2 = tm.Material("Snow", float("inf"), snows2)
 #here water.imgs is a list of images list whose index refer to zoom level
 
 print("Building material couples")
-materials = [deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
+##materials = [deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
 ##material_couples = tm.get_material_couples(materials, CELL_RADIUS_DIVIDER)
 material_couples = tm.get_material_couples([shore,badlands], CELL_RADIUS_DIVIDER)
 ################################################################################
@@ -248,24 +254,40 @@ def refresh_derived_constants():
 refresh_derived_constants()
 ################################################################################
 cam = Camera()
+
+map_rects = []
+for i,level in enumerate(ZOOM_CELL_SIZES):
+    CURRENT_ZOOM_LEVEL = i
+    refresh_derived_constants()
+    cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
+    map_rects.append(pygame.Rect(cam.map_rect))
+CURRENT_ZOOM_LEVEL = 0 #reset to zero
+refresh_derived_constants()
 cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
 
-################################################################################
-mg = LogicalMap(hmap, material_couples, cam.map_rect, outsides, restrict_size=cam.world_size)
-mg.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
-mg.refresh_cell_types()
-mg.cells[3][3].name = "Roflburg"
-mg.set_zoom(CURRENT_ZOOM_LEVEL)
-cam.set_map_data(mg)
 
 ################################################################################
-print("Building GUI")
-cell_clicked = None
 
 frame_map = pygame.Surface(VIEWPORT_RECT.size)
 frame_map.fill(guip.FRAME_MAP_COLOR)
 pygame.draw.rect(frame_map, (255,255,255), cam.map_rect)
 frame_map.set_colorkey((255,255,255))
+
+
+################################################################################
+lm = LogicalMap(hmap, material_couples, map_rects, outsides,
+                restrict_size=cam.world_size)
+lm.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
+lm.refresh_cell_heights(hmap)
+lm.refresh_cell_types()
+lm.cells[3][3].name = "Roflburg"
+##lm.set_zoom(CURRENT_ZOOM_LEVEL)
+cam.set_map_data(lm)
+
+################################################################################
+print("Building GUI")
+cell_clicked = None
+
 
 e_hmap = thorpy.Image.make(img_hmap)
 e_hmap.stick_to("screen", "right", "right", False)
@@ -299,6 +321,7 @@ box.stick_to("screen","right","right")
 
 cam.set_elements(e_hmap, box_hmap)
 
+
 cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
 idx_cursor = 0
 img_cursor = cursors[idx_cursor]
@@ -306,8 +329,12 @@ cursor_slowness = int(0.3*FPS)
 
 
 thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
+
+set_zoom(0)
 m = thorpy.Menu([box],fps=FPS)
 m.play()
+
+
 
 app.quit()
 

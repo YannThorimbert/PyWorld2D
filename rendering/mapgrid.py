@@ -59,6 +59,9 @@ class LogicalCell:
     def get_img(self):
         return self.map.get_img_at(self.coord)
 
+    def get_img_at_zoom(self, level):
+        return self.map.get_img_at_zoom(self.coord, level)
+
 class GraphicalCell:
 
     def __init__(self):
@@ -67,23 +70,22 @@ class GraphicalCell:
 
 class LogicalMap(BaseGrid):
 
-    def __init__(self, hmap, material_couples, actual_frame, outsides,
+    def __init__(self, hmap, material_couples, actual_frames, outsides,
                     restrict_size=None):
         self.material_couples = material_couples
         self.zoom_levels = list(range(len(material_couples[0].tilers)))
-        self.actual_frame = actual_frame
+        self.actual_frames = actual_frames
         if restrict_size is None:
             nx, ny = len(hmap), len(hmap[0])
         else:
             nx, ny = restrict_size
         BaseGrid.__init__(self, int(nx), int(ny))
-        self.refresh_cell_heights(hmap, material_couples) #a separer
         self.current_x = 0
         self.current_y = 0
         self.graphical_maps = []
         for z in self.zoom_levels:
             cell_size = material_couples[0].get_cell_size(z)
-            gm = GraphicalMap(nx, ny, cell_size, actual_frame, outsides[z])
+            gm = GraphicalMap(nx, ny, cell_size, actual_frames[z], outsides[z])
             self.graphical_maps.append(gm)
         self.current_gm = self.graphical_maps[0]
         #
@@ -101,7 +103,7 @@ class LogicalMap(BaseGrid):
             self.t = (self.t+1) % self.nframes
             return True
 
-    def refresh_cell_heights(self, hmap, zoom):
+    def refresh_cell_heights(self, hmap):
         for x,y in self:
             self[x,y] = LogicalCell(hmap[x][y], (x,y), self)
 
@@ -156,19 +158,22 @@ class LogicalMap(BaseGrid):
 
     def draw_cell(self, screen, xpix, ypix, coord, x0, y0):
         x,y = coord
-        if self.is_inside(coord):
-            img = self.current_gm[coord].imgs[self.t]
-        else:
-            img = self.current_gm.outside_imgs[self.t]
+        img = self.get_img_at(coord)
         rect = self.current_gm.get_rect_at_coord((x-x0,y-y0))
         rect.move_ip(-xpix, -ypix)
         screen.blit(img, rect)
 
-    def get_img_at(self, coord):
+    def get_img_at(self, coord): #a utiliser dans draw_cell!
         if self.is_inside(coord):
             return self.current_gm[coord].imgs[self.t]
         else:
             return self.current_gm.outside_imgs[self.t]
+
+    def get_img_at_zoom(self, coord, zoom):
+        if self.is_inside(coord):
+            return self.graphical_maps[zoom][coord].imgs[self.t]
+        else:
+            return self.graphical_maps[zoom].outside_imgs[self.t]
 
 
     def draw(self, screen, xpix, ypix, x0, w, y0, h):
