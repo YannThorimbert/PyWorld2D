@@ -3,20 +3,25 @@ from pygame.math import Vector2 as V2
 import thorpy
 import thornoise.purepython.noisegen as ng
 import rendering.tilers.tilemanager as tm
-from rendering.mapgrid import MapGrid
+from rendering.mapgrid import LogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
 
 ##thorpy.application.SHOW_FPS = True
+#actual_frame and frame_map depends on zoom!!
+#refresh cell heights a separer
 
-#cell.get_image() pour 2 raisons: 1) zoom, 2) personnaliser les images ==> attribut img, et changement de method plutot que if else
+#peut etre que marche pas sans numpy a cause du beach tiler.
+#Dans ce cas, favoriser la hmap issue de version numpy
+
+#cell.get_image() pour 1 raisons: 2) personnaliser les images ==> attribut img, et changement de method plutot que if else
 
 #objets : arbres, sapins(+ grand h), montagnes, villages, chateaux, murailles.
 #units: (herite de objet)
 #materials: chemin, riviere (eau peu profonde) (a generer?)
 
-
+#faire le outside en beachtiler?
 
 #finalement: editeur, load/save/quit
 
@@ -32,6 +37,24 @@ from rendering.camera import Camera
 
 #surface preproduites ? Lourd en memoire mais cool en perfs...
 ## ==> a faire en cas de problemes de perfs ingame
+
+
+def set_zoom(level):
+    global CURRENT_ZOOM_LEVEL, img_cursor, cursors
+    CURRENT_ZOOM_LEVEL = level
+    refresh_derived_constants()
+    cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
+    mg.set_zoom(level)
+    #
+    cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
+    idx_cursor = 0
+    img_cursor = cursors[idx_cursor]
+
+def increment_zoom(value):
+    global CURRENT_ZOOM_LEVEL
+    CURRENT_ZOOM_LEVEL += value
+    CURRENT_ZOOM_LEVEL %= len(ZOOM_CELL_SIZES)
+    set_zoom(CURRENT_ZOOM_LEVEL)
 
 def update_cell_info():
     mousepos = pygame.mouse.get_pos()
@@ -77,6 +100,9 @@ def func_reac_click(e):
     if e.button == 1: #left click
         if box_hmap.get_rect().collidepoint(e.pos):
             cam.center_on(e.pos)
+    elif e.button == 3:
+        print("Uh")
+        increment_zoom(1)
 
 def func_reac_unclick(e):
     global cell_clicked
@@ -125,26 +151,18 @@ W, H = 900, 600
 FPS = 80
 BOX_HMAP_MARGIN = 20 #box of the minimap
 MENU_WIDTH = 200
-MAX_MINIMAP_SIZE = 128
+MAX_WANTED_MINIMAP_SIZE = 128
 S = 128 #size of the produced hmap (to be completed with croping!)
-CELL_SIZE = 32
 ZOOM_CELL_SIZES = [32, 25, 20, 16, 12]
+##ZOOM_CELL_SIZES = [20]
+CURRENT_ZOOM_LEVEL = 0
+CELL_RADIUS_DIVIDER = 8 #cell_radius = cell_size//radius_divider
 NFRAMES = 16 #number of different tiles for one material (used for moving water)
+
 
 app = thorpy.Application((W,H), "PyWorld2D example")
 screen = thorpy.get_screen()
 
-#compute derived constants
-CELL_RADIUS = CELL_SIZE//8
-CELL_RECT = pygame.Rect(0,0,CELL_SIZE,CELL_SIZE)
-MAX_MINIMAP_SIZE = (MAX_MINIMAP_SIZE,)*2
-MENU_SIZE = (MENU_WIDTH, H)
-MENU_RECT = pygame.Rect((0,0),MENU_SIZE)
-MENU_RECT.right = W
-if MENU_RECT.w < MAX_MINIMAP_SIZE[0] + BOX_HMAP_MARGIN*2:
-    s = MENU_RECT.w - BOX_HMAP_MARGIN*2 - 2
-    MAX_MINIMAP_SIZE = (s,s)
-VIEWPORT_RECT = pygame.Rect((0,0),(MENU_RECT.left,MENU_RECT.bottom))
 ################################################################################
 print("Building hmap")
 hmap = ng.generate_terrain(S, chunk=(1310,14)) #1310,14, S=64
@@ -157,13 +175,10 @@ img_hmap = ng.build_surface(hmap)
 new_img_hmap = pygame.Surface((S,S//3))
 new_img_hmap.blit(img_hmap, (0,0))
 img_hmap = new_img_hmap
-################################################################################
-
-cam = Camera()
-cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
 
 
 ################################################################################
+print("Building tilers")
 #Here we arbitrary choose how to interpret height as type of terrain
 water = "./rendering/tiles/water1.png"
 sand = "./rendering/tiles/sand1.jpg"
@@ -182,18 +197,18 @@ deepwater = tm.get_mixed_tiles(water_img, black_img, 127)
 mediumwater = tm.get_mixed_tiles(water_img, black_img,50)
 shore = tm.get_mixed_tiles(sand_img, water_img, 127)  #alpha of water is 127
 thinsnow = tm.get_mixed_tiles(rock_img, white_img, 160)
-#we use a dict for convenienece
-tiles = {}
 #build tiles
-deepwaters = tm.get_shifted_tiles(deepwater, NFRAMES, dx=CELL_SIZE//10, dy=CELL_SIZE//8)
-mediumwaters = tm.get_shifted_tiles(mediumwater, NFRAMES, dx=CELL_SIZE//10, dy=CELL_SIZE//8)
-waters = tm.get_shifted_tiles(water_img, NFRAMES, dx=CELL_SIZE//10, dy=CELL_SIZE//8)
-shores = tm.get_shifted_tiles(shore, NFRAMES, dx=CELL_SIZE//10, dy=CELL_SIZE//8)
-sands = tm.get_shifted_tiles(sand_img, NFRAMES, dx=0, dy=0)
-grasses = tm.get_shifted_tiles(grass_img, NFRAMES)
-rocks = tm.get_shifted_tiles(rock_img, NFRAMES)
-snows1 = tm.get_shifted_tiles(thinsnow, NFRAMES)
-snows2 = tm.get_shifted_tiles(white_img, NFRAMES)
+deepwaters = tm.build_tiles(deepwater, ZOOM_CELL_SIZES, NFRAMES,
+                            dx_divider=10, dy_divider=8) #water movement
+mediumwaters = tm.build_tiles(mediumwater, ZOOM_CELL_SIZES, NFRAMES, 10, 8)
+waters = tm.build_tiles(water_img, ZOOM_CELL_SIZES, NFRAMES, 10, 8)
+shores = tm.build_tiles(shore, ZOOM_CELL_SIZES, NFRAMES, 10, 8)
+sands = tm.build_tiles(sand_img, ZOOM_CELL_SIZES, NFRAMES)
+grasses = tm.build_tiles(grass_img, ZOOM_CELL_SIZES, NFRAMES)
+rocks = tm.build_tiles(rock_img, ZOOM_CELL_SIZES, NFRAMES)
+snows1 = tm.build_tiles(thinsnow, ZOOM_CELL_SIZES, NFRAMES)
+snows2 = tm.build_tiles(white_img, ZOOM_CELL_SIZES, NFRAMES)
+outsides = tm.build_tiles(black_img, ZOOM_CELL_SIZES, NFRAMES)
 #build materials
 deepwater = tm.Material("Deep water", 0.1, deepwaters)
 mediumwater = tm.Material("Medium water", 0.4, mediumwaters)
@@ -204,19 +219,47 @@ badlands = tm.Material("Grass", 0.8, grasses)
 rock = tm.Material("Rock", 0.83, rocks)
 snow1 = tm.Material("Thin snow", 0.9, snows1)
 snow2 = tm.Material("Snow", float("inf"), snows2)
+#here water.imgs is a list of images list whose index refer to zoom level
 
+print("Building material couples")
 materials = [deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
-material_couples = tm.get_material_couples(materials, CELL_RADIUS)
+##material_couples = tm.get_material_couples(materials, CELL_RADIUS_DIVIDER)
+material_couples = tm.get_material_couples([shore,badlands], CELL_RADIUS_DIVIDER)
+################################################################################
+#derived constants
+CELL_SIZE = None
+CELL_RECT = None
+MENU_SIZE = None
+MENU_RECT = None
+VIEWPORT_RECT = None
+MAX_MINIMAP_SIZE = None
+def refresh_derived_constants():
+    global CELL_SIZE, CELL_RECT, MAX_MINIMAP_SIZE, MENU_SIZE, MENU_RECT, VIEWPORT_RECT
+    CELL_SIZE = ZOOM_CELL_SIZES[CURRENT_ZOOM_LEVEL]
+    CELL_RECT = pygame.Rect(0,0,CELL_SIZE,CELL_SIZE)
+    MAX_MINIMAP_SIZE = (MAX_WANTED_MINIMAP_SIZE,)*2
+    MENU_SIZE = (MENU_WIDTH, H)
+    MENU_RECT = pygame.Rect((0,0),MENU_SIZE)
+    MENU_RECT.right = W
+    if MENU_RECT.w < MAX_MINIMAP_SIZE[0] + BOX_HMAP_MARGIN*2:
+        s = MENU_RECT.w - BOX_HMAP_MARGIN*2 - 2
+        MAX_MINIMAP_SIZE = (s,s)
+    VIEWPORT_RECT = pygame.Rect((0,0),(MENU_RECT.left,MENU_RECT.bottom))
+refresh_derived_constants()
+################################################################################
+cam = Camera()
+cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
 
 ################################################################################
-mg = MapGrid(hmap, material_couples, cam.map_rect, cam.world_size)
+mg = LogicalMap(hmap, material_couples, cam.map_rect, outsides, restrict_size=cam.world_size)
 mg.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
-print("Refreshing cell types")
 mg.refresh_cell_types()
 mg.cells[3][3].name = "Roflburg"
+mg.set_zoom(CURRENT_ZOOM_LEVEL)
 cam.set_map_data(mg)
 
 ################################################################################
+print("Building GUI")
 cell_clicked = None
 
 frame_map = pygame.Surface(VIEWPORT_RECT.size)
@@ -232,6 +275,8 @@ e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONUP, func_reac_unclick))
 
 
 thorpy.add_time_reaction(e_hmap, func_reac_time)
+thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_PLUS, increment_zoom, params={"value":-1})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_MINUS, increment_zoom, params={"value":1})
 e_title_hmap = guip.get_title("Map")
 box_hmap = thorpy.Box.make([e_hmap])
 box_hmap.fit_children((BOX_HMAP_MARGIN,)*2)

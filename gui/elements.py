@@ -93,7 +93,7 @@ class CellInfo:
             self.launched = False
 
     def update_em(self, cell):
-        self.em_mat_img_img.set_image(cell.imgs[0])
+        self.em_mat_img_img.set_image(cell.get_img())
         self.em_mat_name.set_text(cell.material.name)
         thorpy.store(self.em_mat, mode="h")
         self.em_coord.set_text("Coordinates: "+str(cell.coord))
@@ -157,7 +157,7 @@ class CellInfo:
         else:
             name = cell.material.name
         self.e_mat_name.set_text(name)
-        self.e_mat_img.set_image(cell.imgs[0])
+        self.e_mat_img.set_image(cell.get_img())
         thorpy.store(self.e_mat, mode="h")
         #
         altitude = round(cell.get_altitude())
