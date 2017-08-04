@@ -49,6 +49,7 @@ def set_zoom(level):
     refresh_derived_constants()
     cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
     lm.set_zoom(level)
+    cam.reinit_pos()
     move_cam_and_refresh((0,0))
     #cursor
     cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
@@ -82,6 +83,8 @@ def unblit_map():
 
 def draw():
     cam.set_rmouse_from_rcam()
+    #blit map frame
+    screen.fill((0,0,0))
     #blit map
     cam.draw_grid(screen)
     #blit grid

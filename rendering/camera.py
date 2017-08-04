@@ -31,11 +31,14 @@ class Camera:
         self.rmouse = pygame.Rect(0,0,w,h)
 
 
+    def reinit_pos(self):
+        self.rmouse.topleft = self.e_hmap.get_rect().topleft
+        self.set_campos_from_rcam()
+
     def set_elements(self, e_hmap, box_hmap):
         self.e_hmap = e_hmap
         self.box_hmap = box_hmap
-        self.rmouse.topleft = e_hmap.get_rect().topleft
-        self.set_campos_from_rcam()
+        self.reinit_pos
 
     def set_map_data(self, mg):
         self.mg = mg
@@ -50,8 +53,9 @@ class Camera:
     def draw_grid(self, screen):
         xpix, ypix = self.get_dpix()
         #appeller self.mg.draw_current(xpix,ypix,self.nx,self.ny)
-        self.mg.draw(screen, xpix, ypix, self.mg.current_x, self.nx,
-                                         self.mg.current_y, self.ny)
+##        self.mg.draw(screen, xpix, ypix, self.mg.current_x, self.nx,
+##                                         self.mg.current_y, self.ny)
+        self.mg.draw(screen, self.map_rect.topleft, xpix, ypix)
 
     def draw_grid_lines(self, screen):
         coord = self.get_coord_at_pix(self.map_rect.topleft+V2(1,1))
@@ -119,16 +123,18 @@ class Camera:
 
     def get_rect_at_coord(self, coord):
         dx, dy = self.get_dpix()
-        shift_x = (coord[0] - self.mg.current_x + 1) * self.cell_rect.w - int(dx)
-        shift_y = (coord[1] - self.mg.current_y + 1) * self.cell_rect.h - int(dy)
+        shift_x = (coord[0] - self.mg.current_x) * self.cell_rect.w - int(dx)
+        shift_y = (coord[1] - self.mg.current_y) * self.cell_rect.h - int(dy)
         return self.cell_rect.move((shift_x, shift_y)).move(self.map_rect.topleft)
 
     def get_coord_at_pix(self, pix):
         pos = V2(self.get_dpix()) + pix - self.map_rect.topleft
         pos.x *= self.nx/self.map_rect.w
         pos.y *= self.ny/self.map_rect.h
-        return (int(pos.x) + self.mg.current_x - 1,
-                int(pos.y) + self.mg.current_y - 1)
+##        return (int(pos.x) + self.mg.current_x - 1,
+##                int(pos.y) + self.mg.current_y - 1)
+        return (int(pos.x) + self.mg.current_x,
+                int(pos.y) + self.mg.current_y)
 
     def get_rect_at_pix(self, pix):
         return self.get_rect_at_coord(self.get_coord_at_pix(pix))

@@ -210,8 +210,10 @@ class LogicalMap(BaseGrid):
 ##            for y in range(y0,y0+h):
 ##                self.draw_cell(screen, xpix, ypix, (x,y), x0, y0)
 
-    def draw(self, screen, xpix, ypix, x0, w, y0, h):
-        self.current_gm.draw(screen, xpix, ypix, self.t)
+    def draw(self, screen, topleft, dx_pix, dy_pix):
+        x0 = self.current_x
+        y0 = self.current_y
+        self.current_gm.draw(screen, topleft, x0, y0, dx_pix, dy_pix, self.t)
 ##        x0 -= 1
 ##        y0 -= 1
 ##        w += 1
@@ -275,14 +277,14 @@ class GraphicalMap(PygameGrid):
         self.nsurf_x = nsurf_x
         self.nsurf_y = nsurf_y
 
-    def draw(self, screen, xpix, ypix, frame):
-        posx = xpix
-        posy = ypix
+    def draw(self, screen, topleft, x0, y0, xpix, ypix, t):
+        delta_x = topleft[0] - xpix - x0*self.cell_size
+        delta_y = topleft[1] - ypix - y0*self.cell_size
         for x in range(self.nsurf_x):
             for y in range(self.nsurf_y):
-                posx = x*self.surf_size[0] + xpix
-                posy = y*self.surf_size[1] + ypix
-                screen.blit(self.surfaces[x][y][frame], (posx,posy))
+                posx = x*self.surf_size[0] + delta_x
+                posy = y*self.surf_size[1] + delta_y
+                screen.blit(self.surfaces[x][y][t], (posx,posy))
 
 ##surfaces, surf_size, nx, ny = gm.surfaces, gm.surf_size, gm.nsurf_x, gm.nsurf_y
 ##for x in range(nx):
