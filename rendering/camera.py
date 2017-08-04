@@ -144,11 +144,22 @@ class Camera:
         s = self.lm.get_current_cell_size()
         for o in objs:
             r = self.get_rect_at_coord(o.cell.coord)
+            #if self.map_rect.colliderect(r):
             img = o.get_current_img()
             ir = img.get_rect()
             ir.center = r.center
             ir.move_ip(o.relpos[0]*s, o.relpos[1]*s)
             screen.blit(img, ir.topleft)
+
+    def get_center_coord(self):
+        return self.get_coord_at_pix(self.map_rect.center)
+
+    def center_on_coord(self, coord):
+        fx = coord[0]/self.world_size[0]
+        fy = coord[1]/self.world_size[1]
+        r = self.e_hmap.get_rect()
+        self.rmouse.center = r.x + fx*r.w, r.y + fy*r.h
+        self.set_rcam_from_rmouse()
 
 
 

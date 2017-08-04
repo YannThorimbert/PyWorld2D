@@ -9,15 +9,31 @@ import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
 
-##thorpy.application.SHOW_FPS = True
+thorpy.application.SHOW_FPS = True
 
 #set_zoom preserve centre de la camera
+
+#FAIRE UN SECOND CALQUE avec colorkey (map) POUR LES OBJETS!
+#   ==> facile a ajouter a l'apercu d'info cell
+#   ==> compromis de performance
+#   ==> evite le probleme du debordement
+
+#le second calque est fait de surfaces blanches(transparentes), puis on blit les objets comme s'ils etaient dynamiques
+
+#restreindre les relpos par obj (pour sapin, relpos[1] tj positif
+
+#mettre un max d'objets en static. Tout ce qui est movable n'apparait pas dans l'apercu de infos cell.
+
+#a l'interieur d'une cellule donnee, on peut se permettre de trier objs dynamiques en fonction de coord y pour un affichage correct
+
+#ajouter noms des objets dans infos cell
 
 #POUR OBJECtS STATICS; si jen fais:
 #       -on blit les parties qui debordent sur les voisins!
 #       -on les construits a partir des imgs des objects dynamics, car deja bien scaled
 
 
+################################################################################
 #objets de base: palmiers, feuillu, sapins(+ sapin enneigé), montagnes, villages, chemin
 #pour fs: chateaux, murailles, units: (herite de objet)
 
@@ -32,8 +48,7 @@ from rendering.camera import Camera
 
 #ridged noise
 
-#effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, prÃ©cipitations
-
+#effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
 
 
 #faire le outside en beachtiler?
@@ -41,11 +56,13 @@ from rendering.camera import Camera
 
 def set_zoom(level):
     global CURRENT_ZOOM_LEVEL, img_cursor, cursors, frame_map
+    center_before = cam.get_center_coord()
     CURRENT_ZOOM_LEVEL = level
     refresh_derived_constants()
     cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
     lm.set_zoom(level)
     cam.reinit_pos()
+    cam.center_on_coord(center_before) #marche pas
     move_cam_and_refresh((0,0))
     #cursor
     cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
@@ -231,8 +248,8 @@ snows1 = tm.build_tiles(thinsnow, ZOOM_CELL_SIZES, NFRAMES)
 snows2 = tm.build_tiles(white_img, ZOOM_CELL_SIZES, NFRAMES)
 outsides = tm.build_tiles(black_img, ZOOM_CELL_SIZES, NFRAMES)
 #build materials
-deepwater = tm.Material("Deep water", 0.1, deepwaters)
-mediumwater = tm.Material("Medium water", 0.4, mediumwaters)
+deepwater = tm.Material("Very deep water", 0.1, deepwaters)
+mediumwater = tm.Material("Deep water", 0.4, mediumwaters)
 water = tm.Material("Water", 0.55, waters)
 shore = tm.Material("Shallow water", 0.6, shores)
 sand = tm.Material("Sand", 0.62, sands) #means sand below 0.62
@@ -303,13 +320,22 @@ cam.set_map_data(lm)
 print("Adding objects")
 fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
 fir0_img = thorpy.get_resized_image(fir0_img, (ZOOM_CELL_SIZES[0]-1,)*2)
+
+char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
+char1_img = thorpy.get_resized_image(char1_img, (ZOOM_CELL_SIZES[0]-1,)*2)
+
 forest_map = ng.generate_terrain(S,n_octaves=3) #generer sur map + grande et reduite, ou alors avec persistance +- faible suivant ce qu'on veut
 ng.normalize(forest_map)
 
+
+
 from mapobjects.objects import MapObject
+
 fir = MapObject(fir0_img)
 fir.build_imgs(ZOOM_CELL_SIZES)
 
+char1 = MapObject(char1_img)
+char1.build_imgs(ZOOM_CELL_SIZES)
 
 objects = []
 
@@ -320,12 +346,16 @@ for x in range(lm.nx):
             if lm.cells[x][y].material is badlands:
                 for i in range(3):
                     if random.random() < 0.75:
-                        obj = fir.add_copy_on_cell(lm.cells[x][y])
-                        obj.randomize_relpos()
-                        objects.append(obj)
-##                        xrel = random.random()/10.
-##                        yrel = random.random()/10.
-##                        lm.blit_on_cell(fir0_img, x, y, xrel, yrel)
+##                        obj = fir.add_copy_on_cell(lm.cells[x][y])
+##                        obj.randomize_relpos()
+##                        objects.append(obj)
+                        xrel = random.random()/10.
+                        yrel = random.random()/10.
+                        lm.blit_on_cell(fir0_img, x, y, xrel, yrel)
+
+##obj = char1.add_copy_on_cell(lm.cells[32][15])
+##objects.append(obj)
+
 
 ###############################################################################
 

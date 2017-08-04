@@ -46,3 +46,10 @@ class MapObject:
         return self.imgs[self.cell.map.current_zoom_level]
 
 
+##class StaticObject(MapObject):
+##
+##    def add_copy_on_cell(self, cell, relpos=(0,0)):
+##        copy = MapObject.add_copy_on_cell(self, cell, relpos)
+##        cell.map.blit_on_cell(fir0_img, x, y, xrel, yrel)
+
+
