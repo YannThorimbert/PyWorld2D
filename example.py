@@ -298,10 +298,20 @@ lm.cells[3][3].name = "Roflburg"
 ##lm.set_zoom(CURRENT_ZOOM_LEVEL)
 cam.set_map_data(lm)
 
+print("Building untiled surfaces")
+lm.build_surfaces()
+
+##app.fill((255,255,255))
+##gm = lm.graphical_maps[3]
+##gm.draw(screen,10,10,0)
+##app.update()
+##app.pause()
+
+################################################################################
 fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
 fir0_img = thorpy.get_resized_image(fir0_img, (ZOOM_CELL_SIZES[0]-1,)*2)
 print("Adding objects")
-forest_map = ng.generate_terrain(S,n_octaves=3)
+forest_map = ng.generate_terrain(S,n_octaves=3) #generer sur map + grande et reduite, ou alors avec persistance +- faible suivant ce qu'on veut
 ng.normalize(forest_map)
 for x in range(lm.nx):
     for y in range(lm.ny):

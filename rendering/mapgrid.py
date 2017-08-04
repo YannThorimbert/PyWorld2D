@@ -1,3 +1,4 @@
+import math
 import pygame
 from thorpy.gamestools.basegrid import BaseGrid
 from thorpy.gamestools.grid import PygameGrid
@@ -200,14 +201,28 @@ class LogicalMap(BaseGrid):
                 new_imgs.append(new_)
             gc.imgs = [new_ for new_ in new_imgs]
 
+##    def draw(self, screen, xpix, ypix, x0, w, y0, h):
+##        x0 -= 1
+##        y0 -= 1
+##        w += 1
+##        h += 1
+##        for x in range(x0,x0+w):
+##            for y in range(y0,y0+h):
+##                self.draw_cell(screen, xpix, ypix, (x,y), x0, y0)
+
     def draw(self, screen, xpix, ypix, x0, w, y0, h):
-        x0 -= 1
-        y0 -= 1
-        w += 1
-        h += 1
-        for x in range(x0,x0+w):
-            for y in range(y0,y0+h):
-                self.draw_cell(screen, xpix, ypix, (x,y), x0, y0)
+        self.current_gm.draw(screen, xpix, ypix, self.t)
+##        x0 -= 1
+##        y0 -= 1
+##        w += 1
+##        h += 1
+##        for x in range(x0,x0+w):
+##            for y in range(y0,y0+h):
+##                self.draw_cell(screen, xpix, ypix, (x,y), x0, y0)
+
+    def build_surfaces(self):
+        for gm in self.graphical_maps:
+            gm.build_surfaces()
 
 ##    def show(self):
 ##        monitor.show()
@@ -222,5 +237,55 @@ class GraphicalMap(PygameGrid):
                             cell_size=(cell_size,)*2,
                             topleft=actual_frame.topleft)
         self.outside_imgs = outside_imgs
+        self.cell_size = cell_size
         for coord in self:
             self[coord] = GraphicalCell()
+        self.surfaces = None
+        self.surf_size = None
+        self.nsurf_x = None
+        self.nsurf_y = None
+
+    def build_surfaces(self):
+        #heuristic
+        nx = int(200/self.cell_size)
+        ny = int(200/self.cell_size)
+        nframes = len(self[(0,0)].imgs)
+        size_x = nx*self.cell_size
+        size_y = ny*self.cell_size
+        surf_size = (size_x, size_y)
+        nsurf_x = self.frame.w//size_x + 1
+        nsurf_y = self.frame.h//size_y + 1
+        #create table of surfaces
+        surfaces = [[[pygame.Surface(surf_size) for frame in range(nframes)]
+                        for y in range(nsurf_y)]
+                          for x in range(nsurf_x)]
+        #fill table of surfaces
+        for x,y in self:
+            surfx = x*self.cell_size//surf_size[0]
+            surfy = y*self.cell_size//surf_size[1]
+            xpix = x*self.cell_size - surfx*surf_size[0]
+            ypix = y*self.cell_size - surfy*surf_size[1]
+##            print(x, size_x, nsurf_x, surfx)
+            for t in range(nframes):
+                img = self[(x,y)].imgs[t]
+                surfaces[surfx][surfy][t].blit(img, (xpix,ypix))
+        #
+        self.surfaces = surfaces
+        self.surf_size = surf_size
+        self.nsurf_x = nsurf_x
+        self.nsurf_y = nsurf_y
+
+    def draw(self, screen, xpix, ypix, frame):
+        posx = xpix
+        posy = ypix
+        for x in range(self.nsurf_x):
+            for y in range(self.nsurf_y):
+                posx = x*self.surf_size[0] + xpix
+                posy = y*self.surf_size[1] + ypix
+                screen.blit(self.surfaces[x][y][frame], (posx,posy))
+
+##surfaces, surf_size, nx, ny = gm.surfaces, gm.surf_size, gm.nsurf_x, gm.nsurf_y
+##for x in range(nx):
+##    for y in range(ny):
+##        app.blit(surfaces[x][y][0],(x*surf_size[0],y*surf_size[1]))
+##        pygame.draw.rect(screen, (0,255,0), pygame.Rect(x*surf_size[0],y*surf_size[1], surf_size[0], surf_size[1]), 1)
