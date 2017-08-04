@@ -50,7 +50,22 @@ class Camera:
     def draw_grid(self, screen):
         xpix, ypix = self.get_dpix()
         #appeller self.mg.draw_current(xpix,ypix,self.nx,self.ny)
-        self.mg.draw(screen, xpix, ypix, self.mg.current_x, self.nx, self.mg.current_y, self.ny)
+        self.mg.draw(screen, xpix, ypix, self.mg.current_x, self.nx,
+                                         self.mg.current_y, self.ny)
+
+    def draw_grid_lines(self, screen):
+        coord = self.get_coord_at_pix(self.map_rect.topleft+V2(1,1))
+        xpix, ypix = self.get_rect_at_coord(coord).topleft
+        for x in range(self.nx):
+            xpix += self.cell_rect.w
+            p1 = (xpix, self.map_rect.top)
+            p2 = (xpix, self.map_rect.bottom)
+            pygame.draw.line(screen, (0,0,0), p1, p2)
+        for y in range(self.ny):
+            ypix += self.cell_rect.h
+            p1 = (self.map_rect.left, ypix)
+            p2 = (self.map_rect.right, ypix)
+            pygame.draw.line(screen, (0,0,0), p1, p2)
 
     def set_mg_pos_from_rcam(self):
         self.mg.current_x = int(self.rcam.x)

@@ -1,3 +1,4 @@
+import random
 import pygame
 from pygame.math import Vector2 as V2
 import thorpy
@@ -10,16 +11,23 @@ from rendering.camera import Camera
 
 ##thorpy.application.SHOW_FPS = True
 
+
+#en fait l'enregistrement en images simplifierait les choses pour les objets.
+#surface preproduites ? Lourd en memoire mais cool en perfs...
+
+#SINON:
+#       -soit deux types d'objets, ceux qui restent dans la case et ceux qui debordent, mis dans une liste a part, detachee de la map
+#       -soit on blit les parties qui debordent sur les voisins!
+
+#pour perfs, les objets par defauts style arbres devraient etre pour chaque niveau de zoom:
+##1) scaled, 2) blitted sur toutes les cells idoines
+
+#objets de base: arbres, sapins(+ grand h), montagnes, villages, chemin
+#pour fs: chateaux, murailles, units: (herite de objet)
+
 #peut etre que marche pas sans numpy a cause du beach tiler.
 #Dans ce cas, favoriser la hmap issue de version numpy
-
-#cell.get_image() pour 1 raisons: 2) personnaliser les images ==> attribut img, et changement de method plutot que if else
-
-#objets : arbres, sapins(+ grand h), montagnes, villages, chateaux, murailles.
-#units: (herite de objet)
-#materials: chemin, riviere (eau peu profonde) (a generer?)
-
-#faire le outside en beachtiler?
+#==> a tester sur une machine vierge
 
 #finalement: editeur, load/save/quit
 
@@ -28,13 +36,11 @@ from rendering.camera import Camera
 
 #ridged noise
 
-#zoom: on genere les tilers de MAX_CELLSIZE a MIN_CELLSIZE
-#   quand zoom change, cell.imgs pointe juste vers un autre #cell.imgs devient un dict ?
+#effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, prÃ©cipitations
 
-#effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, précipitations
 
-#surface preproduites ? Lourd en memoire mais cool en perfs...
-## ==> a faire en cas de problemes de perfs ingame
+
+#faire le outside en beachtiler?
 
 
 def set_zoom(level):
@@ -43,6 +49,7 @@ def set_zoom(level):
     refresh_derived_constants()
     cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
     lm.set_zoom(level)
+    move_cam_and_refresh((0,0))
     #cursor
     cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
     idx_cursor = 0
@@ -75,11 +82,15 @@ def unblit_map():
 
 def draw():
     cam.set_rmouse_from_rcam()
-    #blit map and its frame
+    #blit map
     cam.draw_grid(screen)
-    screen.blit(frame_map, (0,0))
+    #blit grid
+    if show_grid_lines:
+        cam.draw_grid_lines(screen)
     #update right pane
     update_cell_info()
+    #blit map frame
+    screen.blit(frame_map, (0,0))
     #blit right pane and draw rect on minimap
     box.blit()
     pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
@@ -129,9 +140,12 @@ def func_reac_mousemotion(e):
             cam.center_on(e.pos)
         elif cam.map_rect.collidepoint(e.pos):
             delta = -V2(e.rel)/cam.cell_rect.w #assuming square cells
-            cam.move(delta)
-            cam.set_mg_pos_from_rcam()
+            move_cam_and_refresh(delta)
             cell_clicked = cam.get_cell(e.pos)
+
+def move_cam_and_refresh(delta):
+    cam.move(delta)
+    cam.set_mg_pos_from_rcam()
 
 def process_mouse_navigation(): #cam can move even with no mousemotion!
     if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
@@ -284,9 +298,31 @@ lm.cells[3][3].name = "Roflburg"
 ##lm.set_zoom(CURRENT_ZOOM_LEVEL)
 cam.set_map_data(lm)
 
+fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
+fir0_img = thorpy.get_resized_image(fir0_img, (ZOOM_CELL_SIZES[0]-1,)*2)
+print("Adding objects")
+forest_map = ng.generate_terrain(S,n_octaves=3)
+ng.normalize(forest_map)
+for x in range(lm.nx):
+    for y in range(lm.ny):
+        h = forest_map[x][y]
+        if 0.3 < h < 0.35 or 0.8 < h < 0.85:
+            if lm.cells[x][y].material is badlands:
+                for i in range(3):
+                    if random.random() < 0.75:
+                        xrel = random.random()/10.
+                        yrel = random.random()/10.
+                        lm.blit_on_cell(fir0_img, x, y, xrel, yrel)
+
+
 ################################################################################
 print("Building GUI")
 cell_clicked = None
+show_grid_lines = False
+
+def set_show_grid_lines(value):
+    global show_grid_lines
+    show_grid_lines = value
 
 
 e_hmap = thorpy.Image.make(img_hmap)
@@ -299,6 +335,22 @@ e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONUP, func_reac_unclick))
 thorpy.add_time_reaction(e_hmap, func_reac_time)
 thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_PLUS, increment_zoom, params={"value":-1})
 thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_MINUS, increment_zoom, params={"value":1})
+
+
+velocity = 0.2
+thorpy.add_keydown_reaction(e_hmap, pygame.K_LEFT, move_cam_and_refresh, params={"delta":(-velocity,0)})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_RIGHT, move_cam_and_refresh, params={"delta":(velocity,0)})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_UP, move_cam_and_refresh, params={"delta":(0,-velocity)})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_DOWN, move_cam_and_refresh, params={"delta":(0,velocity)})
+
+thorpy.add_keydown_reaction(e_hmap, pygame.K_g, set_show_grid_lines, params={"value":True})
+thorpy.add_keyup_reaction(e_hmap, pygame.K_g, set_show_grid_lines, params={"value":False})
+
+##commands = thorpy.commands.Commands(e_hmap)
+##thorpy.commands.playing(FPS)
+##commands.add_reaction(pygame.K_g, set_show_grid_lines)
+##commands.default_func = reinit_frame
+
 e_title_hmap = guip.get_title("Map")
 box_hmap = thorpy.Box.make([e_hmap])
 box_hmap.fit_children((BOX_HMAP_MARGIN,)*2)
