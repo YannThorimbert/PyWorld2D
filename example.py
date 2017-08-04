@@ -11,18 +11,14 @@ from rendering.camera import Camera
 
 ##thorpy.application.SHOW_FPS = True
 
+#set_zoom preserve centre de la camera
 
-#en fait l'enregistrement en images simplifierait les choses pour les objets.
-#surface preproduites ? Lourd en memoire mais cool en perfs...
+#POUR OBJECtS STATICS; si jen fais:
+#       -on blit les parties qui debordent sur les voisins!
+#       -on les construits a partir des imgs des objects dynamics, car deja bien scaled
 
-#SINON:
-#       -soit deux types d'objets, ceux qui restent dans la case et ceux qui debordent, mis dans une liste a part, detachee de la map
-#       -soit on blit les parties qui debordent sur les voisins!
 
-#pour perfs, les objets par defauts style arbres devraient etre pour chaque niveau de zoom:
-##1) scaled, 2) blitted sur toutes les cells idoines
-
-#objets de base: arbres, sapins(+ grand h), montagnes, villages, chemin
+#objets de base: palmiers, feuillu, sapins(+ sapin enneigé), montagnes, villages, chemin
 #pour fs: chateaux, murailles, units: (herite de objet)
 
 #peut etre que marche pas sans numpy a cause du beach tiler.
@@ -90,6 +86,8 @@ def draw():
     #blit grid
     if show_grid_lines:
         cam.draw_grid_lines(screen)
+    #blit objects
+    cam.draw_objects(screen, objects)
     #update right pane
     update_cell_info()
     #blit map frame
@@ -301,6 +299,37 @@ lm.cells[3][3].name = "Roflburg"
 ##lm.set_zoom(CURRENT_ZOOM_LEVEL)
 cam.set_map_data(lm)
 
+################################################################################
+print("Adding objects")
+fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
+fir0_img = thorpy.get_resized_image(fir0_img, (ZOOM_CELL_SIZES[0]-1,)*2)
+forest_map = ng.generate_terrain(S,n_octaves=3) #generer sur map + grande et reduite, ou alors avec persistance +- faible suivant ce qu'on veut
+ng.normalize(forest_map)
+
+from mapobjects.objects import MapObject
+fir = MapObject(fir0_img)
+fir.build_imgs(ZOOM_CELL_SIZES)
+
+
+objects = []
+
+for x in range(lm.nx):
+    for y in range(lm.ny):
+        h = forest_map[x][y]
+        if 0.3 < h < 0.35 or 0.8 < h < 0.85:
+            if lm.cells[x][y].material is badlands:
+                for i in range(3):
+                    if random.random() < 0.75:
+                        obj = fir.add_copy_on_cell(lm.cells[x][y])
+                        obj.randomize_relpos()
+                        objects.append(obj)
+##                        xrel = random.random()/10.
+##                        yrel = random.random()/10.
+##                        lm.blit_on_cell(fir0_img, x, y, xrel, yrel)
+
+###############################################################################
+
+
 print("Building untiled surfaces")
 lm.build_surfaces()
 
@@ -309,23 +338,6 @@ lm.build_surfaces()
 ##gm.draw(screen,10,10,0)
 ##app.update()
 ##app.pause()
-
-################################################################################
-fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
-fir0_img = thorpy.get_resized_image(fir0_img, (ZOOM_CELL_SIZES[0]-1,)*2)
-print("Adding objects")
-forest_map = ng.generate_terrain(S,n_octaves=3) #generer sur map + grande et reduite, ou alors avec persistance +- faible suivant ce qu'on veut
-ng.normalize(forest_map)
-for x in range(lm.nx):
-    for y in range(lm.ny):
-        h = forest_map[x][y]
-        if 0.3 < h < 0.35 or 0.8 < h < 0.85:
-            if lm.cells[x][y].material is badlands:
-                for i in range(3):
-                    if random.random() < 0.75:
-                        xrel = random.random()/10.
-                        yrel = random.random()/10.
-                        lm.blit_on_cell(fir0_img, x, y, xrel, yrel)
 
 
 ################################################################################

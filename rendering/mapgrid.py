@@ -79,7 +79,11 @@ class LogicalMap(BaseGrid):
         self.tot_time = 0
         self.frame_slowness = 20
 
+    def get_current_cell_size(self):
+        return self.cell_sizes[self.current_zoom_level]
+
     def set_zoom(self, level):
+        self.current_zoom_level = level
         self.current_gm = self.graphical_maps[level]
         if self.current_x < 0:
             self.current_x = 0
@@ -280,10 +284,11 @@ class GraphicalMap(PygameGrid):
     def draw(self, screen, topleft, x0, y0, xpix, ypix, t):
         delta_x = topleft[0] - xpix - x0*self.cell_size
         delta_y = topleft[1] - ypix - y0*self.cell_size
+        oldposx = delta_x
         for x in range(self.nsurf_x):
+            posx = round(x*self.surf_size[0] + delta_x)
             for y in range(self.nsurf_y):
-                posx = x*self.surf_size[0] + delta_x
-                posy = y*self.surf_size[1] + delta_y
+                posy = round(y*self.surf_size[1] + delta_y)
                 screen.blit(self.surfaces[x][y][t], (posx,posy))
 
 ##surfaces, surf_size, nx, ny = gm.surfaces, gm.surf_size, gm.nsurf_x, gm.nsurf_y

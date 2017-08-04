@@ -5,7 +5,7 @@ from pygame.math import Vector2 as V2
 class Camera:
 
     def __init__(self):
-        self.mg = None
+        self.lm = None
         self.cell_rect = pygame.Rect(0,0,0,0)
         self.e_hmap = None
         self.box_hmap = None
@@ -40,9 +40,9 @@ class Camera:
         self.box_hmap = box_hmap
         self.reinit_pos
 
-    def set_map_data(self, mg):
-        self.mg = mg
-        assert mg.nx == self.world_size.x and mg.ny == self.world_size.y
+    def set_map_data(self, lm):
+        self.lm = lm
+        assert lm.nx == self.world_size.x and lm.ny == self.world_size.y
 
 
     def get_dpix(self):
@@ -52,10 +52,10 @@ class Camera:
 
     def draw_grid(self, screen):
         xpix, ypix = self.get_dpix()
-        #appeller self.mg.draw_current(xpix,ypix,self.nx,self.ny)
-##        self.mg.draw(screen, xpix, ypix, self.mg.current_x, self.nx,
-##                                         self.mg.current_y, self.ny)
-        self.mg.draw(screen, self.map_rect.topleft, xpix, ypix)
+        #appeller self.lm.draw_current(xpix,ypix,self.nx,self.ny)
+##        self.lm.draw(screen, xpix, ypix, self.lm.current_x, self.nx,
+##                                         self.lm.current_y, self.ny)
+        self.lm.draw(screen, self.map_rect.topleft, xpix, ypix)
 
     def draw_grid_lines(self, screen):
         coord = self.get_coord_at_pix(self.map_rect.topleft+V2(1,1))
@@ -72,8 +72,8 @@ class Camera:
             pygame.draw.line(screen, (0,0,0), p1, p2)
 
     def set_mg_pos_from_rcam(self):
-        self.mg.current_x = int(self.rcam.x)
-        self.mg.current_y = int(self.rcam.y)
+        self.lm.current_x = int(self.rcam.x)
+        self.lm.current_y = int(self.rcam.y)
 
     def set_campos_from_rcam(self):
         self.campos = V2(self.rcam.topleft)
@@ -98,8 +98,8 @@ class Camera:
     def get_cell(self, pix):
         if self.map_rect.collidepoint(pix):
             coord = self.get_coord_at_pix(pix)
-            if self.mg.is_inside(coord):
-                return self.mg[coord]
+            if self.lm.is_inside(coord):
+                return self.lm[coord]
 
     def center_on(self, minimap_pos):
         if self.box_hmap.get_rect().collidepoint(minimap_pos):
@@ -110,34 +110,46 @@ class Camera:
 
     def correct_move(self, d):
         dx, dy = d
-        mg = self.mg
-        if mg.current_x + self.nx > mg.nx + 2 and dx > 0:
+        lm = self.lm
+        if lm.current_x + self.nx > lm.nx + 2 and dx > 0:
             dx = 0
-        elif mg.current_x < -2 and dx < 0:
+        elif lm.current_x < -2 and dx < 0:
             dx = 0
-        if mg.current_y + self.ny > mg.ny + 2 and dy > 0:
+        if lm.current_y + self.ny > lm.ny + 2 and dy > 0:
             dy = 0
-        elif mg.current_y < -2 and dy < 0:
+        elif lm.current_y < -2 and dy < 0:
             dy = 0
         return dx, dy
 
     def get_rect_at_coord(self, coord):
         dx, dy = self.get_dpix()
-        shift_x = (coord[0] - self.mg.current_x) * self.cell_rect.w - int(dx)
-        shift_y = (coord[1] - self.mg.current_y) * self.cell_rect.h - int(dy)
+        shift_x = (coord[0] - self.lm.current_x) * self.cell_rect.w - int(dx)
+        shift_y = (coord[1] - self.lm.current_y) * self.cell_rect.h - int(dy)
         return self.cell_rect.move((shift_x, shift_y)).move(self.map_rect.topleft)
 
     def get_coord_at_pix(self, pix):
         pos = V2(self.get_dpix()) + pix - self.map_rect.topleft
         pos.x *= self.nx/self.map_rect.w
         pos.y *= self.ny/self.map_rect.h
-##        return (int(pos.x) + self.mg.current_x - 1,
-##                int(pos.y) + self.mg.current_y - 1)
-        return (int(pos.x) + self.mg.current_x,
-                int(pos.y) + self.mg.current_y)
+##        return (int(pos.x) + self.lm.current_x - 1,
+##                int(pos.y) + self.lm.current_y - 1)
+        return (int(pos.x) + self.lm.current_x,
+                int(pos.y) + self.lm.current_y)
 
     def get_rect_at_pix(self, pix):
         return self.get_rect_at_coord(self.get_coord_at_pix(pix))
+
+
+    def draw_objects(self, screen, objs):
+        s = self.lm.get_current_cell_size()
+        for o in objs:
+            r = self.get_rect_at_coord(o.cell.coord)
+            img = o.get_current_img()
+            ir = img.get_rect()
+            ir.center = r.center
+            ir.move_ip(o.relpos[0]*s, o.relpos[1]*s)
+            screen.blit(img, ir.topleft)
+
 
 
 
@@ -158,3 +170,4 @@ def get_world_and_minimap_sizes(img_hmap, max_minimap_size):
         scale_factor = 1. #to update if (un)zoom the map!!!
     minimap_size = img_hmap.get_size() #can differ from world_size !
     return world_size, minimap_size
+
