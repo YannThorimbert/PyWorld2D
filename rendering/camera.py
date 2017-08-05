@@ -154,13 +154,6 @@ class Camera:
     def get_center_coord(self):
         return self.get_coord_at_pix(self.map_rect.center)
 
-    def center_on_coord(self, coord):
-        fx = coord[0]/self.world_size[0]
-        fy = coord[1]/self.world_size[1]
-        r = self.e_hmap.get_rect()
-        self.rmouse.center = r.x + fx*r.w, r.y + fy*r.h
-        self.set_rcam_from_rmouse()
-
 
 
 

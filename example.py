@@ -9,7 +9,7 @@ import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
 
-thorpy.application.SHOW_FPS = True
+##thorpy.application.SHOW_FPS = True
 
 #set_zoom preserve centre de la camera
 
@@ -57,13 +57,13 @@ thorpy.application.SHOW_FPS = True
 def set_zoom(level):
     global CURRENT_ZOOM_LEVEL, img_cursor, cursors, frame_map
     center_before = cam.get_center_coord()
+    print(center_before)
     CURRENT_ZOOM_LEVEL = level
     refresh_derived_constants()
     cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
     lm.set_zoom(level)
     cam.reinit_pos()
-    cam.center_on_coord(center_before) #marche pas
-    move_cam_and_refresh((0,0))
+    move_cam_and_refresh((center_before[0]-cam.nx//2,center_before[1]-cam.ny//2))
     #cursor
     cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
     idx_cursor = 0
