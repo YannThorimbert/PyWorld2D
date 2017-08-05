@@ -8,10 +8,9 @@ from rendering.mapgrid import LogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
+from mapobjects.objects import MapObject
 
 ##thorpy.application.SHOW_FPS = True
-
-#set_zoom preserve centre de la camera
 
 #FAIRE UN SECOND CALQUE avec colorkey (map) POUR LES OBJETS!
 #   ==> facile a ajouter a l'apercu d'info cell
@@ -19,6 +18,8 @@ from rendering.camera import Camera
 #   ==> evite le probleme du debordement
 
 #le second calque est fait de surfaces blanches(transparentes), puis on blit les objets comme s'ils etaient dynamiques
+
+#revoir le draw no update
 
 #restreindre les relpos par obj (pour sapin, relpos[1] tj positif
 
@@ -57,11 +58,11 @@ from rendering.camera import Camera
 def set_zoom(level):
     global CURRENT_ZOOM_LEVEL, img_cursor, cursors, frame_map
     center_before = cam.get_center_coord()
-    print(center_before)
     CURRENT_ZOOM_LEVEL = level
     refresh_derived_constants()
     cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
     lm.set_zoom(level)
+    layer2.set_zoom(level)
     cam.reinit_pos()
     move_cam_and_refresh((center_before[0]-cam.nx//2,center_before[1]-cam.ny//2))
     #cursor
@@ -90,6 +91,9 @@ def update_cell_info():
         screen.blit(img_cursor, rcursor)
         if cell_info.cell is not cell:
             cell_info.update_e(cell)
+        objs = layer2.cells[cell.coord[0]][cell.coord[1]].objects
+        if objs:
+            print(objs)
 
 def unblit_map():
     pygame.draw.rect(screen, (0,0,0), cam.map_rect)
@@ -100,6 +104,7 @@ def draw():
     screen.fill((0,0,0))
     #blit map
     cam.draw_grid(screen)
+    cam.draw_layer(screen)
     #blit grid
     if show_grid_lines:
         cam.draw_grid_lines(screen)
@@ -126,6 +131,7 @@ def func_reac_time():
     pygame.display.flip()
     #
     lm.next_frame()
+    layer2.t = lm.t
     if lm.tot_time%cursor_slowness == 0:
         idx_cursor = (idx_cursor+1)%len(cursors)
         img_cursor = cursors[idx_cursor]
@@ -307,14 +313,28 @@ frame_map.set_colorkey((255,255,255))
 
 
 ################################################################################
-lm = LogicalMap(hmap, material_couples, map_rects, outsides,
-                restrict_size=cam.world_size)
+#white_couple n'a que des images blanches
+whites = tm.build_tiles(white_img, ZOOM_CELL_SIZES, NFRAMES)
+white_mat1 = tm.Material("White material 1", -1., whites)
+white_mat2 = tm.Material("White material 2", 1., whites)
+white_couples = tm.get_material_couples([white_mat1,white_mat2], CELL_RADIUS_DIVIDER)
+layer2 = LogicalMap(hmap, white_couples, map_rects, outsides, cam.world_size)
+
+################################################################################
+lm = LogicalMap(hmap, material_couples, map_rects, outsides, cam.world_size)
 lm.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
 lm.refresh_cell_heights(hmap)
 lm.refresh_cell_types()
 lm.cells[3][3].name = "Roflburg"
-##lm.set_zoom(CURRENT_ZOOM_LEVEL)
-cam.set_map_data(lm)
+cam.set_map_data(lm, layer2)
+
+
+layer2.frame_slowness = lm.frame_slowness
+layer2.refresh_cell_heights(hmap)
+layer2.refresh_cell_types()
+for coord in layer2:
+    for zoom, gm in enumerate(layer2.graphical_maps):
+        gm[coord].imgs = layer2[coord].couple.get_all_frames(zoom, "c")
 
 ################################################################################
 print("Adding objects")
@@ -327,9 +347,8 @@ char1_img = thorpy.get_resized_image(char1_img, (ZOOM_CELL_SIZES[0]-1,)*2)
 forest_map = ng.generate_terrain(S,n_octaves=3) #generer sur map + grande et reduite, ou alors avec persistance +- faible suivant ce qu'on veut
 ng.normalize(forest_map)
 
-
-
-from mapobjects.objects import MapObject
+################################################################################
+##objects
 
 fir = MapObject(fir0_img)
 fir.build_imgs(ZOOM_CELL_SIZES)
@@ -338,6 +357,7 @@ char1 = MapObject(char1_img)
 char1.build_imgs(ZOOM_CELL_SIZES)
 
 objects = []
+
 
 for x in range(lm.nx):
     for y in range(lm.ny):
@@ -349,9 +369,10 @@ for x in range(lm.nx):
 ##                        obj = fir.add_copy_on_cell(lm.cells[x][y])
 ##                        obj.randomize_relpos()
 ##                        objects.append(obj)
+                        print(x,y)
                         xrel = random.random()/10.
                         yrel = random.random()/10.
-                        lm.blit_on_cell(fir0_img, x, y, xrel, yrel)
+                        layer2.blit_on_cell(fir0_img, x, y, xrel, yrel)
 
 ##obj = char1.add_copy_on_cell(lm.cells[32][15])
 ##objects.append(obj)
@@ -362,6 +383,9 @@ for x in range(lm.nx):
 
 print("Building untiled surfaces")
 lm.build_surfaces()
+print("Builing object layer untiled surfaces()")
+layer2.build_surfaces(colorkey=(255,255,255))
+
 
 ##app.fill((255,255,255))
 ##gm = lm.graphical_maps[3]

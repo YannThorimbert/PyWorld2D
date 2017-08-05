@@ -37,7 +37,7 @@ def get_shifted_tiles(img, nframes, dx=0, dy=0, reverse=False, sin=True):
     return images
 
 def build_tiles(img_fullsize, sizes, nframes, dx_divider=0, dy_divider=0,
-                reverse=False, sin=True):
+                reverse=False, sin=True, colorkey=None):
     imgs = []
     for size in sizes:
         img = pygame.transform.smoothscale(img_fullsize, (size,)*2)
@@ -48,6 +48,10 @@ def build_tiles(img_fullsize, sizes, nframes, dx_divider=0, dy_divider=0,
         if dy_divider:
             dy = size//dy_divider
         imgs.append(get_shifted_tiles(img, nframes, dx, dy, reverse, sin))
+    if colorkey:
+        for tiles in imgs:
+            for img in tiles:
+                img.set_colorkey(colorkey)
     return imgs
 
 def get_radiuses(nframes, initial_value, increment, reverse=False, sin=True):

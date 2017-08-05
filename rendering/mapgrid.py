@@ -47,8 +47,8 @@ class GraphicalCell:
     def __init__(self):
         self.imgs = None
 
-    def set_imgs(self, news):
-        self.imgs = [img for img in news]
+##    def set_imgs(self, news):
+##        self.imgs = [img for img in news]
 
 
 class LogicalMap(BaseGrid):
@@ -186,6 +186,7 @@ class LogicalMap(BaseGrid):
         cell_size0 = self.cell_sizes[0]
         wobj0, hobj0 = img.get_size()
         coord = (x,y)
+        self.cells[x][y].objects.append("lol")
         for zoom, cell_size in enumerate(self.cell_sizes):
             factor = float(cell_size) / cell_size0
             w = int(wobj0 * factor)
@@ -200,35 +201,23 @@ class LogicalMap(BaseGrid):
             gc = self.get_graphical_cell(coord, zoom)
             new_imgs = []
             for original in gc.imgs:
-                new_ = original.copy()
-                new_.blit(obj_img, obj_rect.topleft)
+##                new_ = original.copy()
+##                new_.blit(obj_img, obj_rect.topleft)
+                new_ = pygame.Surface(original.get_size())
+                new_.fill((255,0,0))
                 new_imgs.append(new_)
             gc.imgs = [new_ for new_ in new_imgs]
 
-##    def draw(self, screen, xpix, ypix, x0, w, y0, h):
-##        x0 -= 1
-##        y0 -= 1
-##        w += 1
-##        h += 1
-##        for x in range(x0,x0+w):
-##            for y in range(y0,y0+h):
-##                self.draw_cell(screen, xpix, ypix, (x,y), x0, y0)
+
 
     def draw(self, screen, topleft, dx_pix, dy_pix):
         x0 = self.current_x
         y0 = self.current_y
         self.current_gm.draw(screen, topleft, x0, y0, dx_pix, dy_pix, self.t)
-##        x0 -= 1
-##        y0 -= 1
-##        w += 1
-##        h += 1
-##        for x in range(x0,x0+w):
-##            for y in range(y0,y0+h):
-##                self.draw_cell(screen, xpix, ypix, (x,y), x0, y0)
 
-    def build_surfaces(self):
+    def build_surfaces(self, colorkey=None):
         for gm in self.graphical_maps:
-            gm.build_surfaces()
+            gm.build_surfaces(colorkey)
 
 ##    def show(self):
 ##        monitor.show()
@@ -251,7 +240,7 @@ class GraphicalMap(PygameGrid):
         self.nsurf_x = None
         self.nsurf_y = None
 
-    def build_surfaces(self):
+    def build_surfaces(self, colorkey):
         #heuristic
         nx = int(200/self.cell_size)
         ny = int(200/self.cell_size)
@@ -275,6 +264,8 @@ class GraphicalMap(PygameGrid):
             for t in range(nframes):
                 img = self[(x,y)].imgs[t]
                 surfaces[surfx][surfy][t].blit(img, (xpix,ypix))
+                if colorkey is not None:
+                    surfaces[surfx][surfy][t].set_colorkey(colorkey)
         #
         self.surfaces = surfaces
         self.surf_size = surf_size
@@ -291,8 +282,3 @@ class GraphicalMap(PygameGrid):
                 posy = round(y*self.surf_size[1] + delta_y)
                 screen.blit(self.surfaces[x][y][t], (posx,posy))
 
-##surfaces, surf_size, nx, ny = gm.surfaces, gm.surf_size, gm.nsurf_x, gm.nsurf_y
-##for x in range(nx):
-##    for y in range(ny):
-##        app.blit(surfaces[x][y][0],(x*surf_size[0],y*surf_size[1]))
-##        pygame.draw.rect(screen, (0,255,0), pygame.Rect(x*surf_size[0],y*surf_size[1], surf_size[0], surf_size[1]), 1)

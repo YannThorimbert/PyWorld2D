@@ -6,6 +6,7 @@ class Camera:
 
     def __init__(self):
         self.lm = None
+        self.layer2 = None
         self.cell_rect = pygame.Rect(0,0,0,0)
         self.e_hmap = None
         self.box_hmap = None
@@ -40,9 +41,11 @@ class Camera:
         self.box_hmap = box_hmap
         self.reinit_pos
 
-    def set_map_data(self, lm):
+    def set_map_data(self, lm, layer):
         self.lm = lm
         assert lm.nx == self.world_size.x and lm.ny == self.world_size.y
+        self.layer2 = layer
+        assert layer.nx == self.world_size.x and layer.ny == self.world_size.y
 
 
     def get_dpix(self):
@@ -52,10 +55,11 @@ class Camera:
 
     def draw_grid(self, screen):
         xpix, ypix = self.get_dpix()
-        #appeller self.lm.draw_current(xpix,ypix,self.nx,self.ny)
-##        self.lm.draw(screen, xpix, ypix, self.lm.current_x, self.nx,
-##                                         self.lm.current_y, self.ny)
         self.lm.draw(screen, self.map_rect.topleft, xpix, ypix)
+
+    def draw_layer(self, screen):
+        xpix, ypix = self.get_dpix()
+        self.layer2.draw(screen, self.map_rect.topleft, xpix, ypix)
 
     def draw_grid_lines(self, screen):
         coord = self.get_coord_at_pix(self.map_rect.topleft+V2(1,1))
@@ -74,6 +78,9 @@ class Camera:
     def set_mg_pos_from_rcam(self):
         self.lm.current_x = int(self.rcam.x)
         self.lm.current_y = int(self.rcam.y)
+        #
+        self.layer2.current_x = self.lm.current_x
+        self.layer2.current_y = self.lm.current_y
 
     def set_campos_from_rcam(self):
         self.campos = V2(self.rcam.topleft)
