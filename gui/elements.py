@@ -14,6 +14,18 @@ def get_help_text(*texts,start="normal"):
         state = 1 if state==0 else 0
     return thorpy.make_group(els)
 
+def get_help_text_normal(*texts,start="normal"):
+    if start == "normal":
+        state = 0
+    else:
+        state = 1
+    get_text = {0:guip.get_text, 1:guip.get_highlight_text}
+    els = []
+    for text in texts:
+        els.append(get_text[state](text))
+        state = 1 if state==0 else 0
+    return thorpy.make_group(els)
+
 
 def get_cursors(rect, color):
     assert color != (255,255,255) #used for transparency
@@ -215,11 +227,16 @@ class HelpBox:
         self.e_title = guip.get_title(title)
         self.helps = []
         for h in helps:
-            self.helps.append(get_help_text(*h))
-        self.e = thorpy.Box.make([self.e_title]+self.helps)
-
+            self.helps.append(get_help_text_normal(*h))
+        self.e = thorpy.make_ok_box([self.e_title]+self.helps)
+        self.b = thorpy.Element.make(size=thorpy.functions.get_screen_size())
+        self.b.set_main_color((200,200,200,100))
+        self.e.center()
+        self.launcher = thorpy.make_button("See commands", self.launch)
 
     def launch(self):
-        pass
+        self.b.blit()
+        pygame.display.flip()
+        thorpy.launch_blocking(self.e)
 
 

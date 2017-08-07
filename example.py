@@ -428,14 +428,21 @@ cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_n
 unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
 misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
 
-menu_button = thorpy.make_menu_button() #==> load, save, settings
 help_box = gui.HelpBox("Commands",
     [("To move the map, drag it with", "<LBM>",
-        "or hold", "<left shift>", "while moving mouse"),
+        "or hold", "<left shift>", "while moving mouse."),
      ("The minimap on the upper right can be clicked or hold with","<LBM>",
-        "in order to move the camera")])
-menu_button.user_func = thorpy.launch_blocking
-menu_button.user_params = {"element":help_box.e}
+        "in order to move the camera."),
+     ("The","<keyboard arrows>", "can also be used to scroll the map view.")])
+
+e_quit = thorpy.make_button("Quit", thorpy.functions.quit_func)
+e_save = thorpy.make_button("Save")
+e_load = thorpy.make_button("Load")
+
+menu_button = thorpy.make_menu_button() #==> load, save, settings
+menu_button_launched = thorpy.make_ok_box([help_box.launcher, e_quit])
+thorpy.set_launcher(menu_button, menu_button_launched)
+
 box = thorpy.Element.make(elements=[topbox, #thorpy.Line.make(MENU_RECT.w-20),
                                     misc_info.e, #thorpy.Line.make(MENU_RECT.w-20),
                                     cell_info.e, #thorpy.Line.make(MENU_RECT.w-20),
