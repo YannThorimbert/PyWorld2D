@@ -89,6 +89,12 @@ class LogicalMap(BaseGrid):
         self.tot_time = 0
         self.frame_slowness = 20
 
+    def add_layer(self, lay):
+        assert lay.nx == self.nx and lay.ny == self.ny
+        lay.nframes = self.nframes
+        lay.frame_slowness = self.frame_slowness
+        self.layers.append(lay)
+
     def get_current_cell_size(self):
         return self.cell_sizes[self.current_zoom_level]
 
@@ -103,11 +109,15 @@ class LogicalMap(BaseGrid):
             self.current_y = 0
         elif self.current_y > self.ny-2:
             self.current_y = self.ny-2
+        for lay in self.layers:
+            lay.set_zoom(level)
 
     def next_frame(self):
         self.tot_time += 1
         if self.tot_time % self.frame_slowness == 0:
             self.t = (self.t+1) % self.nframes
+            for lay in self.layers:
+                lay.t = self.t
             return True
 
     def refresh_cell_heights(self, hmap):
@@ -407,6 +417,7 @@ class WhiteLogicalMap(LogicalMap):
             white.fill(self.white_value)
             self.whites.append(white)
         self.current_gm = self.graphical_maps[0]
+        self.layers = []
         #
         self.nframes = nframes
         self.t = 0
