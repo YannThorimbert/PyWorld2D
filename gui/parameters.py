@@ -1,4 +1,7 @@
-import thorpy
+import thorpy, pygame
+
+DELAY_HELP = 5.
+
 
 #menus
 FRAME_MAP_COLOR = thorpy.style.DEF_COLOR
@@ -12,9 +15,20 @@ NFS = thorpy.style.FONT_SIZE
 NFC = thorpy.style.FONT_COLOR
 
 #small
-SFS = thorpy.style.FONT_SIZE - 2
-SFC = thorpy.style.FONT_COLOR
+SFS = NFS - 2
+SFC = NFC
 
+#highlight
+HFS = NFS + 1
+HFC = (255,0,0)
+
+#info
+IFS = NFS
+IFC = (100,255,100)
+
+
+#environments:
+##env = {"small":-3, "normal":0, "large":+3, "highlight":+1}
 
 def get_title(text):
     return thorpy.make_text(text, TFS, TFC)
@@ -24,6 +38,12 @@ def get_text(text):
 
 def get_small_text(text):
     return thorpy.make_text(text, SFS, SFC)
+
+def get_highlight_text(text):
+    return thorpy.make_text(text, HFS, HFC)
+
+def get_info_text(text):
+    return thorpy.make_text(text, IFS, IFC)
 
 def get_button(text, func, params=None):
     b = thorpy.make_button(text, func, params)

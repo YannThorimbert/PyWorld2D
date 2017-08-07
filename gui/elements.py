@@ -1,20 +1,18 @@
 import pygame, thorpy
 import gui.parameters as guip
 
-##def get_rounded_frame_img(size, radius, color, thickness):
-##    assert color != (255,255,255)
-##    surface = pygame.Surface(size)
-##    surface.fill((255,255,255))
-##    outer = thorpy.graphics.get_aa_round_rect(size, radius, color)
-##    size2 = (size[0]-2*thickness, size[1]-2*thickness)
-##    radius2 = radius - thickness
-##    inner = thorpy.graphics.get_aa_round_rect(size2, radius2, (255,255,255))
-##    r = inner.get_rect()
-##    r.center = surface.get_rect().center
-##    surface.blit(outer, (0,0))
-##    surface.blit(inner, r.topleft)
-##    surface.set_colorkey((255,255,255))
-##    return surface
+
+def get_help_text(*texts,start="normal"):
+    if start == "normal":
+        state = 0
+    else:
+        state = 1
+    get_text = {0:guip.get_info_text, 1:guip.get_highlight_text}
+    els = []
+    for text in texts:
+        els.append(get_text[state](text))
+        state = 1 if state==0 else 0
+    return thorpy.make_group(els)
 
 
 def get_cursors(rect, color):
@@ -172,4 +170,56 @@ class CellInfo:
 ##            self.e_title.recenter()
         #
 ##        self.e.blit()
+
+class AlertPool:
+
+    def __init__(self):
+        self.alerts = []
+        self.countdowns = {}
+
+    def add_alert_countdown(self, element, countdown):
+        self.countdowns[element] = countdown
+
+    def add_alert(self, element, counter):
+        self.alerts.append([element, counter])
+
+    def alert_indices(self):
+        for i in range(len(self.alerts)-1, -1, -1):
+            yield i
+
+    def refresh(self):
+        for i in self.alert_indices():
+            self.alerts[i][1] -= 1
+            if self.alerts[i][1] < 0:
+                self.alerts.pop(i)
+        for e in self.countdowns:
+            self.countdowns[e] -= 1
+
+
+    def draw(self, screen, x, y, gap=5):
+        for i in self.alert_indices():
+            e = self.alerts[i][0]
+            e.set_topleft((x,y))
+            e.blit()
+            y += e.get_fus_size()[1] + gap
+        for e in self.countdowns:
+            if self.countdowns[e] < 0:
+                e.set_topleft((x,y))
+                e.blit()
+                y += e.get_fus_size()[1] + gap
+
+
+class HelpBox:
+
+    def __init__(self, title, helps):
+        self.e_title = guip.get_title(title)
+        self.helps = []
+        for h in helps:
+            self.helps.append(get_help_text(*h))
+        self.e = thorpy.Box.make([self.e_title]+self.helps)
+
+
+    def launch(self):
+        pass
+
 

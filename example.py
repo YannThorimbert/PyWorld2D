@@ -12,28 +12,26 @@ from mapobjects.objects import MapObject
 
 thorpy.application.SHOW_FPS = True
 
-#objects avec des frames
+#zoom avec slider
+#help button
+#alerts pour autres trucs
 
-#quand meme mettre un texte pour les keys...
+#space_material pour hauteurs negatives, qui sont mises sur la hmap apres que la miniature soit construite
+
+#temperature a la place de altitude!
+
+#objects avec des frames
+#restreindre les relpos par obj (pour sapin, relpos[1] tj positif
+#ajouter noms des objets dans infos cell
+
+#objets dynamiques
+#a l'interieur d'une cellule donnee, on peut se permettre de trier objs dynamiques en fonction de coord y pour un affichage correct
 
 #revoir le draw no update
 
-#restreindre les relpos par obj (pour sapin, relpos[1] tj positif
-
-#mettre un max d'objets en static. Tout ce qui est movable n'apparait pas dans l'apercu de infos cell.
-
-#a l'interieur d'une cellule donnee, on peut se permettre de trier objs dynamiques en fonction de coord y pour un affichage correct
-
-#ajouter noms des objets dans infos cell
-
-#POUR OBJECtS STATICS; si jen fais:
-#       -on blit les parties qui debordent sur les voisins!
-#       -on les construits a partir des imgs des objects dynamics, car deja bien scaled
-
-
 ################################################################################
-#objets de base: palmiers, feuillu, sapins(+ sapin enneigÃ©), montagnes, villages, chemin
-#pour fs: chateaux, murailles, units: (herite de objet)
+#objets de base: palmiers, feuillu, sapins(+ sapin enneige), montagnes, villages, chemin
+#pour fs: chateaux, murailles, units: (herite de objet dynamique)
 
 #peut etre que marche pas sans numpy a cause du beach tiler.
 #Dans ce cas, favoriser la hmap issue de version numpy
@@ -47,7 +45,6 @@ thorpy.application.SHOW_FPS = True
 #ridged noise
 
 #effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
-
 
 #faire le outside en beachtiler?
 
@@ -114,7 +111,6 @@ def draw():
 
 def draw_no_update():
     cam.draw_grid(screen)
-##    screen.blit(frame_map, (0,0))
     box.blit()
     pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
 
@@ -122,6 +118,8 @@ def func_reac_time():
     global img_cursor, idx_cursor
     process_mouse_navigation()
     draw()
+    ap.refresh()
+    ap.draw(screen, 20,20)
     pygame.display.flip()
     #
     lm.next_frame()
@@ -134,7 +132,7 @@ def func_reac_click(e):
     if e.button == 1: #left click
         if box_hmap.get_rect().collidepoint(e.pos):
             cam.center_on(e.pos)
-    elif e.button == 3:
+    elif e.button == 3: #right click
         print("Uh")
         increment_zoom(1)
 
@@ -159,6 +157,7 @@ def func_reac_mousemotion(e):
             delta = -V2(e.rel)/cam.cell_rect.w #assuming square cells
             move_cam_and_refresh(delta)
             cell_clicked = cam.get_cell(e.pos)
+            ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
 
 def move_cam_and_refresh(delta):
     cam.move(delta)
@@ -176,6 +175,7 @@ def process_mouse_navigation(): #cam can move even with no mousemotion!
             delta = V2(cam.correct_move(d))
             cam.move(delta)
             cam.set_mg_pos_from_rcam()
+            ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
 
 
 def load_image(fn):
@@ -190,8 +190,8 @@ BOX_HMAP_MARGIN = 20 #box of the minimap
 MENU_WIDTH = 200
 MAX_WANTED_MINIMAP_SIZE = 128
 S = 128 #size of the produced hmap (to be completed with croping!)
-ZOOM_CELL_SIZES = [32, 20, 14, 8, 4]
-##ZOOM_CELL_SIZES = [32]
+##ZOOM_CELL_SIZES = [32, 20, 14, 8, 4]
+ZOOM_CELL_SIZES = [16]
 CURRENT_ZOOM_LEVEL = 0
 CELL_RADIUS_DIVIDER = 8 #cell_radius = cell_size//radius_divider
 NFRAMES = 16 #number of different tiles for one material (used for moving water)
@@ -256,12 +256,15 @@ badlands = tm.Material("Grass", 0.8, grasses)
 rock = tm.Material("Rock", 0.83, rocks)
 snow1 = tm.Material("Thin snow", 0.9, snows1)
 snow2 = tm.Material("Snow", float("inf"), snows2)
+space = tm.Material("Space", -float("inf"), outsides)
 #here water.imgs is a list of images list whose index refer to zoom level
 
 print("Building material couples")
 ##materials = [deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
 ##material_couples = tm.get_material_couples(materials, CELL_RADIUS_DIVIDER)
 material_couples = tm.get_material_couples([shore,badlands], CELL_RADIUS_DIVIDER)
+##materials = [space,deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
+##material_couples = tm.get_material_couples(materials, CELL_RADIUS_DIVIDER)
 ################################################################################
 #derived constants
 CELL_SIZE = None
@@ -426,6 +429,13 @@ unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_n
 misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
 
 menu_button = thorpy.make_menu_button() #==> load, save, settings
+help_box = gui.HelpBox("Commands",
+    [("To move the map, drag it with", "<LBM>",
+        "or hold", "<left shift>", "while moving mouse"),
+     ("The minimap on the upper right can be clicked or hold with","<LBM>",
+        "in order to move the camera")])
+menu_button.user_func = thorpy.launch_blocking
+menu_button.user_params = {"element":help_box.e}
 box = thorpy.Element.make(elements=[topbox, #thorpy.Line.make(MENU_RECT.w-20),
                                     misc_info.e, #thorpy.Line.make(MENU_RECT.w-20),
                                     cell_info.e, #thorpy.Line.make(MENU_RECT.w-20),
@@ -446,11 +456,16 @@ cursor_slowness = int(0.3*FPS)
 
 
 thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
+##thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
+
+ap = gui.AlertPool()
+e_help_move = gui.get_help_text("To move the map, drag it with", "<LBM>",
+                                "or hold", "<left shift>", "while moving mouse")
+ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
 
 set_zoom(0)
 m = thorpy.Menu([box],fps=FPS)
 m.play()
-
 
 
 app.quit()
