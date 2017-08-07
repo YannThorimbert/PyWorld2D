@@ -238,5 +238,6 @@ class HelpBox:
         self.b.blit()
         pygame.display.flip()
         thorpy.launch_blocking(self.e)
+        thorpy.functions.quit_menu_func()
 
 

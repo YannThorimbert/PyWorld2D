@@ -441,7 +441,9 @@ e_load = thorpy.make_button("Load")
 
 menu_button = thorpy.make_menu_button() #==> load, save, settings
 menu_button_launched = thorpy.make_ok_box([help_box.launcher, e_quit])
-thorpy.set_launcher(menu_button, menu_button_launched)
+##thorpy.set_launcher(menu_button, menu_button_launched)
+menu_button.user_func = thorpy.launch_blocking
+menu_button.user_params = {"element":menu_button_launched}
 
 box = thorpy.Element.make(elements=[topbox, #thorpy.Line.make(MENU_RECT.w-20),
                                     misc_info.e, #thorpy.Line.make(MENU_RECT.w-20),
