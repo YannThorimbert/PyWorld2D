@@ -157,7 +157,8 @@ class CellInfo:
         else:
             name = cell.material.name
         self.e_mat_name.set_text(name)
-        self.e_mat_img.set_image(cell.get_img_at_zoom(0))
+        new_img = cell.extract_all_layers_img_at_zoom(0)
+        self.e_mat_img.set_image(new_img)
         thorpy.store(self.e_mat, mode="h")
         #
         altitude = round(cell.get_altitude())

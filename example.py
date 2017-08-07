@@ -12,13 +12,17 @@ from mapobjects.objects import MapObject
 
 ##thorpy.application.SHOW_FPS = True
 
+#sable pas minecraft
+
+#nettoyer les noms de fonctions de map
+
 #bliter les statis (layer) sur miniature
 
 #objects avec des frames
 
 #quand meme mettre un texte pour les keys...
 
-#generaliser le nb de calques ==> voir fps
+#generaliser le nb de layers ==> voir fps
 
 #revoir le draw no update
 
@@ -197,8 +201,8 @@ BOX_HMAP_MARGIN = 20 #box of the minimap
 MENU_WIDTH = 200
 MAX_WANTED_MINIMAP_SIZE = 128
 S = 128 #size of the produced hmap (to be completed with croping!)
-ZOOM_CELL_SIZES = [32, 25, 20, 16, 12, 8, 4]
-##ZOOM_CELL_SIZES = [20]
+##ZOOM_CELL_SIZES = [32, 25, 20, 16, 12, 8, 4]
+ZOOM_CELL_SIZES = [32]
 CURRENT_ZOOM_LEVEL = 0
 CELL_RADIUS_DIVIDER = 8 #cell_radius = cell_size//radius_divider
 NFRAMES = 16 #number of different tiles for one material (used for moving water)
@@ -322,6 +326,7 @@ lm.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
 lm.refresh_cell_heights(hmap)
 lm.refresh_cell_types()
 lm.cells[3][3].name = "Roflburg"
+lm.layers.append(layer2)
 cam.set_map_data(lm, layer2)
 
 

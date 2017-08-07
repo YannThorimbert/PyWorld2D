@@ -38,6 +38,9 @@ class LogicalCell:
     def get_img_at_zoom(self, level):
         return self.map.get_img_at_zoom(self.coord, level)
 
+    def extract_all_layers_img_at_zoom(self, level):
+        return self.map.extract_all_layers_img_at_zoom(self.coord, level)
+
 class WhiteLogicalCell:
 
     def __init__(self, logical_map):
@@ -78,6 +81,8 @@ class LogicalMap(BaseGrid):
             self.graphical_maps.append(gm)
             self.cell_sizes.append(cell_size)
         self.current_gm = self.graphical_maps[0]
+        #
+        self.layers = []
         #
         self.nframes = len(material_couples[0].get_tilers(0))
         self.t = 0
@@ -158,30 +163,39 @@ class LogicalMap(BaseGrid):
             for zoom, gm in enumerate(self.graphical_maps):
                 gm[x,y].imgs = cell.couple.get_all_frames(zoom, cell.type)
 
-    def draw_cell(self, screen, xpix, ypix, coord, x0, y0):
-        x,y = coord
-        img = self.get_img_at(coord)
-        rect = self.current_gm.get_rect_at_coord((x-x0,y-y0))
-        rect.move_ip(-xpix, -ypix)
-        screen.blit(img, rect)
-
-    def get_img_at(self, coord): #a utiliser dans draw_cell!
-        if self.is_inside(coord):
-            return self.current_gm[coord].imgs[self.t]
-        else:
-            return self.current_gm.outside_imgs[self.t]
 
     def get_img_at_zoom(self, coord, zoom):
+        """Returns the image contained on permanent cell of self.
+        Use extract_img_at_zoom if you need the cell plus all what has been
+        drawn on self's surface."""
         if self.is_inside(coord):
             return self.graphical_maps[zoom][coord].imgs[self.t]
         else:
             return self.graphical_maps[zoom].outside_imgs[self.t]
 
-    def get_img(self, coord, zoom, frame):
+    def extract_img_at_zoom(self, coord, zoom, img):
+        """Returns the image of the cell of self plus what has been drawn on
+        self's surface.
+        Use get_img_at_zoom if you need the cell only."""
         if self.is_inside(coord):
-            return self.graphical_maps[zoom][coord].imgs[frame]
+            self.graphical_maps[zoom].extract_img(coord, self.t, img)
         else:
-            return self.graphical_maps[zoom].outside_imgs[frame]
+            img.blit(self.graphical_maps[zoom].outside_imgs[self.t],(0,0))
+
+    def extract_all_layers_img_at_zoom(self, coord, zoom):
+        """Fusion all the images extracted from all the layers of self."""
+        if self.is_inside(coord):
+            img = pygame.Surface((self.cell_sizes[zoom],)*2)
+            img.blit(self.get_img_at_zoom(coord, zoom), (0,0)) #I dont know why I have to do that to avoir bug of spurious static objects...
+            for lay in self.layers:
+                lay.extract_img_at_zoom(coord, zoom, img)
+            return img
+        else:
+            img = self.graphical_maps[zoom].outside_imgs[self.t]
+            for lay in self.layers:
+                img.blit(lay[coord].imgs[self.t], (0,0))
+            return img
+
 
     def get_graphical_cell(self, coord, zoom):
         return self.graphical_maps[zoom][coord]
@@ -222,6 +236,8 @@ class LogicalMap(BaseGrid):
             gm.build_surfaces(colorkey)
 
     def blit_img(self, imgs, coord, relpos): #this is permanent
+        """Permanently blit images <imgs> corresponding to different zoom levels
+        onto self's surfaces."""
         for level, gm in enumerate(self.graphical_maps):
             gm.blit_img(imgs[level], coord, relpos)
 
@@ -304,6 +320,7 @@ class GraphicalMap(PygameGrid):
 
 
     def blit_img(self, obj_img, obj_coord, relpos):
+        """blit image <obj_img> on self's surface"""
         xobj, yobj = obj_coord
         obj_rect = obj_img.get_rect()
         obj_rect.center = (self.cell_size//2,)*2
@@ -341,6 +358,27 @@ class GraphicalMap(PygameGrid):
             for y in range(self.nsurf_y):
                 posy = round(y*self.surf_size[1] + delta_y)
                 screen.blit(self.surfaces[x][y][t], (posx,posy))
+
+    def extract_img(self, coord, frame, img):
+        """blit (onto <img>) self'surface cell at <coord>"""
+        nx = int(200/self.cell_size)
+        ny = int(200/self.cell_size)
+        size_x = nx*self.cell_size
+        size_y = ny*self.cell_size
+        surfx = coord[0]*self.cell_size//size_x
+        surfy = coord[1]*self.cell_size//size_y
+        xpix = coord[0]*self.cell_size - surfx*size_x
+        ypix = coord[1]*self.cell_size - surfy*size_y
+        img.blit(self.surfaces[surfx][surfy][frame], (-xpix, -ypix))
+##        if coord[1] == 7:
+##            import thorpy
+##            app = thorpy.get_application()
+##            app.fill((255,255,255))
+##            screen = thorpy.get_screen()
+##            screen.blit(img, (0,0))
+##            app.update()
+##            print(xpix, ypix, coord)
+##            app.pause()
 
 
 class WhiteLogicalMap(LogicalMap):
@@ -384,4 +422,5 @@ class WhiteLogicalMap(LogicalMap):
             cell = self[x,y]
             for zoom_level, gm in enumerate(self.graphical_maps):
                 gm[x,y].imgs = [self.whites[zoom_level] for i in range(self.nframes)]
+
 
