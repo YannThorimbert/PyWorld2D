@@ -1,3 +1,4 @@
+import math
 import pygame
 from thorpy._utils.images import load_image
 from pygame import surfarray

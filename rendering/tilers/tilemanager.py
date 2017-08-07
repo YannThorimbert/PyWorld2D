@@ -54,6 +54,14 @@ def build_tiles(img_fullsize, sizes, nframes, dx_divider=0, dy_divider=0,
                 img.set_colorkey(colorkey)
     return imgs
 
+def build_color_tiles(color, sizes, nframes, reverse=False, sin=True):
+    imgs = []
+    for size in sizes:
+        img = pygame.Surface((size,)*2)
+        img.fill(color)
+        imgs.append(get_shifted_tiles(img, nframes, 0, 0, reverse, sin))
+    return imgs
+
 def get_radiuses(nframes, initial_value, increment, reverse=False, sin=True):
     values = []
     if sin:
@@ -101,6 +109,7 @@ def get_material_couples(materials, radius_divider):
         couples.append(couple)
     return couples
 
+
 def get_couple(h, couples):
     if h < 0.:
         return couples[0]
@@ -137,31 +146,4 @@ class MaterialCouple:
 
     def get_all_frames(self, zoom, type_):
         return [self.tilers[zoom][t].imgs[type_] for t in range(len(self.tilers[zoom]))]
-
-##screen.fill((255,255,255))
-##x = 0
-##y = 0
-##i = 0
-##tiler = tilemanager.tilers[0]
-##keys = list(tiler.imgs.keys())
-##keys.sort()
-##for key in keys:
-##    img = tiler.imgs[key]
-##    rect = img.get_rect()
-##    rect.topleft = (x,y)
-##    screen.blit(img, rect.topleft)
-##    pygame.draw.rect(screen, (0,0,0), rect, 1)
-##    text = thorpy.make_text(key+" "+str(i), font_color=(255,255,255),
-##                            font_size=CELL_SIZE//4)
-##    text.set_center(rect.center)
-##    text.blit()
-##    x += CELL_SIZE
-##    if x >= W - CELL_SIZE:
-##        x = 0
-##        y += CELL_SIZE
-##    i += 1
-####    print(i,x,y)
-##pygame.display.flip()
-##app.pause()
-
 

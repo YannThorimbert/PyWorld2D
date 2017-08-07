@@ -4,7 +4,7 @@ from pygame.math import Vector2 as V2
 import thorpy
 import thornoise.purepython.noisegen as ng
 import rendering.tilers.tilemanager as tm
-from rendering.mapgrid import LogicalMap
+from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
@@ -12,12 +12,13 @@ from mapobjects.objects import MapObject
 
 ##thorpy.application.SHOW_FPS = True
 
-#FAIRE UN SECOND CALQUE avec colorkey (map) POUR LES OBJETS!
-#   ==> facile a ajouter a l'apercu d'info cell
-#   ==> compromis de performance
-#   ==> evite le probleme du debordement
+#bliter les statis (layer) sur miniature
 
-#le second calque est fait de surfaces blanches(transparentes), puis on blit les objets comme s'ils etaient dynamiques
+#objects avec des frames
+
+#quand meme mettre un texte pour les keys...
+
+#generaliser le nb de calques ==> voir fps
 
 #revoir le draw no update
 
@@ -35,7 +36,7 @@ from mapobjects.objects import MapObject
 
 
 ################################################################################
-#objets de base: palmiers, feuillu, sapins(+ sapin enneigé), montagnes, villages, chemin
+#objets de base: palmiers, feuillu, sapins(+ sapin enneigÃ©), montagnes, villages, chemin
 #pour fs: chateaux, murailles, units: (herite de objet)
 
 #peut etre que marche pas sans numpy a cause du beach tiler.
@@ -91,9 +92,8 @@ def update_cell_info():
         screen.blit(img_cursor, rcursor)
         if cell_info.cell is not cell:
             cell_info.update_e(cell)
-        objs = layer2.cells[cell.coord[0]][cell.coord[1]].objects
-        if objs:
-            print(objs)
+##        if cell.objects:
+##            print(cell.objects)
 
 def unblit_map():
     pygame.draw.rect(screen, (0,0,0), cam.map_rect)
@@ -109,18 +109,18 @@ def draw():
     if show_grid_lines:
         cam.draw_grid_lines(screen)
     #blit objects
-    cam.draw_objects(screen, objects)
+    cam.draw_objects(screen, dynamic_objects)
     #update right pane
     update_cell_info()
     #blit map frame
-    screen.blit(frame_map, (0,0))
+##    screen.blit(frame_map, (0,0))
     #blit right pane and draw rect on minimap
     box.blit()
     pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
 
 def draw_no_update():
     cam.draw_grid(screen)
-    screen.blit(frame_map, (0,0))
+##    screen.blit(frame_map, (0,0))
     box.blit()
     pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
 
@@ -313,12 +313,8 @@ frame_map.set_colorkey((255,255,255))
 
 
 ################################################################################
-#white_couple n'a que des images blanches
-whites = tm.build_tiles(white_img, ZOOM_CELL_SIZES, NFRAMES)
-white_mat1 = tm.Material("White material 1", -1., whites)
-white_mat2 = tm.Material("White material 2", 1., whites)
-white_couples = tm.get_material_couples([white_mat1,white_mat2], CELL_RADIUS_DIVIDER)
-layer2 = LogicalMap(hmap, white_couples, map_rects, outsides, cam.world_size)
+layer2 = WhiteLogicalMap(hmap, map_rects, outsides, ZOOM_CELL_SIZES, NFRAMES,
+                            cam.world_size, white_value=(255,255,255))
 
 ################################################################################
 lm = LogicalMap(hmap, material_couples, map_rects, outsides, cam.world_size)
@@ -332,9 +328,6 @@ cam.set_map_data(lm, layer2)
 layer2.frame_slowness = lm.frame_slowness
 layer2.refresh_cell_heights(hmap)
 layer2.refresh_cell_types()
-for coord in layer2:
-    for zoom, gm in enumerate(layer2.graphical_maps):
-        gm[coord].imgs = layer2[coord].couple.get_all_frames(zoom, "c")
 
 ################################################################################
 print("Adding objects")
@@ -356,7 +349,8 @@ fir.build_imgs(ZOOM_CELL_SIZES)
 char1 = MapObject(char1_img)
 char1.build_imgs(ZOOM_CELL_SIZES)
 
-objects = []
+static_objects = []
+dynamic_objects = []
 
 
 for x in range(lm.nx):
@@ -366,16 +360,16 @@ for x in range(lm.nx):
             if lm.cells[x][y].material is badlands:
                 for i in range(3):
                     if random.random() < 0.75:
-##                        obj = fir.add_copy_on_cell(lm.cells[x][y])
-##                        obj.randomize_relpos()
-##                        objects.append(obj)
-                        print(x,y)
-                        xrel = random.random()/10.
-                        yrel = random.random()/10.
-                        layer2.blit_on_cell(fir0_img, x, y, xrel, yrel)
+                        obj = fir.add_copy_on_cell(lm.cells[x][y])
+                        obj.randomize_relpos()
+                        static_objects.append(obj)
+##                        print(x,y)
+##                        xrel = random.random()/10.
+##                        yrel = random.random()/10.
+##                        layer2.blit_on_cell(fir0_img, x, y, xrel, yrel)
 
-##obj = char1.add_copy_on_cell(lm.cells[32][15])
-##objects.append(obj)
+obj = char1.add_copy_on_cell(lm.cells[32][15])
+dynamic_objects.append(obj)
 
 
 ###############################################################################
@@ -385,13 +379,8 @@ print("Building untiled surfaces")
 lm.build_surfaces()
 print("Builing object layer untiled surfaces()")
 layer2.build_surfaces(colorkey=(255,255,255))
-
-
-##app.fill((255,255,255))
-##gm = lm.graphical_maps[3]
-##gm.draw(screen,10,10,0)
-##app.update()
-##app.pause()
+layer2.save_pure_surfaces() #save BEFORE we blit objects (unless we want the objects to be part of the permanent map)
+layer2.blit_objects(static_objects)
 
 
 ################################################################################
@@ -424,6 +413,10 @@ thorpy.add_keydown_reaction(e_hmap, pygame.K_DOWN, move_cam_and_refresh, params=
 
 thorpy.add_keydown_reaction(e_hmap, pygame.K_g, set_show_grid_lines, params={"value":True})
 thorpy.add_keyup_reaction(e_hmap, pygame.K_g, set_show_grid_lines, params={"value":False})
+
+def rofl():
+    layer2.reset_pure_surfaces()
+thorpy.add_keydown_reaction(e_hmap, pygame.K_SPACE, rofl)
 
 ##commands = thorpy.commands.Commands(e_hmap)
 ##thorpy.commands.playing(FPS)

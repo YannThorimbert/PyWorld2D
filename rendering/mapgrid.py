@@ -29,17 +29,23 @@ class LogicalCell:
         self.type = None
         self.name = ""
         self.objects = []
-        self.spec_imgs = None
+        self.imgs = None
 
     def get_altitude(self):
         return (self.h-0.6)*2e4
 
-##    def get_img(self):
-##        return self.map.get_img_at(self.coord)
 
     def get_img_at_zoom(self, level):
         return self.map.get_img_at_zoom(self.coord, level)
 
+class WhiteLogicalCell:
+
+    def __init__(self, logical_map):
+        self.map = logical_map
+        self.imgs = None
+
+    def get_img_at_zoom(self, level):
+        return self.map.get_img_at_zoom(self.coord, level)
 
 
 class GraphicalCell:
@@ -47,16 +53,15 @@ class GraphicalCell:
     def __init__(self):
         self.imgs = None
 
-##    def set_imgs(self, news):
-##        self.imgs = [img for img in news]
 
 
 class LogicalMap(BaseGrid):
 
     def __init__(self, hmap, material_couples, actual_frames, outsides,
-                    restrict_size=None):
+                    restrict_size):
         self.material_couples = material_couples
         self.zoom_levels = list(range(len(material_couples[0].tilers)))
+        self.current_zoom_level = 0
         self.actual_frames = actual_frames
         if restrict_size is None:
             nx, ny = len(hmap), len(hmap[0])
@@ -181,12 +186,12 @@ class LogicalMap(BaseGrid):
     def get_graphical_cell(self, coord, zoom):
         return self.graphical_maps[zoom][coord]
 
-    def blit_on_cell(self, img, x, y, relx, rely):
+    def draw_on_cell(self, img, x, y, relx, rely): #used for dynamic objects
         """relx and rely are the relative center coordinates"""
         cell_size0 = self.cell_sizes[0]
         wobj0, hobj0 = img.get_size()
         coord = (x,y)
-        self.cells[x][y].objects.append("lol")
+##        self.cells[x][y].objects.append("lol")
         for zoom, cell_size in enumerate(self.cell_sizes):
             factor = float(cell_size) / cell_size0
             w = int(wobj0 * factor)
@@ -201,13 +206,10 @@ class LogicalMap(BaseGrid):
             gc = self.get_graphical_cell(coord, zoom)
             new_imgs = []
             for original in gc.imgs:
-##                new_ = original.copy()
-##                new_.blit(obj_img, obj_rect.topleft)
-                new_ = pygame.Surface(original.get_size())
-                new_.fill((255,0,0))
+                new_ = original.copy()
+                new_.blit(obj_img, obj_rect.topleft)
                 new_imgs.append(new_)
             gc.imgs = [new_ for new_ in new_imgs]
-
 
 
     def draw(self, screen, topleft, dx_pix, dy_pix):
@@ -218,6 +220,23 @@ class LogicalMap(BaseGrid):
     def build_surfaces(self, colorkey=None):
         for gm in self.graphical_maps:
             gm.build_surfaces(colorkey)
+
+    def blit_img(self, imgs, coord, relpos): #this is permanent
+        for level, gm in enumerate(self.graphical_maps):
+            gm.blit_img(imgs[level], coord, relpos)
+
+    def save_pure_surfaces(self):
+        for gm in self.graphical_maps:
+            gm.save_pure_surfaces()
+
+    def reset_pure_surfaces(self):
+        for gm in self.graphical_maps:
+            gm.surfaces = gm.pure_surfaces
+            gm.save_pure_surfaces()
+
+    def blit_objects(self, objects): #this is permanent
+        for obj in objects:
+            self.blit_img(obj.imgs, obj.cell.coord, obj.relpos)
 
 ##    def show(self):
 ##        monitor.show()
@@ -236,6 +255,7 @@ class GraphicalMap(PygameGrid):
         for coord in self:
             self[coord] = GraphicalCell()
         self.surfaces = None
+        self.pure_surfaces = None #surfaces with no objects
         self.surf_size = None
         self.nsurf_x = None
         self.nsurf_y = None
@@ -272,6 +292,46 @@ class GraphicalMap(PygameGrid):
         self.nsurf_x = nsurf_x
         self.nsurf_y = nsurf_y
 
+    def save_pure_surfaces(self):
+        self.pure_surfaces = []
+        for x in range(len(self.surfaces)):
+            self.pure_surfaces.append([])
+            for y in range(len(self.surfaces[0])):
+                self.pure_surfaces[x].append([])
+                for t in range(len(self.surfaces[0][0])):
+                    self.pure_surfaces[x][y].append(None)
+                    self.pure_surfaces[x][y][t] = self.surfaces[x][y][t].copy()
+
+
+    def blit_img(self, obj_img, obj_coord, relpos):
+        xobj, yobj = obj_coord
+        obj_rect = obj_img.get_rect()
+        obj_rect.center = (self.cell_size//2,)*2
+        dx, dy = int(relpos[0]*self.cell_size), int(relpos[1]*self.cell_size)
+        obj_rect.move_ip(dx,dy)
+        #heuristic
+        nx = int(200/self.cell_size)
+        ny = int(200/self.cell_size)
+        nframes = len(self[(0,0)].imgs)
+        size_x = nx*self.cell_size
+        size_y = ny*self.cell_size
+        surf_size = (size_x, size_y)
+        nsurf_x = self.frame.w//size_x + 1
+        nsurf_y = self.frame.h//size_y + 1
+        #fill table of surfaces
+        surfx = xobj*self.cell_size//surf_size[0]
+        surfy = yobj*self.cell_size//surf_size[1]
+        xpix = xobj*self.cell_size - surfx*surf_size[0] + obj_rect.x
+        ypix = yobj*self.cell_size - surfy*surf_size[1] + obj_rect.y
+        for t in range(nframes):
+            for dx in range(-1,2):
+                for dy in range(-1,2):
+                    cx,cy = surfx+dx, surfy+dy
+                    if 0 <= cx < nsurf_x and 0 <= cy <nsurf_y:
+                        x = xpix - dx*surf_size[0]
+                        y = ypix - dy*surf_size[1]
+                        self.surfaces[cx][cy][t].blit(obj_img, (x,y))
+
     def draw(self, screen, topleft, x0, y0, xpix, ypix, t):
         delta_x = topleft[0] - xpix - x0*self.cell_size
         delta_y = topleft[1] - ypix - y0*self.cell_size
@@ -281,4 +341,47 @@ class GraphicalMap(PygameGrid):
             for y in range(self.nsurf_y):
                 posy = round(y*self.surf_size[1] + delta_y)
                 screen.blit(self.surfaces[x][y][t], (posx,posy))
+
+
+class WhiteLogicalMap(LogicalMap):
+
+    def __init__(self, hmap, actual_frames, outsides, zoom_sizes, nframes,
+                    restrict_size, white_value=(255,255,255)):
+        self.zoom_levels = list(range(len(zoom_sizes)))
+        self.current_zoom_level = 0
+        self.cell_sizes = zoom_sizes
+        self.actual_frames = actual_frames
+        if restrict_size is None:
+            nx, ny = len(hmap), len(hmap[0])
+        else:
+            nx, ny = restrict_size
+        BaseGrid.__init__(self, int(nx), int(ny))
+        self.current_x = 0
+        self.current_y = 0
+        self.graphical_maps = []
+        self.whites = []
+        self.white_value = white_value
+        for z in self.zoom_levels:
+            cell_size = self.cell_sizes[z]
+            gm = GraphicalMap(nx, ny, cell_size, actual_frames[z], outsides[z])
+            self.graphical_maps.append(gm)
+            white = pygame.Surface((cell_size,)*2)
+            white.fill(self.white_value)
+            self.whites.append(white)
+        self.current_gm = self.graphical_maps[0]
+        #
+        self.nframes = nframes
+        self.t = 0
+        self.tot_time = 0
+        self.frame_slowness = 20
+
+    def refresh_cell_heights(self, hmap):
+        for x,y in self:
+            self[x,y] = WhiteLogicalCell(self)
+
+    def refresh_cell_types(self):
+        for x,y in self:
+            cell = self[x,y]
+            for zoom_level, gm in enumerate(self.graphical_maps):
+                gm[x,y].imgs = [self.whites[zoom_level] for i in range(self.nframes)]
 
