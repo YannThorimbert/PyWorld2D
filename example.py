@@ -10,7 +10,7 @@ import gui.elements as gui
 from rendering.camera import Camera
 from mapobjects.objects import MapObject
 
-thorpy.application.SHOW_FPS = True
+##thorpy.application.SHOW_FPS = True
 
 #zoom avec slider
 #help button
@@ -191,7 +191,8 @@ MENU_WIDTH = 200
 MAX_WANTED_MINIMAP_SIZE = 128
 S = 128 #size of the produced hmap (to be completed with croping!)
 ##ZOOM_CELL_SIZES = [32, 20, 14, 8, 4]
-ZOOM_CELL_SIZES = [16]
+ZOOM_CELL_SIZES = [16, 8, 4]
+##ZOOM_CELL_SIZES = [16]
 CURRENT_ZOOM_LEVEL = 0
 CELL_RADIUS_DIVIDER = 8 #cell_radius = cell_size//radius_divider
 NFRAMES = 16 #number of different tiles for one material (used for moving water)
@@ -428,12 +429,15 @@ cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_n
 unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
 misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
 
-help_box = gui.HelpBox("Commands",
+help_box = gui.HelpBox([
+("Move camera",
     [("To move the map, drag it with", "<LBM>",
         "or hold", "<left shift>", "while moving mouse."),
      ("The minimap on the upper right can be clicked or hold with","<LBM>",
         "in order to move the camera."),
-     ("The","<keyboard arrows>", "can also be used to scroll the map view.")])
+     ("The","<keyboard arrows>", "can also be used to scroll the map view.")]),
+("Zoom",
+    [("rofl")])])
 
 e_quit = thorpy.make_button("Quit game", thorpy.functions.quit_func)
 e_settings = thorpy.make_button("Settings")
@@ -447,7 +451,22 @@ menu_button_launched.center()
 menu_button.user_func = thorpy.launch_blocking
 menu_button.user_params = {"element":menu_button_launched}
 
-box = thorpy.Element.make(elements=[topbox, #thorpy.Line.make(MENU_RECT.w-20),
+
+e_zoom = thorpy.SliderX.make(MENU_WIDTH//4, (0, 100), "Zoom (%)", int)
+def troll(e):
+    print("orofl",e_zoom.get_value())
+    levels = len(ZOOM_CELL_SIZES) - 1
+    level = int(levels*e_zoom.get_value()/e_zoom.limvals[1])
+    print(level)
+    set_zoom(level)
+reac_zoom = thorpy.Reaction(reacts_to=thorpy.constants.THORPY_EVENT,
+                            reac_func=troll,
+                            event_args={"id":thorpy.constants.EVENT_SLIDE,
+                                        "el":e_zoom})
+e_hmap.add_reaction(reac_zoom)
+
+box = thorpy.Element.make(elements=[e_zoom,
+                                    topbox, #thorpy.Line.make(MENU_RECT.w-20),
                                     misc_info.e, #thorpy.Line.make(MENU_RECT.w-20),
                                     cell_info.e, #thorpy.Line.make(MENU_RECT.w-20),
                                     unit_info.e, #thorpy.Line.make(MENU_RECT.w-20),

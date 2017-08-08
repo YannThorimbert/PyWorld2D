@@ -221,14 +221,20 @@ class AlertPool:
                 y += e.get_fus_size()[1] + gap
 
 
+
+
 class HelpBox:
 
-    def __init__(self, title, helps):
-        self.e_title = guip.get_title(title)
-        self.helps = []
-        for h in helps:
-            self.helps.append(get_help_text_normal(*h))
-        self.e = thorpy.make_ok_box([self.e_title]+self.helps)
+    def __init__(self, helps):
+        """helps is a list of tuple on the form (title, list_of_help_texts)."""
+        elements = []
+        for title, texts in helps:
+            e_title = guip.get_title(title)
+            e_helps = []
+            for h in texts:
+                e_helps.append(get_help_text_normal(*h))
+            elements += [e_title] + e_helps
+        self.e = thorpy.make_ok_box(elements)
         self.b = thorpy.Element.make(size=thorpy.functions.get_screen_size())
         self.b.set_main_color((200,200,200,100))
         self.e.center()
