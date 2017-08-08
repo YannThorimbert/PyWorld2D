@@ -398,16 +398,13 @@ class GraphicalMap(PygameGrid):
 
 class WhiteLogicalMap(LogicalMap):
 
-    def __init__(self, hmap, actual_frames, outsides, zoom_sizes, nframes,
+    def __init__(self, actual_frames, outsides, zoom_sizes, nframes,
                     restrict_size, white_value=(255,255,255)):
         self.zoom_levels = list(range(len(zoom_sizes)))
         self.current_zoom_level = 0
         self.cell_sizes = zoom_sizes
         self.actual_frames = actual_frames
-        if restrict_size is None:
-            nx, ny = len(hmap), len(hmap[0])
-        else:
-            nx, ny = restrict_size
+        nx, ny = restrict_size
         BaseGrid.__init__(self, int(nx), int(ny))
         self.current_x = 0
         self.current_y = 0

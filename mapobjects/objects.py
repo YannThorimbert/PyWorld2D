@@ -19,7 +19,7 @@ class StaticObject:
 
     def copy(self):
         self.ncopies += 1
-        obj = MapObject(self.original_img)
+        obj = StaticObject(self.editor, self.original_img)
         obj.imgs = self.imgs
         if self.name:
             obj.name = self.name + " " + str(self.ncopies)
@@ -34,7 +34,7 @@ class StaticObject:
 
     def build_imgs(self):
         W,H = self.original_img.get_size()
-        w0 = float(sizes[0])
+        w0 = float(self.editor.zoom_cell_sizes[0])
         imgs = []
         for w in self.editor.zoom_cell_sizes:
             factor = w/w0

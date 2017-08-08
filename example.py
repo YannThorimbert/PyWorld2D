@@ -1,4 +1,4 @@
-import random
+import random, math
 import pygame
 from pygame.math import Vector2 as V2
 import thorpy
@@ -11,8 +11,11 @@ from rendering.camera import Camera
 from mapobjects.objects import StaticObject
 import saveload.io as io
 
+from editor.mapeditor import MapEditor
+
 ##thorpy.application.SHOW_FPS = True
 
+#StaticObject -> MapObject
 #zoom avec slider
 #help button
 #alerts pour autres trucs
@@ -49,7 +52,6 @@ import saveload.io as io
 
 #faire le outside en beachtiler?==> fonction speciale qui met en hauteur negative les bords
 
-from editor.mapeditor import MapEditor
 
 W,H = 800, 600 #screen size you want
 app = thorpy.Application((W,H))
@@ -72,7 +74,7 @@ me.menu_width = 200 #width of the right menu in pixels
 me.max_wanted_minimap_size = 128 #in pixels.
 
 me.refresh_derived_parameters()
-me.build_camera()
+
 
 
 ################################################################################
@@ -81,7 +83,7 @@ power = int(math.log2(max(desired_world_size)))
 if 2**power < max(desired_world_size):
     power += 1
 S = int(2**power)
-hmap = ng.generate_terrain(S, chunk)
+hmap = ng.generate_terrain(S, chunk=chunk)
 ng.normalize(hmap)
 ##hmap[2][1] = 0.7 #this is how you manually change the height of a cell
 
@@ -90,6 +92,7 @@ img_hmap = ng.build_surface(hmap)
 new_img_hmap = pygame.Surface(desired_world_size)
 new_img_hmap.blit(img_hmap, (0,0))
 img_hmap = new_img_hmap
+me.build_camera(img_hmap)
 
 ################################################################################
 print("Building tilers")
@@ -113,18 +116,18 @@ mediumwater_img = tm.get_mixed_tiles(water_img, black_img, 50)
 shore_img = tm.get_mixed_tiles(sand_img, water_img, 127) # alpha of water is 127
 thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 160)
 
-#build materials - we need at least one material whose hmax value is >= 1.0
+#build materials - we need at least one material whose hmax value is >= 1.0 <== c'est vrai?????
 #water movement is made by using a delta-x (dx_divider) and delta-y shifts,
 # here dx_divider = 10 and dy_divider = 8
 #hmax=0.1 means one will find deepwater only below height = 0.1
 deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
-mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
-water = me.add_material("Water", 0.55, water_img, 10, 8)
-shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
-sand = me.add_material("Sand", 0.62, sand_img)
-badlands = me.add_material("Grass", 0.8, grass_img)
-rock = me.add_material("Rock", 0.83, rock_img)
-snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
+##mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
+##water = me.add_material("Water", 0.55, water_img, 10, 8)
+##shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
+##sand = me.add_material("Sand", 0.62, sand_img)
+##badlands = me.add_material("Grass", 0.8, grass_img)
+##rock = me.add_material("Rock", 0.83, rock_img)
+##snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
 snow2 = me.add_material("Snow", float("inf"), white_img)
 #Outside material is mandatory. The only thing you can change is black_img
 outside = me.add_material("outside", -1, black_img)
@@ -137,7 +140,7 @@ me.build_materials(cell_radius_divider)
 
 
 lm = me.build_map(hmap, desired_world_size)
-lm.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
+lm.frame_slowness = 0.1*me.fps #frame will change every k*FPS [s]
 lm.cells[3][3].name = "Roflburg" #this is how we set the name of a cell
 me.set_map(lm) #we attach the map to the editor
 
@@ -164,7 +167,7 @@ ng.normalize(forest_map)
 for x,y in lm:
     h = forest_map[x][y]
     if 0.3 < h < 0.35 or 0.8 < h < 0.85: # a systematiser!!!!!!!!!!!!!!!!!!!!!!!
-        if lm.cells[x][y].material is me.materials["Grass"]:
+        if lm.cells[x][y].material is me.materials["Snow"]:
             for i in range(3):
                 if random.random() < 0.75:
                     obj = fir.add_copy_on_cell(lm.cells[x][y])
@@ -183,9 +186,9 @@ me.build_surfaces()
 ################################################################################
 dynamic_objects = []
 char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
-char1_img = thorpy.get_resized_image(char1_img, (zoom_cell_sizes[0]-1,)*2)
-char1 = MapObject(char1_img)
-char1.build_imgs(zoom_cell_sizes)
+char1_img = thorpy.get_resized_image(char1_img, (me.zoom_cell_sizes[0]-1,)*2)
+char1 = StaticObject(me, char1_img)
+char1.build_imgs()
 obj = char1.add_copy_on_cell(lm.cells[32][15])
 dynamic_objects.append(obj)
 
@@ -202,30 +205,38 @@ def set_show_grid_lines(value):
 
 e_hmap = thorpy.Image.make(img_hmap)
 e_hmap.stick_to("screen", "right", "right", False)
-e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEMOTION, func_reac_mousemotion))
-e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONDOWN, func_reac_click))
-e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONUP, func_reac_unclick))
+e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEMOTION, me.func_reac_mousemotion))
+e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONDOWN, me.func_reac_click))
+e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONUP, me.func_reac_unclick))
 
 
-thorpy.add_time_reaction(e_hmap, func_reac_time)
-thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_PLUS, increment_zoom, params={"value":-1})
-thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_MINUS, increment_zoom, params={"value":1})
+thorpy.add_time_reaction(e_hmap, me.func_reac_time)
+thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_PLUS, me.increment_zoom,
+                            params={"value":-1})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_MINUS, me.increment_zoom,
+                            params={"value":1})
 
 
 velocity = 0.2
-thorpy.add_keydown_reaction(e_hmap, pygame.K_LEFT, move_cam_and_refresh, params={"delta":(-velocity,0)})
-thorpy.add_keydown_reaction(e_hmap, pygame.K_RIGHT, move_cam_and_refresh, params={"delta":(velocity,0)})
-thorpy.add_keydown_reaction(e_hmap, pygame.K_UP, move_cam_and_refresh, params={"delta":(0,-velocity)})
-thorpy.add_keydown_reaction(e_hmap, pygame.K_DOWN, move_cam_and_refresh, params={"delta":(0,velocity)})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_LEFT, me.move_cam_and_refresh,
+                            params={"delta":(-velocity,0)})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_RIGHT, me.move_cam_and_refresh,
+                            params={"delta":(velocity,0)})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_UP, me.move_cam_and_refresh,
+                            params={"delta":(0,-velocity)})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_DOWN, me.move_cam_and_refresh,
+                            params={"delta":(0,velocity)})
 
-thorpy.add_keydown_reaction(e_hmap, pygame.K_g, set_show_grid_lines, params={"value":True})
-thorpy.add_keyup_reaction(e_hmap, pygame.K_g, set_show_grid_lines, params={"value":False})
+thorpy.add_keydown_reaction(e_hmap, pygame.K_g, me.set_show_grid_lines,
+                            params={"value":True})
+thorpy.add_keyup_reaction(e_hmap, pygame.K_g, me.set_show_grid_lines,
+                            params={"value":False})
 
 
 
 e_title_hmap = guip.get_title("Map")
 box_hmap = thorpy.Box.make([e_hmap])
-box_hmap.fit_children((BOX_HMAP_MARGIN,)*2)
+box_hmap.fit_children((me.box_hmap_margin,)*2)
 topbox = thorpy.make_group([e_title_hmap, box_hmap], "v")
 
 cell_info = gui.CellInfo(me.menu_rect.inflate((-10,0)).size,
@@ -284,7 +295,6 @@ box = thorpy.Element.make(elements=[e_zoom,
                             size=me.menu_rect.size)
 thorpy.store(box)
 box.stick_to("screen","right","right")
-
 
 thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
 
