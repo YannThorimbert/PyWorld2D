@@ -22,9 +22,9 @@ class MapEditor:
         self.box_hmap_margin = 20 #box of the minimap
         self.menu_width = 200
         self.zoom_cell_sizes = [20,16,10]
-        self.zoom_level = 0
         self.nframes = 16 #number of different tiles for one material (used for moving water)
         #
+        self.zoom_level = 0
         self.materials = {}
 
 
@@ -159,7 +159,7 @@ class MapEditor:
         surface.fill(color)
         return surface
 
-    def refresh_derived_constants(self, max_wanted_minimap_size):
+    def refresh_derived_parameters(self, max_wanted_minimap_size):
         self.cell_size = self.zoom_cell_sizes[self.zoom_level]
         self.cell_rect = pygame.Rect(0,0,self.cell_size,self.cell_size)
         self.max_minimap_size = (max_wanted_minimap_size,)*2

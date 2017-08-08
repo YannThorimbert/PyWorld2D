@@ -52,19 +52,25 @@ import saveload.io as io
 from editor.mapeditor import MapEditor
 
 W,H = 800, 600 #screen size you want
+app = thorpy.Application((W,H))
 
 #might be chosen by user:
+
 chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
 desired_world_size = (100,50) #in number of cells. Put a power of 2 for tilable maps
-zoom_cell_sizes = [20, 12, 8] #side in pixels of the map's square cells
 max_wanted_minimap_size = 128 #in pixels.
 
-#cell_radius = cell_size//radius_divider; change how "round" look cell transitions
+#cell_radius = cell_size//radius_divider
+# change how "round" look cell transitions
 cell_radius_divider = 8
 
-app = thorpy.Application((W,H))
 me = MapEditor()
-me.zoom_cell_sizes = zoom_cell_sizes
+me.zoom_cell_sizes = [20, 16, 12, 8] #side in pixels of the map's square cells
+me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
+me.fps = 60 #frame per second
+me.menu_width = 200 #width of the right menu in pixels
+
+me.refresh_derived_parameters()
 
 
 ################################################################################
@@ -132,37 +138,12 @@ badlands = me.add_material("Grass", 0.8, grass_img)
 rock = me.add_material("Rock", 0.83, rock_img)
 snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
 snow2 = me.add_material("Snow", float("inf"), white_img)
-space = me.add_material("Intergalactic Space", -float("inf"), black_img)
-
-#here water.imgs is a list of images list whose index refer to zoom level
+##space = me.add_material("Intergalactic Space", -1, black_img)
 
 print("Building material couples")
-##materials = [deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
-##material_couples = tm.get_material_couples(materials, cell_radius_divider)
 material_couples = tm.get_material_couples([shore,badlands], cell_radius_divider)
-##materials = [space,deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
-##material_couples = tm.get_material_couples(materials, cell_radius_divider)
-################################################################################
-#derived constants
-CELL_SIZE = None
-CELL_RECT = None
-MENU_SIZE = None
-MENU_RECT = None
-VIEWPORT_RECT = None
-MAX_MINIMAP_SIZE = None
-def refresh_derived_constants():
-    global CELL_SIZE, CELL_RECT, MAX_MINIMAP_SIZE, MENU_SIZE, MENU_RECT, VIEWPORT_RECT
-    CELL_SIZE = zoom_cell_sizes[CURRENT_ZOOM_LEVEL]
-    CELL_RECT = pygame.Rect(0,0,CELL_SIZE,CELL_SIZE)
-    MAX_MINIMAP_SIZE = (MAX_WANTED_MINIMAP_SIZE,)*2
-    MENU_SIZE = (MENU_WIDTH, H)
-    MENU_RECT = pygame.Rect((0,0),MENU_SIZE)
-    MENU_RECT.right = W
-    if MENU_RECT.w < MAX_MINIMAP_SIZE[0] + BOX_HMAP_MARGIN*2:
-        s = MENU_RECT.w - BOX_HMAP_MARGIN*2 - 2
-        MAX_MINIMAP_SIZE = (s,s)
-    VIEWPORT_RECT = pygame.Rect((0,0),(MENU_RECT.left,MENU_RECT.bottom))
-refresh_derived_constants()
+
+
 ################################################################################
 cam = Camera()
 
