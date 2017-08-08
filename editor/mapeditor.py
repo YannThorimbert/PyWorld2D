@@ -25,9 +25,22 @@ class MapEditor:
         self.nframes = 16 #number of different tiles for one material (used for moving water)
         self.max_wanted_minimap_size = 128 #in pixels.
         #
+        self.lm = None
         self.cam = None #camera, to be built later
+        self.map_rects
         self.zoom_level = 0
         self.materials = {}
+
+    def set_map(self, logical_map):
+        self.cam.set_map_data(logical_map)
+
+    def add_layer(self, white_value=(255,255,255)):
+        outsides = self.materials["outside"].imgs
+        lay = WhiteLogicalMap(hmap, self.map_rects, outsides, self.cell_sizes,
+                                self.nframes, cam.world_size, white_value)
+##        lay = WhiteLogicalMap(hmap, map_rects, outsides, desired_world_size,
+##                                white_value=white_value)
+        self.lm.add_layer(lay)
 
 
     def build_camera(self):
@@ -44,6 +57,7 @@ class MapEditor:
         cam.set_parameters(self.cell_size, self.viewport_rect, img_hmap,
                                 self.max_minimap_size)
         self.cam = cam
+        self.map_rects = map_rects
 
 
     def set_zoom(self, level):

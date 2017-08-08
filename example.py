@@ -113,20 +113,6 @@ mediumwater_img = tm.get_mixed_tiles(water_img, black_img, 50)
 shore_img = tm.get_mixed_tiles(sand_img, water_img, 127) # alpha of water is 127
 thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 160)
 
-#build tiles
-#water movement is made by using a delta-x (dx_divider) and delta-y shifts
-deepwaters = me.build_tiles(deepwater_img, dx_divider=10, dy_divider=8)
-mediumwaters = me.build_tiles(mediumwater_img, 10, 8)
-waters = me.build_tiles(water_img, 10, 8)
-shores = me.build_tiles(shore_img, 10, 8)
-sands = me.build_tiles(sand_img)
-grasses = me.build_tiles(grass_img)
-rocks = me.build_tiles(rock_img)
-snows1 = me.build_tiles(thinsnow_img)
-snows2 = me.build_tiles(white_img)
-outsides = me.build_tiles(black_img)
-
-
 #build materials
 #water movement is made by using a delta-x (dx_divider) and delta-y shifts,
 # here dx_divider = 10 and dy_divider = 8
@@ -140,7 +126,7 @@ badlands = me.add_material("Grass", 0.8, grass_img)
 rock = me.add_material("Rock", 0.83, rock_img)
 snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
 snow2 = me.add_material("Snow", float("inf"), white_img)
-##space = me.add_material("Intergalactic Space", -1, black_img)
+outside = me.add_material("Intergalactic Space", -1, black_img)
 
 print("Building material couples")
 material_couples = tm.get_material_couples([shore,badlands], cell_radius_divider)
@@ -154,10 +140,12 @@ lm.refresh_cell_heights(hmap)
 lm.refresh_cell_types()
 lm.cells[3][3].name = "Roflburg" #this is how we set the name of a cell
 
+me.set_map(lm)
+
 #layer2 is a superimposed map on which we decide to blit some static objects:
 layer2 = lm.add_layer()
 
-cam.set_map_data(lm)
+
 
 layer2.refresh_cell_heights(hmap)
 layer2.refresh_cell_types()
