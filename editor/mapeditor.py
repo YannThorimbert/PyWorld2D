@@ -10,6 +10,13 @@ import gui.elements as gui
 from rendering.camera import Camera
 import saveload.io as io
 
+def sgn(x):
+    if x < 0:
+        return -1.
+    elif x > 0:
+        return 1.
+    return 0.
+
 class MapEditor:
 
     def __init__(self):
@@ -73,11 +80,11 @@ class MapEditor:
         self.cam.set_gui_elements(e_hmap, box_hmap)
         ########################################################################
         self.e_zoom = thorpy.SliderX.make(self.menu_width//4, (0, 100),
-                                            "Zoom (%)", int)
+                                            "Zoom (%)", int, initial_value=100)
         def func_reac_zoom(e):
             levels = len(self.zoom_cell_sizes) - 1
             level = int(levels*self.e_zoom.get_value()/self.e_zoom.limvals[1])
-            self.set_zoom(level)
+            self.set_zoom(levels-level)
         ########################################################################
         self.cell_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size,
                          self.cell_rect.size, self.draw_no_update, e_hmap)
@@ -189,9 +196,17 @@ class MapEditor:
         self.cam = cam
         self.map_rects = map_rects
 
+    def set_key_scroll_velocity(self, velnorm):
+        for name in ["left", "right", "up", "down"]:
+            name = "k "+name
+            value = self.e_box.get_reaction(name).params["delta"]
+            value = sgn(value) * velnorm
+            self.e_box.get_reaction(name).params["delta"] = value
+
 
     def build_surfaces(self):
         self.lm.build_surfaces()
+        self.lm.blit_objects()
         for lay in self.lm.layers:
             lay.build_surfaces()
              #save BEFORE we blit objects (unless we want the objects to be part of the permanent map)
@@ -266,7 +281,16 @@ class MapEditor:
         pygame.draw.rect(self.screen, (255,255,255), self.cam.rmouse, 1)
 
     def draw_no_update(self):
+        #blit map frame
+        self.screen.fill((0,0,0))
+        #blit map
         self.cam.draw_grid(self.screen)
+        #blit grid
+        if self.show_grid_lines:
+            self.cam.draw_grid_lines(self.screen)
+        #blit objects
+        self.cam.draw_objects(self.screen, self.dynamic_objects)
+        #blit right pane and draw rect on minimap
         self.e_box.blit()
         pygame.draw.rect(self.screen, (255,255,255), self.cam.rmouse, 1)
 

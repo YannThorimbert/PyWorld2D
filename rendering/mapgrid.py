@@ -34,7 +34,6 @@ class LogicalCell:
     def get_altitude(self):
         return (self.h-0.6)*2e4
 
-
     def get_img_at_zoom(self, level):
         return self.map.get_img_at_zoom(self.coord, level)
 

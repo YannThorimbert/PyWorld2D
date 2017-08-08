@@ -1,6 +1,35 @@
 import random
 import pygame
 
+class RandomObjectDistribution:
+
+    def __init__(self, obj, hmap, master_map):
+        self.obj = obj
+        self.hmap = hmap
+        self.master_map = master_map
+        assert master_map.nx <= len(hmap) and master_map.ny <= len(hmap[0])
+        self.materials = []
+        self.max_density = 1
+        self.homogeneity = 0.5
+        self.zones_spread = [(0.,1.)]
+
+
+    def distribute_objects(self, layer):
+        for x,y in self.master_map:
+            h = self.hmap[x][y]
+            right_h = False
+            for heigth,spread in self.zones_spread:
+                if abs(h-heigth) < spread:
+                    right_h = True
+                    break
+            if right_h:
+                cell = self.master_map.cells[x][y]
+                if cell.material in self.materials:
+                    for i in range(self.max_density):
+                        if random.random() < self.homogeneity:
+                            obj = self.obj.add_copy_on_cell(cell)
+                            obj.randomize_relpos()
+                            layer.static_objects.append(obj)
 
 class MapObject:
 

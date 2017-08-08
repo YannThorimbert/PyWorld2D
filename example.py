@@ -8,24 +8,12 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-from mapobjects.objects import MapObject
+from mapobjects.objects import MapObject, RandomObjectDistribution
 import saveload.io as io
 
 from editor.mapeditor import MapEditor
 
-thorpy.application.SHOW_FPS = True
-
-
-#ne pas oublier d'ajouter thorpy
-#grid pas bien blittee sur bords
-
-#inverser sens du zoom slider
-#StaticObject -> MapObject
-
-#draw no update
-
-#help button
-#alerts pour autres trucs
+##thorpy.application.SHOW_FPS = True
 
 #space_material pour hauteurs negatives, qui sont mises sur la hmap apres que la miniature soit construite
 
@@ -50,6 +38,8 @@ thorpy.application.SHOW_FPS = True
 
 #finalement: editeur, load/save/quit
 
+#alerts pour autres trucs
+
 #v2:
 #quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
 
@@ -58,6 +48,8 @@ thorpy.application.SHOW_FPS = True
 #effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
 
 #faire le outside en beachtiler?==> fonction speciale qui met en hauteur negative les bords
+
+#ne pas oublier d'ajouter thorpy
 
 
 W,H = 800, 600 #screen size you want
@@ -127,15 +119,15 @@ thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 160)
 #water movement is made by using a delta-x (dx_divider) and delta-y shifts,
 # here dx_divider = 10 and dy_divider = 8
 #hmax=0.1 means one will find deepwater only below height = 0.1
-##deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
-##mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
+deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
+mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
 water = me.add_material("Water", 0.55, water_img, 10, 8)
-##shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
-##sand = me.add_material("Sand", 0.62, sand_img)
+shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
+sand = me.add_material("Sand", 0.62, sand_img)
 badlands = me.add_material("Grass", 0.8, grass_img)
-##rock = me.add_material("Rock", 0.83, rock_img)
-##snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
-##snow2 = me.add_material("Snow", float("inf"), white_img)
+rock = me.add_material("Rock", 0.83, rock_img)
+snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
+snow2 = me.add_material("Snow", float("inf"), white_img)
 #Outside material is mandatory. The only thing you can change is black_img
 outside = me.add_material("outside", -1, black_img)
 
@@ -164,27 +156,25 @@ fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
 fir0_img = thorpy.get_resized_image(fir0_img, (me.zoom_cell_sizes[0]-1,)*2)
 fir = MapObject(me, fir0_img)
 fir.build_imgs()
-fir.min_relpos[1] = 0. #to ensure the fir is not growing from another cell
+fir.max_relpos[1] = 0. #to ensure the fir is not growing from another cell
 
 
 #2) We use another hmap to decide where we want trees
-forest_map = ng.generate_terrain(S, n_octaves=3, persistance=1.7)
+forest_map = ng.generate_terrain(S, n_octaves=None, persistance=1.7)
 ng.normalize(forest_map)
 
-for x,y in lm:
-    h = forest_map[x][y]
-    if 0.3 < h < 0.35 or 0.8 < h < 0.85: # a systematiser!!!!!!!!!!!!!!!!!!!!!!!
-        if lm.cells[x][y].material is me.materials["Grass"]:
-            for i in range(3):
-                if random.random() < 0.75:
-                    obj = fir.add_copy_on_cell(lm.cells[x][y])
-                    obj.randomize_relpos()
-                    layer2.static_objects.append(obj)
+fir_distributor = RandomObjectDistribution(fir, forest_map, lm)
+fir_distributor.materials.append(me.materials["Grass"])
+fir_distributor.materials.append(me.materials["Rock"])
+fir_distributor.max_density = 3
+fir_distributor.homogeneity = 0.75
+fir_distributor.zones_spread = [(0.1, 0.02), (0.5,0.05), (0.9,0.05)]
+fir_distributor.distribute_objects(layer2)
+random.seed(0)
 
 #Now that we finished to add static objects, we generate the surface
 print("Building surfaces") #this is also a long process
 me.build_surfaces()
-
 
 ################################################################################
 #Here we add a dynamic object
