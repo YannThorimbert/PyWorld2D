@@ -31,6 +31,13 @@ class MapEditor:
         self.zoom_level = 0
         self.materials = {}
         self.material_couples = None
+        #
+        self.cursor_color = (255,255,0)
+        self.cursors = None
+        self.idx_cursor = 0
+        self.img_cursor = None
+        self.cursor_slowness = None
+
 
     def build_map(self, hmap, desired_world_size):
         outsides = self.materials["outside"].imgs
@@ -66,6 +73,21 @@ class MapEditor:
                                 self.max_minimap_size)
         self.cam = cam
         self.map_rects = map_rects
+
+
+    def build_surfaces(self):
+        lm.build_surfaces()
+        for lay in lm.layers:
+            lay.build_surfaces()
+             #save BEFORE we blit objects (unless we want the objects to be part of the permanent map)
+            lay.save_pure_surfaces()
+            lay.blit_objects()
+        #
+        self.cursors = gui.get_cursors(self.cell_rect.inflate((2,2)),
+                                        self.cursor_color)
+        self.idx_cursor = 0
+        self.img_cursor = self.cursors[self.idx_cursor]
+        self.cursor_slowness = int(0.3*self.fps)
 
 
     def set_zoom(self, level):

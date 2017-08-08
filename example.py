@@ -143,9 +143,9 @@ me.set_map(lm) #we attach the map to the editor
 
 ################################################################################
 print("Adding static objects")
-static_objects = []
 
 #1) We build a static object representing a Fir
+#we can use as many layers as we want.
 #layer2 is a superimposed map on which we decide to blit some static objects:
 layer2 = me.add_layer()
 fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
@@ -164,16 +164,20 @@ ng.normalize(forest_map)
 for x,y in lm:
     h = forest_map[x][y]
     if 0.3 < h < 0.35 or 0.8 < h < 0.85: # a systematiser!!!!!!!!!!!!!!!!!!!!!!!
-        if lm.cells[x][y].material is badlands:
+        if lm.cells[x][y].material is me.materials["Grass"]:
             for i in range(3):
                 if random.random() < 0.75:
                     obj = fir.add_copy_on_cell(lm.cells[x][y])
                     obj.randomize_relpos()
-                    static_objects.append(obj)
+                    layer2.static_objects.append(obj)
 ##                        print(x,y)
 ##                        xrel = random.random()/10.
 ##                        yrel = random.random()/10.
 ##                        layer2.blit_on_cell(fir0_img, x, y, xrel, yrel)
+
+#Now we finished to add static objects, we generate the surface
+print("Building untiled surfaces") #this is also a long process
+me.build_surfaces()
 
 
 ################################################################################
@@ -184,17 +188,6 @@ char1 = MapObject(char1_img)
 char1.build_imgs(zoom_cell_sizes)
 obj = char1.add_copy_on_cell(lm.cells[32][15])
 dynamic_objects.append(obj)
-
-
-################################################################################
-
-
-print("Building untiled surfaces")
-lm.build_surfaces()
-print("Builing object layer untiled surfaces()")
-layer2.build_surfaces(colorkey=(255,255,255))
-layer2.save_pure_surfaces() #save BEFORE we blit objects (unless we want the objects to be part of the permanent map)
-layer2.blit_objects(static_objects)
 
 
 ################################################################################
@@ -228,23 +221,19 @@ thorpy.add_keydown_reaction(e_hmap, pygame.K_DOWN, move_cam_and_refresh, params=
 thorpy.add_keydown_reaction(e_hmap, pygame.K_g, set_show_grid_lines, params={"value":True})
 thorpy.add_keyup_reaction(e_hmap, pygame.K_g, set_show_grid_lines, params={"value":False})
 
-def rofl():
-    layer2.reset_pure_surfaces()
-thorpy.add_keydown_reaction(e_hmap, pygame.K_SPACE, rofl)
 
-##commands = thorpy.commands.Commands(e_hmap)
-##thorpy.commands.playing(FPS)
-##commands.add_reaction(pygame.K_g, set_show_grid_lines)
-##commands.default_func = reinit_frame
 
 e_title_hmap = guip.get_title("Map")
 box_hmap = thorpy.Box.make([e_hmap])
 box_hmap.fit_children((BOX_HMAP_MARGIN,)*2)
 topbox = thorpy.make_group([e_title_hmap, box_hmap], "v")
 
-cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
-unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
-misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
+cell_info = gui.CellInfo(me.menu_rect.inflate((-10,0)).size,
+                         me.cell_rect.size, draw_no_update, e_hmap)
+unit_info = gui.CellInfo(me.menu_rect.inflate((-10,0)).size,
+                         me.cell_rect.size, draw_no_update, e_hmap)
+misc_info = gui.CellInfo(me.menu_rect.inflate((-10,0)).size,
+                         me.cell_rect.size, draw_no_update, e_hmap)
 
 help_box = gui.HelpBox([
 ("Move camera",
@@ -287,37 +276,28 @@ reac_zoom = thorpy.Reaction(reacts_to=thorpy.constants.THORPY_EVENT,
 e_hmap.add_reaction(reac_zoom)
 
 box = thorpy.Element.make(elements=[e_zoom,
-                                    topbox, #thorpy.Line.make(MENU_RECT.w-20),
-                                    misc_info.e, #thorpy.Line.make(MENU_RECT.w-20),
-                                    cell_info.e, #thorpy.Line.make(MENU_RECT.w-20),
-                                    unit_info.e, #thorpy.Line.make(MENU_RECT.w-20),
+                                    topbox, #thorpy.Line.make(me.menu_rect.w-20),
+                                    misc_info.e, #thorpy.Line.make(me.menu_rect.w-20),
+                                    cell_info.e, #thorpy.Line.make(me.menu_rect.w-20),
+                                    unit_info.e, #thorpy.Line.make(me.menu_rect.w-20),
                                     menu_button],
-                            size=MENU_RECT.size)
+                            size=me.menu_rect.size)
 thorpy.store(box)
 box.stick_to("screen","right","right")
 
 
-cam.set_elements(e_hmap, box_hmap)
-
-
-cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
-idx_cursor = 0
-img_cursor = cursors[idx_cursor]
-cursor_slowness = int(0.3*FPS)
-
-
 thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
-##thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
 
 ap = gui.AlertPool()
 e_help_move = gui.get_help_text("To move the map, drag it with", "<LBM>",
                                 "or hold", "<left shift>", "while moving mouse")
 ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
 
-set_zoom(0)
+me.cam.set_gui_elements(e_hmap, box_hmap)
+me.set_zoom(level=0)
+
 m = thorpy.Menu([box],fps=FPS)
 m.play()
-
 
 app.quit()
 

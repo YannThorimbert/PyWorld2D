@@ -91,6 +91,8 @@ class LogicalMap(BaseGrid):
         #
         self.refresh_cell_heights(hmap)
         self.refresh_cell_types()
+        self.colorkey = None #used at build_surface()
+        self.static_objects = []
 
     def add_layer(self, lay):
         lay.frame_slowness = self.frame_slowness
@@ -242,9 +244,9 @@ class LogicalMap(BaseGrid):
         y0 = self.current_y
         self.current_gm.draw(screen, topleft, x0, y0, dx_pix, dy_pix, self.t)
 
-    def build_surfaces(self, colorkey=None):
+    def build_surfaces(self):
         for gm in self.graphical_maps:
-            gm.build_surfaces(colorkey)
+            gm.build_surfaces(self.colorkey)
 
     def blit_img(self, imgs, coord, relpos): #this is permanent
         """Permanently blit images <imgs> corresponding to different zoom levels
@@ -261,7 +263,9 @@ class LogicalMap(BaseGrid):
             gm.surfaces = gm.pure_surfaces
             gm.save_pure_surfaces()
 
-    def blit_objects(self, objects): #this is permanent
+    def blit_objects(self, objects=None): #this is permanent
+        if objects is None:
+            objects = self.static_objects
         for obj in objects:
             self.blit_img(obj.imgs, obj.cell.coord, obj.relpos)
 
@@ -427,6 +431,8 @@ class WhiteLogicalMap(LogicalMap):
         #
         self.refresh_cell_heights()
         self.refresh_cell_types()
+        self.colorkey = white_value
+        self.static_objects = []
 
     def refresh_cell_heights(self):
         for x,y in self:

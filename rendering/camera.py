@@ -35,7 +35,7 @@ class Camera:
         self.rmouse.topleft = self.e_hmap.get_rect().topleft
         self.set_campos_from_rcam()
 
-    def set_elements(self, e_hmap, box_hmap):
+    def set_gui_elements(self, e_hmap, box_hmap):
         self.e_hmap = e_hmap
         self.box_hmap = box_hmap
         self.reinit_pos
@@ -43,7 +43,6 @@ class Camera:
     def set_map_data(self, lm):
         self.lm = lm
         assert lm.nx == self.world_size.x and lm.ny == self.world_size.y
-
 
     def get_dpix(self):
        x = (self.campos.x - self.rcam.x)*self.cell_rect.w
