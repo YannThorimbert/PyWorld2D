@@ -23,21 +23,44 @@ class MapEditor:
         self.menu_width = 200
         self.zoom_cell_sizes = [20,16,10]
         self.nframes = 16 #number of different tiles for one material (used for moving water)
+        self.max_wanted_minimap_size = 128 #in pixels.
         #
+        self.cam = None #camera, to be built later
         self.zoom_level = 0
         self.materials = {}
+
+
+    def build_camera(self):
+        cam = Camera()
+        map_rects = []
+        for level in range(self.zoom_cell_sizes):
+            self.zoom_level = level
+            self.refresh_derived_parameters()
+            cam.set_parameters(self.cell_size, self.viewport_rect, img_hmap,
+                                self.max_minimap_size)
+            map_rects.append(pygame.Rect(cam.map_rect))
+        self.zoom_level = 0
+        refresh_derived_constants()
+        cam.set_parameters(self.cell_size, self.viewport_rect, img_hmap,
+                                self.max_minimap_size)
+        self.cam = cam
 
 
     def set_zoom(self, level):
         center_before = cam.get_center_coord()
         self.zoom_level = level
         refresh_derived_constants()
-        cam.set_parameters(self.cell_size, self.viewport_rect, img_hmap, self.max_minimap_size)
+        cam.set_parameters(self.cell_size,
+                            self.viewport_rect,
+                            img_hmap,
+                            self.max_minimap_size)
         lm.set_zoom(level)
         cam.reinit_pos()
-        move_cam_and_refresh((center_before[0]-cam.nx//2,center_before[1]-cam.ny//2))
+        move_cam_and_refresh((center_before[0]-cam.nx//2,
+                                center_before[1]-cam.ny//2))
         #cursor
-        self.cursors = gui.get_self.cursors(self.cell_rect.inflate((2,2)), (255,255,0))
+        self.cursors = gui.get_self.cursors(self.cell_rect.inflate((2,2)),
+                                            (255,255,0))
         self.self.idx_cursor = 0
         self.img_cursos = self.cursors[self.self.idx_cursor]
         #
@@ -159,17 +182,18 @@ class MapEditor:
         surface.fill(color)
         return surface
 
-    def refresh_derived_parameters(self, max_wanted_minimap_size):
+    def refresh_derived_parameters(self):
         self.cell_size = self.zoom_cell_sizes[self.zoom_level]
         self.cell_rect = pygame.Rect(0,0,self.cell_size,self.cell_size)
-        self.max_minimap_size = (max_wanted_minimap_size,)*2
+        self.max_minimap_size = (self.max_wanted_minimap_size,)*2
         self.menu_size = (self.menu_width, self.H)
         self.menu_rect = pygame.Rect((0,0),self.menu_size)
         self.menu_rect.right = self.W
         if self.menu_rect.w < self.max_minimap_size[0] + self.box_hmap_margin*2:
             s = self.menu_rect.w - self.box_hmap_margin*2 - 2
             self.max_minimap_size = (s,s)
-        self.viewport_rect = pygame.Rect((0,0),(self.menu_rect.left,self.menu_rect.bottom))
+        self.viewport_rect = pygame.Rect((0,0),(self.menu_rect.left,
+                                                self.menu_rect.bottom))
 
     def build_tiles(self, img_full_size, dx_divider=0, dy_divider=0):
         return tm.build_tiles(img_full_size, self.zoom_cell_sizes, self.nframes,

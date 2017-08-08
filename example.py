@@ -58,7 +58,7 @@ app = thorpy.Application((W,H))
 
 chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
 desired_world_size = (100,50) #in number of cells. Put a power of 2 for tilable maps
-max_wanted_minimap_size = 128 #in pixels.
+
 
 #cell_radius = cell_size//radius_divider
 # change how "round" look cell transitions
@@ -69,6 +69,7 @@ me.zoom_cell_sizes = [20, 16, 12, 8] #side in pixels of the map's square cells
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 200 #width of the right menu in pixels
+me.max_wanted_minimap_size = 128 #in pixels.
 
 me.refresh_derived_parameters()
 
@@ -105,7 +106,7 @@ rock_img = me.load_image(rock)
 black_img = me.get_color_image((0,0,0))
 white_img = me.get_color_image((255,255,255))
 
-#mixed images - we superimpose differnt image to make a new one
+#mixed images - we superimpose different image to make a new one
 deepwater_img = tm.get_mixed_tiles(water_img, black_img, 127)
 mediumwater_img = tm.get_mixed_tiles(water_img, black_img, 50)
 shore_img = tm.get_mixed_tiles(sand_img, water_img, 127) # alpha of water is 127
@@ -145,17 +146,7 @@ material_couples = tm.get_material_couples([shore,badlands], cell_radius_divider
 
 
 ################################################################################
-cam = Camera()
-
-map_rects = []
-for i,level in enumerate(zoom_cell_sizes):
-    CURRENT_ZOOM_LEVEL = i
-    refresh_derived_constants()
-    cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
-    map_rects.append(pygame.Rect(cam.map_rect))
-CURRENT_ZOOM_LEVEL = 0 #reset to zero
-refresh_derived_constants()
-cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
+me.build_camera()
 
 
 ################################################################################
