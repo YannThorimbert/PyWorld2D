@@ -55,41 +55,37 @@ W,H = 800, 600 #screen size you want
 
 #might be chosen by user:
 chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
-desired_world_size = (100,50) #in number of cells
+desired_world_size = (100,50) #in number of cells. Put a power of 2 for tilable maps
 zoom_cell_sizes = [20, 12, 8] #side in pixels of the map's square cells
 max_wanted_minimap_size = 128 #in pixels.
 
+#cell_radius = cell_size//radius_divider; change how "round" look cell transitions
+cell_radius_divider = 8
 
 app = thorpy.Application((W,H))
 me = MapEditor()
 me.zoom_cell_sizes = zoom_cell_sizes
 
 
-
 ################################################################################
 print("Building hmap")
-
 power = int(math.log2(max(desired_world_size)))
 if 2**power < max(desired_world_size):
     power += 1
 S = int(2**power)
-
-
-
 hmap = ng.generate_terrain(S, chunk)
 ng.normalize(hmap)
-hmap[2][1] = 0.7
-hmap[S-1][S-1] = 1.
-img_hmap = ng.build_surface(hmap)
+##hmap[2][1] = 0.7 #this is how you manually change the height of a cell
 
-#possibility to use other sizes:
+#Here we build the miniature map image
+img_hmap = ng.build_surface(hmap)
 new_img_hmap = pygame.Surface(desired_world_size)
 new_img_hmap.blit(img_hmap, (0,0))
 img_hmap = new_img_hmap
 
 ################################################################################
 print("Building tilers")
-#Here we arbitrary choose how to interpret height as type of terrain
+#Here and below we arbitrary choose how to interpret height as type of terrain
 water = "./rendering/tiles/water1.png"
 sand = "./rendering/tiles/sand1.jpg"
 grass = "./rendering/tiles/grass1.png"
@@ -107,18 +103,19 @@ deepwater = tm.get_mixed_tiles(water_img, black_img, 127)
 mediumwater = tm.get_mixed_tiles(water_img, black_img,50)
 shore = tm.get_mixed_tiles(sand_img, water_img, 127)  #alpha of water is 127
 thinsnow = tm.get_mixed_tiles(rock_img, white_img, 160)
+
 #build tiles
-deepwaters = tm.build_tiles(deepwater, ZOOM_CELL_SIZES, NFRAMES,
-                            dx_divider=10, dy_divider=8) #water movement
-mediumwaters = tm.build_tiles(mediumwater, ZOOM_CELL_SIZES, NFRAMES, 10, 8)
-waters = tm.build_tiles(water_img, ZOOM_CELL_SIZES, NFRAMES, 10, 8)
-shores = tm.build_tiles(shore, ZOOM_CELL_SIZES, NFRAMES, 10, 8)
-sands = tm.build_tiles(sand_img, ZOOM_CELL_SIZES, NFRAMES)
-grasses = tm.build_tiles(grass_img, ZOOM_CELL_SIZES, NFRAMES)
-rocks = tm.build_tiles(rock_img, ZOOM_CELL_SIZES, NFRAMES)
-snows1 = tm.build_tiles(thinsnow, ZOOM_CELL_SIZES, NFRAMES)
-snows2 = tm.build_tiles(white_img, ZOOM_CELL_SIZES, NFRAMES)
-outsides = tm.build_tiles(black_img, ZOOM_CELL_SIZES, NFRAMES)
+#water movement is made by using a delta-x (dx_divider) and delta-y shifts
+deepwaters = me.build_tiles(deepwater, dx_divider=10, dy_divider=8)
+mediumwaters = me.build_tiles(mediumwater, 10, 8)
+waters = me.build_tiles(water_img, 10, 8)
+shores = me.build_tiles(shore, 10, 8)
+sands = me.build_tiles(sand_img)
+grasses = me.build_tiles(grass_img)
+rocks = me.build_tiles(rock_img)
+snows1 = me.build_tiles(thinsnow)
+snows2 = me.build_tiles(white_img)
+outsides = me.build_tiles(black_img)
 #build materials
 deepwater = tm.Material("Very deep water", 0.1, deepwaters)
 mediumwater = tm.Material("Deep water", 0.4, mediumwaters)
@@ -134,10 +131,10 @@ space = tm.Material("Space", -float("inf"), outsides)
 
 print("Building material couples")
 ##materials = [deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
-##material_couples = tm.get_material_couples(materials, CELL_RADIUS_DIVIDER)
-material_couples = tm.get_material_couples([shore,badlands], CELL_RADIUS_DIVIDER)
+##material_couples = tm.get_material_couples(materials, cell_radius_divider)
+material_couples = tm.get_material_couples([shore,badlands], cell_radius_divider)
 ##materials = [space,deepwater, mediumwater, water, shore, sand, badlands, rock, snow1, snow2]
-##material_couples = tm.get_material_couples(materials, CELL_RADIUS_DIVIDER)
+##material_couples = tm.get_material_couples(materials, cell_radius_divider)
 ################################################################################
 #derived constants
 CELL_SIZE = None
@@ -148,7 +145,7 @@ VIEWPORT_RECT = None
 MAX_MINIMAP_SIZE = None
 def refresh_derived_constants():
     global CELL_SIZE, CELL_RECT, MAX_MINIMAP_SIZE, MENU_SIZE, MENU_RECT, VIEWPORT_RECT
-    CELL_SIZE = ZOOM_CELL_SIZES[CURRENT_ZOOM_LEVEL]
+    CELL_SIZE = zoom_cell_sizes[CURRENT_ZOOM_LEVEL]
     CELL_RECT = pygame.Rect(0,0,CELL_SIZE,CELL_SIZE)
     MAX_MINIMAP_SIZE = (MAX_WANTED_MINIMAP_SIZE,)*2
     MENU_SIZE = (MENU_WIDTH, H)
@@ -163,7 +160,7 @@ refresh_derived_constants()
 cam = Camera()
 
 map_rects = []
-for i,level in enumerate(ZOOM_CELL_SIZES):
+for i,level in enumerate(zoom_cell_sizes):
     CURRENT_ZOOM_LEVEL = i
     refresh_derived_constants()
     cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
@@ -182,7 +179,7 @@ frame_map.set_colorkey((255,255,255))
 
 
 ################################################################################
-layer2 = WhiteLogicalMap(hmap, map_rects, outsides, ZOOM_CELL_SIZES, NFRAMES,
+layer2 = WhiteLogicalMap(hmap, map_rects, outsides,
                             cam.world_size, white_value=(255,255,255))
 
 ################################################################################
@@ -201,10 +198,10 @@ layer2.refresh_cell_types()
 ################################################################################
 print("Adding objects")
 fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
-fir0_img = thorpy.get_resized_image(fir0_img, (ZOOM_CELL_SIZES[0]-1,)*2)
+fir0_img = thorpy.get_resized_image(fir0_img, (zoom_cell_sizes[0]-1,)*2)
 
 char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
-char1_img = thorpy.get_resized_image(char1_img, (ZOOM_CELL_SIZES[0]-1,)*2)
+char1_img = thorpy.get_resized_image(char1_img, (zoom_cell_sizes[0]-1,)*2)
 
 forest_map = ng.generate_terrain(S,n_octaves=3) #generer sur map + grande et reduite, ou alors avec persistance +- faible suivant ce qu'on veut
 ng.normalize(forest_map)
@@ -213,10 +210,10 @@ ng.normalize(forest_map)
 ##objects
 
 fir = MapObject(fir0_img)
-fir.build_imgs(ZOOM_CELL_SIZES)
+fir.build_imgs(zoom_cell_sizes)
 
 char1 = MapObject(char1_img)
-char1.build_imgs(ZOOM_CELL_SIZES)
+char1.build_imgs(zoom_cell_sizes)
 
 static_objects = []
 dynamic_objects = []
@@ -331,7 +328,7 @@ menu_button.user_params = {"element":menu_button_launched}
 e_zoom = thorpy.SliderX.make(MENU_WIDTH//4, (0, 100), "Zoom (%)", int)
 def troll(e):
     print("orofl",e_zoom.get_value())
-    levels = len(ZOOM_CELL_SIZES) - 1
+    levels = len(zoom_cell_sizes) - 1
     level = int(levels*e_zoom.get_value()/e_zoom.limvals[1])
     print(level)
     set_zoom(level)

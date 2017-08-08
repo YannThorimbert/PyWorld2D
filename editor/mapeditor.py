@@ -16,14 +16,13 @@ class MapEditor:
     def __init__(self):
         self.screen = thorpy.get_screen()
         self.W, self.H = screen.size #screen size, wont change
+        #values below are default values; they can change and
+        # self.refresh_derived_parameters() must be called
         self.fps = 80
         self.box_hmap_margin = 20 #box of the minimap
         self.menu_width = 200
-        MAX_WANTED_MINIMAP_SIZE = 128
-        ##self.zoom_cell_sizes = [32, 20, 14, 8, 4]
-        self.zoom_cell_sizes = None
+        self.zoom_cell_sizes = [20,16,10]
         self.zoom_level = 0
-        CELL_RADIUS_DIVIDER = 8 #cell_radius = cell_size//radius_divider
         self.nframes = 16 #number of different tiles for one material (used for moving water)
         #
 
@@ -172,6 +171,10 @@ class MapEditor:
             s = self.menu_rect.w - self.box_hmap_margin*2 - 2
             self.max_minimap_size = (s,s)
         self.viewport_rect = pygame.Rect((0,0),(self.menu_rect.left,self.menu_rect.bottom))
+
+    def build_tiles(self, img_full_size, dx_divider=0, dy_divider=0):
+        return tm.build_tiles(img_full_size, self.zoom_cell_sizes, self.nframes,
+                                dx_divider, dy_divider)
 
 
 ################################################################################
