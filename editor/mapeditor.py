@@ -14,7 +14,7 @@ class MapEditor:
 
     def __init__(self):
         self.screen = thorpy.get_screen()
-        self.W, self.H = self.screen.get_size() #screen size, wont change
+        self.W, self.H = self.screen.get_size() #self.screen size, wont change
         #values below are default values; they can change and
         # self.refresh_derived_parameters() must be called
         self.fps = 80
@@ -23,6 +23,7 @@ class MapEditor:
         self.zoom_cell_sizes = [20,16,10]
         self.nframes = 16 #number of different tiles for one material (used for moving water)
         self.max_wanted_minimap_size = 128 #in pixels.
+        self.show_grid_lines = False
         #
         self.lm = None
         self.cam = None #camera, to be built later
@@ -30,12 +31,95 @@ class MapEditor:
         self.zoom_level = 0
         self.materials = {}
         self.material_couples = None
+        self.dynamic_objects = []
+        self.last_cell_clicked = None
         #
         self.cursor_color = (255,255,0)
         self.cursors = None
         self.idx_cursor = 0
         self.img_cursor = None
         self.cursor_slowness = None
+        #gui
+        self.e_box = None
+        self.cell_info = None
+        self.unit_info = None
+        self.misc_info = None
+        self.e_hmap = None
+        self.box_hmap = None
+        #
+        self.ap = gui.AlertPool()
+        self.e_ap_move = gui.get_help_text("To move the map, drag it with", "<LBM>",
+                                        "or hold", "<left shift>", "while moving mouse")
+        self.ap.add_alert_countdown(self.e_ap_move, guip.DELAY_HELP * self.fps)
+
+    def build_gui_elements(self): #worst function ever
+        e_hmap = thorpy.Image.make(self.cam.img_hmap)
+        e_hmap.stick_to("screen", "right", "right", False)
+        e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEMOTION,
+                                            self.func_reac_mousemotion))
+        e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONDOWN,
+                                            self.func_reac_click))
+        e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONUP,
+                                            self.func_reac_unclick))
+        self.e_hmap = e_hmap
+        e_title_hmap = guip.get_title("Map")
+        box_hmap = thorpy.Box.make([e_hmap])
+        box_hmap.fit_children((self.box_hmap_margin,)*2)
+        thorpy.makeup.add_basic_help(box_hmap,
+                                     "Click to move camera on miniature map")
+        self.topbox = thorpy.make_group([e_title_hmap, box_hmap], "v")
+        self.box_hmap = box_hmap
+        ########################################################################
+        self.cam.set_gui_elements(e_hmap, box_hmap)
+        ########################################################################
+        self.e_zoom = thorpy.SliderX.make(self.menu_width//4, (0, 100),
+                                            "Zoom (%)", int)
+        def func_reac_zoom(e):
+            levels = len(self.zoom_cell_sizes) - 1
+            level = int(levels*self.e_zoom.get_value()/self.e_zoom.limvals[1])
+            self.set_zoom(level)
+        ########################################################################
+        self.cell_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size,
+                         self.cell_rect.size, self.draw_no_update, e_hmap)
+        self.unit_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size,
+                         self.cell_rect.size, self.draw_no_update, e_hmap)
+        self.misc_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size,
+                         self.cell_rect.size, self.draw_no_update, e_hmap)
+        self.menu_button = thorpy.make_menu_button()
+        ########################################################################
+        self.e_box = thorpy.Element.make(elements=[self.e_zoom,
+                                                self.topbox,
+                                                self.misc_info.e,
+                                                self.cell_info.e,
+                                                self.unit_info.e,
+                                                self.menu_button],
+                                        size=self.menu_rect.size)
+        thorpy.store(self.e_box)
+        self.e_box.stick_to("screen","right","right")
+        ########################################################################
+        reac_zoom = thorpy.Reaction(reacts_to=thorpy.constants.THORPY_EVENT,
+                                    reac_func=func_reac_zoom,
+                                    event_args={"id":thorpy.constants.EVENT_SLIDE,
+                                                "el":self.e_zoom})
+        self.e_box.add_reaction(reac_zoom)
+        ########################################################################
+        self.help_box = gui.HelpBox([
+        ("Move camera",
+            [("To move the map, drag it with", "<LMB>",
+                "or hold", "<LEFT SHIFT>", "while moving mouse."),
+             ("The minimap on the upper right can be clicked or hold with",
+                "<LMB>", "in order to move the camera."),
+             ("The","<KEYBOARD ARROWS>",
+              "can also be used to scroll the map view.")]),
+
+        ("Zoom",
+            [("Use the","zoom slider","or","<NUMPAD +/- >",
+              "to change zoom level."),
+             ("You can also alternate zoom levels by pressing","<RMB>",".")]),
+
+        ("Miscellaneous",
+            [("Press","<g>","to toggle grid lines display.")])
+        ])
 
 
     def build_map(self, hmap, desired_world_size):
@@ -90,130 +174,127 @@ class MapEditor:
 
 
     def set_zoom(self, level):
-        center_before = cam.get_center_coord()
+        center_before = self.cam.get_center_coord()
         self.zoom_level = level
-        refresh_derived_constants()
-        cam.set_parameters(self.cell_size,
+        self.refresh_derived_parameters()
+        self.cam.set_parameters(self.cell_size,
                             self.viewport_rect,
-                            img_hmap,
+                            self.cam.img_hmap,
                             self.max_minimap_size)
-        lm.set_zoom(level)
-        cam.reinit_pos()
-        move_cam_and_refresh((center_before[0]-cam.nx//2,
-                                center_before[1]-cam.ny//2))
+        self.lm.set_zoom(level)
+        self.cam.reinit_pos()
+        self.move_cam_and_refresh((center_before[0]-self.cam.nx//2,
+                                    center_before[1]-self.cam.ny//2))
         #cursor
-        self.cursors = gui.get_self.cursors(self.cell_rect.inflate((2,2)),
-                                            (255,255,0))
-        self.self.idx_cursor = 0
-        self.img_cursos = self.cursors[self.self.idx_cursor]
+        self.cursors = gui.get_cursors(self.cell_rect.inflate((2,2)),
+                                            self.cursor_color)
+        self.idx_cursor = 0
+        self.img_cursors = self.cursors[self.idx_cursor]
         #
-        unblit_map()
-        draw_no_update()
-
+        self.unblit_map()
+        self.draw_no_update()
 
 
     def increment_zoom(self, value):
         self.zoom_level += value
         self.zoom_level %= len(self.zoom_cell_sizes)
-        set_zoom(self.zoom_level)
+        self.set_zoom(self.zoom_level)
 
     def update_cell_info(self):
         mousepos = pygame.mouse.get_pos()
-        cell = cam.get_cell(mousepos)
+        cell = self.cam.get_cell(mousepos)
         if cell:
-    ##        pygame.draw.rect(screen, (0,0,0), get_rect_at_pix(mousepos), 1)
-            rcursor = self.img_cursos.get_rect()
-            rcursor.center = cam.get_rect_at_pix(mousepos).center
-            screen.blit(self.img_cursos, rcursor)
-            if cell_info.cell is not cell:
-                cell_info.update_e(cell)
+    ##        pygame.draw.rect(self.screen, (0,0,0), get_rect_at_pix(mousepos), 1)
+            rcursor = self.img_cursors.get_rect()
+            rcursor.center = self.cam.get_rect_at_pix(mousepos).center
+            self.screen.blit(self.img_cursors, rcursor)
+            if self.cell_info.cell is not cell:
+                self.cell_info.update_e(cell)
     ##        if cell.objects:
     ##            print(cell.objects)
 
     def unblit_map(self):
-        pygame.draw.rect(screen, (0,0,0), cam.map_rect)
+        pygame.draw.rect(self.screen, (0,0,0), self.cam.map_rect)
 
     def draw(self):
-        cam.set_rmouse_from_rcam()
+        self.cam.set_rmouse_from_rcam()
         #blit map frame
-        screen.fill((0,0,0))
+        self.screen.fill((0,0,0))
         #blit map
-        cam.draw_grid(screen)
+        self.cam.draw_grid(self.screen)
         #blit grid
-        if show_grid_lines:
-            cam.draw_grid_lines(screen)
+        if self.show_grid_lines:
+            self.cam.draw_grid_lines(self.screen)
         #blit objects
-        cam.draw_objects(screen, dynamic_objects)
+        self.cam.draw_objects(self.screen, self.dynamic_objects)
         #update right pane
-        update_cell_info()
+        self.update_cell_info()
         #blit right pane and draw rect on minimap
-        box.blit()
-        pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
+        self.e_box.blit()
+        pygame.draw.rect(self.screen, (255,255,255), self.cam.rmouse, 1)
 
     def draw_no_update(self):
-        cam.draw_grid(screen)
-        box.blit()
-        pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
+        self.cam.draw_grid(self.screen)
+        self.e_box.blit()
+        pygame.draw.rect(self.screen, (255,255,255), self.cam.rmouse, 1)
 
     def func_reac_time(self):
-        process_mouse_navigation()
-        draw()
-        ap.refresh()
-        ap.draw(screen, 20,20)
-        pygame.display.flip()
+        self.process_mouse_navigation()
+        self.draw()
+        self.ap.refresh()
+        self.ap.draw(self.screen, 20,20)
         #
-        lm.next_frame()
-        if lm.tot_time%cursor_slowness == 0:
+        self.lm.next_frame()
+        if self.lm.tot_time%self.cursor_slowness == 0:
             self.idx_cursor = (self.idx_cursor+1)%len(self.cursors)
-            self.img_cursos = self.cursors[self.idx_cursor]
+            self.img_cursors = self.cursors[self.idx_cursor]
 
 
     def func_reac_click(self, e):
         if e.button == 1: #left click
-            if box_hmap.get_rect().collidepoint(e.pos):
-                cam.center_on(e.pos)
+            if self.box_hmap.get_rect().collidepoint(e.pos):
+                self.cam.center_on(e.pos)
         elif e.button == 3: #right click
-            print("Uh")
-            increment_zoom(1)
+            self.increment_zoom(1)
 
     def func_reac_unclick(self, e):
         if e.button == 1:
-            cell = cam.get_cell(e.pos)
+            cell = self.cam.get_cell(e.pos)
             if cell:
                 if cell is not self.last_cell_clicked:
-                    if not cell_info.launched:
+                    if not self.cell_info.launched:
                         self.last_cell_clicked = cell
-                        cell_info.launch_em(cell, e.pos, cam.map_rect)
+                        self.cell_info.launch_em(cell, e.pos, self.cam.map_rect)
             self.last_cell_clicked = None
 
     def func_reac_mousemotion(self, e):
     ##    if pygame.key.get_mods() & pygame.KMOD_CTRL:
         if pygame.mouse.get_pressed()[0]:
-            if box_hmap.get_rect().collidepoint(e.pos):
-                cam.center_on(e.pos)
-            elif cam.map_rect.collidepoint(e.pos):
-                delta = -V2(e.rel)/cam.cell_rect.w #assuming square cells
-                move_cam_and_refresh(delta)
-                self.last_cell_clicked = cam.get_cell(e.pos)
-                ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * self.fps)
+            if self.box_hmap.get_rect().collidepoint(e.pos):
+                self.cam.center_on(e.pos)
+            elif self.cam.map_rect.collidepoint(e.pos):
+                delta = -V2(e.rel)/self.cam.cell_rect.w #assuming square cells
+                self.move_cam_and_refresh(delta)
+                self.last_cell_clicked = self.cam.get_cell(e.pos)
+                self.ap.add_alert_countdown(self.e_ap_move, guip.DELAY_HELP * self.fps)
 
     def move_cam_and_refresh(self, delta):
-        cam.move(delta)
-        cam.set_mg_pos_from_rcam()
+        self.cam.move(delta)
+        self.cam.set_mg_pos_from_rcam()
 
     def process_mouse_navigation(self): #cam can move even with no mousemotion!
         if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
             pos = pygame.mouse.get_pos()
-            d = V2(pos) - cam.map_rect.center
+            d = V2(pos) - self.cam.map_rect.center
             if d != (0,0):
                 intensity = 2e-8*d.length_squared()**1.5
                 if intensity > 1.:
                     intensity = 1.
                 d.scale_to_length(intensity)
-                delta = V2(cam.correct_move(d))
-                cam.move(delta)
-                cam.set_mg_pos_from_rcam()
-                ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * self.fps)
+                delta = V2(self.cam.correct_move(d))
+                self.cam.move(delta)
+                self.cam.set_mg_pos_from_rcam()
+                self.ap.add_alert_countdown(self.e_ap_move, guip.DELAY_HELP * self.fps)
 
 
     def load_image(self, fn):

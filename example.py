@@ -13,10 +13,13 @@ import saveload.io as io
 
 from editor.mapeditor import MapEditor
 
-##thorpy.application.SHOW_FPS = True
+thorpy.application.SHOW_FPS = True
 
+#inverser sens du zoom slider
 #StaticObject -> MapObject
-#zoom avec slider
+
+#draw no update
+
 #help button
 #alerts pour autres trucs
 
@@ -120,15 +123,15 @@ thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 160)
 #water movement is made by using a delta-x (dx_divider) and delta-y shifts,
 # here dx_divider = 10 and dy_divider = 8
 #hmax=0.1 means one will find deepwater only below height = 0.1
-deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
+##deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
 ##mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
-##water = me.add_material("Water", 0.55, water_img, 10, 8)
+water = me.add_material("Water", 0.55, water_img, 10, 8)
 ##shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
 ##sand = me.add_material("Sand", 0.62, sand_img)
-##badlands = me.add_material("Grass", 0.8, grass_img)
+badlands = me.add_material("Grass", 0.8, grass_img)
 ##rock = me.add_material("Rock", 0.83, rock_img)
 ##snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
-snow2 = me.add_material("Snow", float("inf"), white_img)
+##snow2 = me.add_material("Snow", float("inf"), white_img)
 #Outside material is mandatory. The only thing you can change is black_img
 outside = me.add_material("outside", -1, black_img)
 
@@ -167,7 +170,7 @@ ng.normalize(forest_map)
 for x,y in lm:
     h = forest_map[x][y]
     if 0.3 < h < 0.35 or 0.8 < h < 0.85: # a systematiser!!!!!!!!!!!!!!!!!!!!!!!
-        if lm.cells[x][y].material is me.materials["Snow"]:
+        if lm.cells[x][y].material is me.materials["Grass"]:
             for i in range(3):
                 if random.random() < 0.75:
                     obj = fir.add_copy_on_cell(lm.cells[x][y])
@@ -184,129 +187,61 @@ me.build_surfaces()
 
 
 ################################################################################
-dynamic_objects = []
 char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
 char1_img = thorpy.get_resized_image(char1_img, (me.zoom_cell_sizes[0]-1,)*2)
 char1 = StaticObject(me, char1_img)
 char1.build_imgs()
 obj = char1.add_copy_on_cell(lm.cells[32][15])
-dynamic_objects.append(obj)
+me.dynamic_objects.append(obj)
 
 
 ################################################################################
 print("Building GUI")
-cell_clicked = None
-show_grid_lines = False
+me.build_gui_elements()
 
-def set_show_grid_lines(value):
-    global show_grid_lines
-    show_grid_lines = value
-
-
-e_hmap = thorpy.Image.make(img_hmap)
-e_hmap.stick_to("screen", "right", "right", False)
-e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEMOTION, me.func_reac_mousemotion))
-e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONDOWN, me.func_reac_click))
-e_hmap.add_reaction(thorpy.Reaction(pygame.MOUSEBUTTONUP, me.func_reac_unclick))
-
-
-thorpy.add_time_reaction(e_hmap, me.func_reac_time)
-thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_PLUS, me.increment_zoom,
+def func_reac_time(): #here put wathever you want, in addition to me's reac
+    me.func_reac_time()
+    pygame.display.flip()
+thorpy.add_time_reaction(me.e_box, func_reac_time)
+thorpy.add_keydown_reaction(me.e_box, pygame.K_KP_PLUS, me.increment_zoom,
                             params={"value":-1})
-thorpy.add_keydown_reaction(e_hmap, pygame.K_KP_MINUS, me.increment_zoom,
+thorpy.add_keydown_reaction(me.e_box, pygame.K_KP_MINUS, me.increment_zoom,
                             params={"value":1})
 
 
 velocity = 0.2
-thorpy.add_keydown_reaction(e_hmap, pygame.K_LEFT, me.move_cam_and_refresh,
+thorpy.add_keydown_reaction(me.e_box, pygame.K_LEFT, me.move_cam_and_refresh,
                             params={"delta":(-velocity,0)})
-thorpy.add_keydown_reaction(e_hmap, pygame.K_RIGHT, me.move_cam_and_refresh,
+thorpy.add_keydown_reaction(me.e_box, pygame.K_RIGHT, me.move_cam_and_refresh,
                             params={"delta":(velocity,0)})
-thorpy.add_keydown_reaction(e_hmap, pygame.K_UP, me.move_cam_and_refresh,
+thorpy.add_keydown_reaction(me.e_box, pygame.K_UP, me.move_cam_and_refresh,
                             params={"delta":(0,-velocity)})
-thorpy.add_keydown_reaction(e_hmap, pygame.K_DOWN, me.move_cam_and_refresh,
+thorpy.add_keydown_reaction(me.e_box, pygame.K_DOWN, me.move_cam_and_refresh,
                             params={"delta":(0,velocity)})
 
-thorpy.add_keydown_reaction(e_hmap, pygame.K_g, me.set_show_grid_lines,
-                            params={"value":True})
-thorpy.add_keyup_reaction(e_hmap, pygame.K_g, me.set_show_grid_lines,
-                            params={"value":False})
+
+#add
+def toggle_show_grid_lines(value):
+    me.show_grid_lines = not(me.show_grid_lines)
+thorpy.add_keydown_reaction(me.e_box, pygame.K_g, toggle_show_grid_lines)
 
 
-
-e_title_hmap = guip.get_title("Map")
-box_hmap = thorpy.Box.make([e_hmap])
-box_hmap.fit_children((me.box_hmap_margin,)*2)
-topbox = thorpy.make_group([e_title_hmap, box_hmap], "v")
-
-cell_info = gui.CellInfo(me.menu_rect.inflate((-10,0)).size,
-                         me.cell_rect.size, draw_no_update, e_hmap)
-unit_info = gui.CellInfo(me.menu_rect.inflate((-10,0)).size,
-                         me.cell_rect.size, draw_no_update, e_hmap)
-misc_info = gui.CellInfo(me.menu_rect.inflate((-10,0)).size,
-                         me.cell_rect.size, draw_no_update, e_hmap)
-
-help_box = gui.HelpBox([
-("Move camera",
-    [("To move the map, drag it with", "<LMB>",
-        "or hold", "<LEFT SHIFT>", "while moving mouse."),
-     ("The minimap on the upper right can be clicked or hold with","<LMB>",
-        "in order to move the camera."),
-     ("The","<KEYBOARD ARROWS>", "can also be used to scroll the map view.")]),
-("Zoom",
-    [("Use the","zoom slider","or","<NUMPAD +/- >","to change zoom level."),
-     ("You can also alternate zoom levels by pressing","<RMB>",".")])])
-
-
+#here you can add/remove buttons to the menu ###################################
 e_quit = thorpy.make_button("Quit game", thorpy.functions.quit_func)
-e_save = thorpy.make_button("Save", io.ask_save, {"editor":None})
+e_save = thorpy.make_button("Save", io.ask_save, {"editor":me})
 e_load = thorpy.make_button("Load", io.ask_load)
 
-menu_button = thorpy.make_menu_button()
-menu_button_launched = thorpy.make_ok_box([help_box.launcher,
+launched_menu = thorpy.make_ok_box([ me.help_box.launcher,
                                             e_save,
                                             e_load,
                                             e_quit])
-menu_button_launched.center()
+launched_menu.center()
+me.menu_button.user_func = thorpy.launch_blocking
+me.menu_button.user_params = {"element":launched_menu}
+# ##############################################################################
 
-menu_button.user_func = thorpy.launch_blocking
-menu_button.user_params = {"element":menu_button_launched}
-
-
-e_zoom = thorpy.SliderX.make(MENU_WIDTH//4, (0, 100), "Zoom (%)", int)
-def troll(e):
-    print("orofl",e_zoom.get_value())
-    levels = len(zoom_cell_sizes) - 1
-    level = int(levels*e_zoom.get_value()/e_zoom.limvals[1])
-    print(level)
-    set_zoom(level)
-reac_zoom = thorpy.Reaction(reacts_to=thorpy.constants.THORPY_EVENT,
-                            reac_func=troll,
-                            event_args={"id":thorpy.constants.EVENT_SLIDE,
-                                        "el":e_zoom})
-e_hmap.add_reaction(reac_zoom)
-
-box = thorpy.Element.make(elements=[e_zoom,
-                                    topbox, #thorpy.Line.make(me.menu_rect.w-20),
-                                    misc_info.e, #thorpy.Line.make(me.menu_rect.w-20),
-                                    cell_info.e, #thorpy.Line.make(me.menu_rect.w-20),
-                                    unit_info.e, #thorpy.Line.make(me.menu_rect.w-20),
-                                    menu_button],
-                            size=me.menu_rect.size)
-thorpy.store(box)
-box.stick_to("screen","right","right")
-
-thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
-
-ap = gui.AlertPool()
-e_help_move = gui.get_help_text("To move the map, drag it with", "<LBM>",
-                                "or hold", "<left shift>", "while moving mouse")
-ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
-
-me.cam.set_gui_elements(e_hmap, box_hmap)
 me.set_zoom(level=0)
-
-m = thorpy.Menu([box],fps=FPS)
+m = thorpy.Menu(me.e_box,fps=me.fps)
 m.play()
 
 app.quit()

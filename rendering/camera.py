@@ -14,9 +14,11 @@ class Camera:
         self.rmouse = None
         self.world_size = V2()
         self.nx, self.ny = 0, 0
+        self.img_hmap = None
 
     def set_parameters(self, cell_size, viewport_rect, img_hmap, max_minimap_size):
         ws, ms = get_world_and_minimap_sizes(img_hmap, max_minimap_size)
+        self.img_hmap = img_hmap
         self.world_size = V2(ws)
         minimap_size = ms
         self.cell_rect.size = (cell_size,)*2
