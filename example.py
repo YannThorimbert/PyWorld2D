@@ -90,7 +90,8 @@ water = "./rendering/tiles/water1.png"
 sand = "./rendering/tiles/sand1.jpg"
 grass = "./rendering/tiles/grass1.png"
 rock = "./rendering/tiles/rock1.png"
-#simple images
+
+#we load simple images - they can be of any size, they will be resized
 water_img = me.load_image(water)
 sand_img = me.load_image(sand)
 grass_img = me.load_image(grass)
@@ -98,35 +99,41 @@ rock_img = me.load_image(rock)
 black_img = me.get_color_image((0,0,0))
 white_img = me.get_color_image((255,255,255))
 
-#mixed images
-deepwater = tm.get_mixed_tiles(water_img, black_img, 127)
-mediumwater = tm.get_mixed_tiles(water_img, black_img,50)
-shore = tm.get_mixed_tiles(sand_img, water_img, 127)  #alpha of water is 127
-thinsnow = tm.get_mixed_tiles(rock_img, white_img, 160)
+#mixed images - we superimpose differnt image to make a new one
+deepwater_img = tm.get_mixed_tiles(water_img, black_img, 127)
+mediumwater_img = tm.get_mixed_tiles(water_img, black_img, 50)
+shore_img = tm.get_mixed_tiles(sand_img, water_img, 127) # alpha of water is 127
+thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 160)
 
 #build tiles
 #water movement is made by using a delta-x (dx_divider) and delta-y shifts
-deepwaters = me.build_tiles(deepwater, dx_divider=10, dy_divider=8)
-mediumwaters = me.build_tiles(mediumwater, 10, 8)
+deepwaters = me.build_tiles(deepwater_img, dx_divider=10, dy_divider=8)
+mediumwaters = me.build_tiles(mediumwater_img, 10, 8)
 waters = me.build_tiles(water_img, 10, 8)
-shores = me.build_tiles(shore, 10, 8)
+shores = me.build_tiles(shore_img, 10, 8)
 sands = me.build_tiles(sand_img)
 grasses = me.build_tiles(grass_img)
 rocks = me.build_tiles(rock_img)
-snows1 = me.build_tiles(thinsnow)
+snows1 = me.build_tiles(thinsnow_img)
 snows2 = me.build_tiles(white_img)
 outsides = me.build_tiles(black_img)
+
+
 #build materials
-deepwater = tm.Material("Very deep water", 0.1, deepwaters)
-mediumwater = tm.Material("Deep water", 0.4, mediumwaters)
-water = tm.Material("Water", 0.55, waters)
-shore = tm.Material("Shallow water", 0.6, shores)
-sand = tm.Material("Sand", 0.62, sands) #means sand below 0.62
-badlands = tm.Material("Grass", 0.8, grasses)
-rock = tm.Material("Rock", 0.83, rocks)
-snow1 = tm.Material("Thin snow", 0.9, snows1)
-snow2 = tm.Material("Snow", float("inf"), snows2)
-space = tm.Material("Space", -float("inf"), outsides)
+#water movement is made by using a delta-x (dx_divider) and delta-y shifts,
+# here dx_divider = 10 and dy_divider = 8
+#hmax=0.1 means one will find deepwater only below height = 0.1
+deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
+mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
+water = me.add_material("Water", 0.55, water_img, 10, 8)
+shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
+sand = me.add_material("Sand", 0.62, sand_img)
+badlands = me.add_material("Grass", 0.8, grass_img)
+rock = me.add_material("Rock", 0.83, rock_img)
+snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
+snow2 = me.add_material("Snow", float("inf"), white_img)
+space = me.add_material("Intergalactic Space", -float("inf"), black_img)
+
 #here water.imgs is a list of images list whose index refer to zoom level
 
 print("Building material couples")

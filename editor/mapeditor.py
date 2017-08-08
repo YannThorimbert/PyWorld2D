@@ -25,6 +25,7 @@ class MapEditor:
         self.zoom_level = 0
         self.nframes = 16 #number of different tiles for one material (used for moving water)
         #
+        self.materials = {}
 
 
     def set_zoom(self, level):
@@ -158,8 +159,6 @@ class MapEditor:
         surface.fill(color)
         return surface
 
-
-
     def refresh_derived_constants(self, max_wanted_minimap_size):
         self.cell_size = self.zoom_cell_sizes[self.zoom_level]
         self.cell_rect = pygame.Rect(0,0,self.cell_size,self.cell_size)
@@ -175,6 +174,10 @@ class MapEditor:
     def build_tiles(self, img_full_size, dx_divider=0, dy_divider=0):
         return tm.build_tiles(img_full_size, self.zoom_cell_sizes, self.nframes,
                                 dx_divider, dy_divider)
+
+    def add_material(self, name, hmax, img_fullsize, dx_divider=0, dy_divider=0):
+        imgs = self.build_tiles(img_fullsize, dx_divider, dy_divider)
+        self.materials[name] = tm.Material(name, hmax, imgs)
 
 
 ################################################################################
