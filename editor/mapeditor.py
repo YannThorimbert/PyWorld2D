@@ -41,6 +41,7 @@ class MapEditor:
 ##        lay = WhiteLogicalMap(hmap, map_rects, outsides, desired_world_size,
 ##                                white_value=white_value)
         self.lm.add_layer(lay)
+        return lay
 
 
     def build_camera(self):

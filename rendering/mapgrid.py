@@ -88,6 +88,9 @@ class LogicalMap(BaseGrid):
         self.t = 0
         self.tot_time = 0
         self.frame_slowness = 20
+        #
+        self.refresh_cell_heights(hmap)
+        self.refresh_cell_types()
 
     def add_layer(self, lay):
         lay.frame_slowness = self.frame_slowness
@@ -421,8 +424,11 @@ class WhiteLogicalMap(LogicalMap):
         self.t = 0
         self.tot_time = 0
         self.frame_slowness = 20
+        #
+        self.refresh_cell_heights()
+        self.refresh_cell_types()
 
-    def refresh_cell_heights(self, hmap):
+    def refresh_cell_heights(self):
         for x,y in self:
             self[x,y] = WhiteLogicalCell(self)
 

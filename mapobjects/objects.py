@@ -2,10 +2,11 @@ import random
 import pygame
 
 
-class MapObject:
+class StaticObject:
 
-    def __init__(self, img, name="", relpos=(0,0)):
+    def __init__(self, editor, img, name="", relpos=(0,0)):
         """Object that looks the same at each frame"""
+        self.editor = editor
         self.original_img = img
         self.relpos = (0,0)
         self.imgs = None
@@ -31,11 +32,11 @@ class MapObject:
         cell.objects.append(copy)
         return copy
 
-    def build_imgs(self, sizes):
+    def build_imgs(self):
         W,H = self.original_img.get_size()
         w0 = float(sizes[0])
         imgs = []
-        for w in sizes:
+        for w in self.editor.zoom_cell_sizes:
             factor = w/w0
             zoom_size = (int(factor*W), int(factor*H))
             img = pygame.transform.scale(self.original_img, zoom_size)

@@ -8,7 +8,7 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-from mapobjects.objects import MapObject
+from mapobjects.objects import StaticObject
 import saveload.io as io
 
 ##thorpy.application.SHOW_FPS = True
@@ -136,43 +136,28 @@ material_couples = tm.get_material_couples([shore,badlands], cell_radius_divider
 
 lm = LogicalMap(hmap, material_couples, map_rects, outsides, desired_world_size)
 lm.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
-lm.refresh_cell_heights(hmap)
-lm.refresh_cell_types()
 lm.cells[3][3].name = "Roflburg" #this is how we set the name of a cell
-
-me.set_map(lm)
-
-#layer2 is a superimposed map on which we decide to blit some static objects:
-layer2 = lm.add_layer()
-
-
-
-layer2.refresh_cell_heights(hmap)
-layer2.refresh_cell_types()
+me.set_map(lm) #we attach the map to the editor
 
 ################################################################################
-print("Adding objects")
-fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
-fir0_img = thorpy.get_resized_image(fir0_img, (zoom_cell_sizes[0]-1,)*2)
-
-char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
-char1_img = thorpy.get_resized_image(char1_img, (zoom_cell_sizes[0]-1,)*2)
-
-forest_map = ng.generate_terrain(S,n_octaves=3) #generer sur map + grande et reduite, ou alors avec persistance +- faible suivant ce qu'on veut
-ng.normalize(forest_map)
-
-################################################################################
-##objects
-
-fir = MapObject(fir0_img)
-fir.build_imgs(zoom_cell_sizes)
-
-char1 = MapObject(char1_img)
-char1.build_imgs(zoom_cell_sizes)
-
+print("Adding static objects")
 static_objects = []
-dynamic_objects = []
 
+#1) We build a static object representing a Fir
+#layer2 is a superimposed map on which we decide to blit some static objects:
+layer2 = me.add_layer()
+fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
+#dont forget to resize the object to the size corresponding to largest zoom:
+# its up to you to decide what should be the size of the object...
+fir0_img = thorpy.get_resized_image(fir0_img, (me.zoom_cell_sizes[0]-1,)*2)
+fir = StaticObject(me, fir0_img)
+#modifier les relpos ici!!!!!!!!!!!!!!!!!!
+fir.build_imgs()
+
+
+#2) We use another hmap to decide where we want trees
+forest_map = ng.generate_terrain(S,n_octaves=3,persistance=1.7)
+ng.normalize(forest_map)
 
 for x in range(lm.nx):
     for y in range(lm.ny):
@@ -189,11 +174,18 @@ for x in range(lm.nx):
 ##                        yrel = random.random()/10.
 ##                        layer2.blit_on_cell(fir0_img, x, y, xrel, yrel)
 
+
+################################################################################
+dynamic_objects = []
+char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
+char1_img = thorpy.get_resized_image(char1_img, (zoom_cell_sizes[0]-1,)*2)
+char1 = MapObject(char1_img)
+char1.build_imgs(zoom_cell_sizes)
 obj = char1.add_copy_on_cell(lm.cells[32][15])
 dynamic_objects.append(obj)
 
 
-###############################################################################
+################################################################################
 
 
 print("Building untiled surfaces")
