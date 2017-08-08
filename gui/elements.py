@@ -248,3 +248,30 @@ class HelpBox:
         thorpy.functions.quit_menu_func()
 
 
+class SettingBox:
+
+    def __init__(self, helps):
+        """helps is a list of tuple on the form (title, list_of_help_texts)."""
+        elements = []
+        for title, texts in helps:
+            e_title = guip.get_title(title)
+            e_line = thorpy.Line.make(e_title.get_fus_size()[0])
+            e_helps = []
+            for h in texts:
+                e_helps.append(get_help_text_normal(*h))
+            elements += [e_line,e_title] + e_helps
+        self.e = thorpy.make_ok_box(elements)
+        self.b = thorpy.Element.make(size=thorpy.functions.get_screen_size())
+        self.b.set_main_color((200,200,200,100))
+        self.e.center()
+        self.launcher = thorpy.make_button("See commands", self.launch)
+
+        thorpy.make_global_display_options("")
+
+    def launch(self):
+        self.b.blit()
+        pygame.display.flip()
+        thorpy.launch_blocking(self.e)
+        thorpy.functions.quit_menu_func()
+
+

@@ -9,6 +9,7 @@ import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
 from mapobjects.objects import MapObject
+import saveload.io as io
 
 ##thorpy.application.SHOW_FPS = True
 
@@ -440,13 +441,16 @@ help_box = gui.HelpBox([
     [("Use the","zoom slider","or","<NUMPAD +/- >","to change zoom level."),
      ("You can also alternate zoom levels by pressing","<RMB>",".")])])
 
+
 e_quit = thorpy.make_button("Quit game", thorpy.functions.quit_func)
-e_settings = thorpy.make_button("Settings")
-e_save = thorpy.make_button("Save")
-e_load = thorpy.make_button("Load")
+e_save = thorpy.make_button("Save", io.ask_save, {"editor":None})
+e_load = thorpy.make_button("Load", io.ask_load)
 
 menu_button = thorpy.make_menu_button()
-menu_button_launched = thorpy.make_ok_box([help_box.launcher, e_settings, e_save, e_load, e_quit])
+menu_button_launched = thorpy.make_ok_box([help_box.launcher,
+                                            e_save,
+                                            e_load,
+                                            e_quit])
 menu_button_launched.center()
 
 menu_button.user_func = thorpy.launch_blocking
