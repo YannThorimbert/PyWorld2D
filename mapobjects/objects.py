@@ -2,32 +2,39 @@ import random
 import pygame
 
 
-class StaticObject:
+class MapObject:
 
     def __init__(self, editor, img, name="", relpos=(0,0)):
         """Object that looks the same at each frame"""
         self.editor = editor
         self.original_img = img
-        self.relpos = (0,0)
+        self.relpos = [0,0]
         self.imgs = None
         self.cell = None
         self.name = name
         self.ncopies = 0
+        self.min_relpos = [-0.5, -0.5]
+        self.max_relpos = [0.5, 0.5]
 
     def randomize_relpos(self):
-        self.relpos = -0.5 + random.random(), -0.5 + random.random()
+        self.relpos[0] = self.min_relpos[0] +\
+                         random.random()*(self.max_relpos[0]-self.min_relpos[0])
+        self.relpos[1] = self.min_relpos[1] +\
+                         random.random()*(self.max_relpos[1]-self.min_relpos[1])
 
     def copy(self):
         self.ncopies += 1
-        obj = StaticObject(self.editor, self.original_img)
+        obj = MapObject(self.editor, self.original_img)
         obj.imgs = self.imgs
         if self.name:
             obj.name = self.name + " " + str(self.ncopies)
+        obj.relpos = list(self.relpos)
+        obj.min_relpos = list(self.min_relpos)
+        obj.max_relpos = list(self.max_relpos)
         return obj
 
-    def add_copy_on_cell(self, cell, relpos=(0,0)):
+    def add_copy_on_cell(self, cell):
         copy = self.copy()
-        copy.relpos = relpos
         copy.cell = cell
         cell.objects.append(copy)
         return copy
@@ -45,12 +52,5 @@ class StaticObject:
 
     def get_current_img(self):
         return self.imgs[self.cell.map.current_zoom_level]
-
-
-##class StaticObject(MapObject):
-##
-##    def add_copy_on_cell(self, cell, relpos=(0,0)):
-##        copy = MapObject.add_copy_on_cell(self, cell, relpos)
-##        cell.map.blit_on_cell(fir0_img, x, y, xrel, yrel)
 
 

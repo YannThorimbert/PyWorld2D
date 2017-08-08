@@ -8,12 +8,16 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-from mapobjects.objects import StaticObject
+from mapobjects.objects import MapObject
 import saveload.io as io
 
 from editor.mapeditor import MapEditor
 
 thorpy.application.SHOW_FPS = True
+
+
+#ne pas oublier d'ajouter thorpy
+#grid pas bien blittee sur bords
 
 #inverser sens du zoom slider
 #StaticObject -> MapObject
@@ -158,9 +162,9 @@ fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
 #dont forget to resize the object to the size corresponding to largest zoom:
 # its up to you to decide what should be the size of the object...
 fir0_img = thorpy.get_resized_image(fir0_img, (me.zoom_cell_sizes[0]-1,)*2)
-fir = StaticObject(me, fir0_img)
-#modifier les relpos ici!!!!!!!!!!!!!!!!!!
+fir = MapObject(me, fir0_img)
 fir.build_imgs()
+fir.min_relpos[1] = 0. #to ensure the fir is not growing from another cell
 
 
 #2) We use another hmap to decide where we want trees
@@ -176,20 +180,17 @@ for x,y in lm:
                     obj = fir.add_copy_on_cell(lm.cells[x][y])
                     obj.randomize_relpos()
                     layer2.static_objects.append(obj)
-##                        print(x,y)
-##                        xrel = random.random()/10.
-##                        yrel = random.random()/10.
-##                        layer2.blit_on_cell(fir0_img, x, y, xrel, yrel)
 
-#Now we finished to add static objects, we generate the surface
-print("Building untiled surfaces") #this is also a long process
+#Now that we finished to add static objects, we generate the surface
+print("Building surfaces") #this is also a long process
 me.build_surfaces()
 
 
 ################################################################################
+#Here we add a dynamic object
 char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
 char1_img = thorpy.get_resized_image(char1_img, (me.zoom_cell_sizes[0]-1,)*2)
-char1 = StaticObject(me, char1_img)
+char1 = MapObject(me, char1_img)
 char1.build_imgs()
 obj = char1.add_copy_on_cell(lm.cells[32][15])
 me.dynamic_objects.append(obj)
@@ -199,31 +200,11 @@ me.dynamic_objects.append(obj)
 print("Building GUI")
 me.build_gui_elements()
 
+
 def func_reac_time(): #here put wathever you want, in addition to me's reac
     me.func_reac_time()
     pygame.display.flip()
 thorpy.add_time_reaction(me.e_box, func_reac_time)
-thorpy.add_keydown_reaction(me.e_box, pygame.K_KP_PLUS, me.increment_zoom,
-                            params={"value":-1})
-thorpy.add_keydown_reaction(me.e_box, pygame.K_KP_MINUS, me.increment_zoom,
-                            params={"value":1})
-
-
-velocity = 0.2
-thorpy.add_keydown_reaction(me.e_box, pygame.K_LEFT, me.move_cam_and_refresh,
-                            params={"delta":(-velocity,0)})
-thorpy.add_keydown_reaction(me.e_box, pygame.K_RIGHT, me.move_cam_and_refresh,
-                            params={"delta":(velocity,0)})
-thorpy.add_keydown_reaction(me.e_box, pygame.K_UP, me.move_cam_and_refresh,
-                            params={"delta":(0,-velocity)})
-thorpy.add_keydown_reaction(me.e_box, pygame.K_DOWN, me.move_cam_and_refresh,
-                            params={"delta":(0,velocity)})
-
-
-#add
-def toggle_show_grid_lines(value):
-    me.show_grid_lines = not(me.show_grid_lines)
-thorpy.add_keydown_reaction(me.e_box, pygame.K_g, toggle_show_grid_lines)
 
 
 #here you can add/remove buttons to the menu ###################################
@@ -239,6 +220,17 @@ launched_menu.center()
 me.menu_button.user_func = thorpy.launch_blocking
 me.menu_button.user_params = {"element":launched_menu}
 # ##############################################################################
+
+
+#me.e_box includes many default reactions. You can remove them as follow:
+#remove <g> key:
+##me.e_box.remove_reaction("toggle grid")
+#remove arrows keys, replacing <direction> by left, right, up or down:
+##me.e_box.remove_reaction("k <direction>")
+#remove +/- numpad keys for zoom, replacing <sign> by plus or minus:
+##me.e_box.remove_reaction("k <sign>")
+#remember to modify/deactivate the help text corresponding to the removed reac
+
 
 me.set_zoom(level=0)
 m = thorpy.Menu(me.e_box,fps=me.fps)

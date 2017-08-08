@@ -100,8 +100,34 @@ class MapEditor:
         reac_zoom = thorpy.Reaction(reacts_to=thorpy.constants.THORPY_EVENT,
                                     reac_func=func_reac_zoom,
                                     event_args={"id":thorpy.constants.EVENT_SLIDE,
-                                                "el":self.e_zoom})
+                                                "el":self.e_zoom},
+                                    reac_name="zoom slide")
         self.e_box.add_reaction(reac_zoom)
+        ########################################################################
+        thorpy.add_keydown_reaction(self.e_box, pygame.K_KP_PLUS,
+                                    self.increment_zoom, params={"value":-1},
+                                    reac_name="k plus")
+        thorpy.add_keydown_reaction(self.e_box, pygame.K_KP_MINUS,
+                                    self.increment_zoom, params={"value":1},
+                                    reac_name="k minus")
+        ########################################################################
+        velocity = 0.2
+        thorpy.add_keydown_reaction(self.e_box, pygame.K_LEFT,
+                                    self.move_cam_and_refresh,
+                                    params={"delta":(-velocity,0)},
+                                    reac_name="k left")
+        thorpy.add_keydown_reaction(self.e_box, pygame.K_RIGHT,
+                                    self.move_cam_and_refresh,
+                                    params={"delta":(velocity,0)},
+                                    reac_name="k right")
+        thorpy.add_keydown_reaction(self.e_box, pygame.K_UP,
+                                    self.move_cam_and_refresh,
+                                    params={"delta":(0,-velocity)},
+                                    reac_name="k up")
+        thorpy.add_keydown_reaction(self.e_box, pygame.K_DOWN,
+                                    self.move_cam_and_refresh,
+                                    params={"delta":(0,velocity)},
+                                    reac_name="k down")
         ########################################################################
         self.help_box = gui.HelpBox([
         ("Move camera",
@@ -120,7 +146,13 @@ class MapEditor:
         ("Miscellaneous",
             [("Press","<g>","to toggle grid lines display.")])
         ])
+        thorpy.add_keydown_reaction(self.e_box, pygame.K_g,
+                                    self.toggle_show_grid_lines,
+                                    reac_name="toggle grid")
 
+
+    def toggle_show_grid_lines(self):
+            self.show_grid_lines = not(self.show_grid_lines)
 
     def build_map(self, hmap, desired_world_size):
         outsides = self.materials["outside"].imgs
