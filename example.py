@@ -435,13 +435,15 @@ help_box = gui.HelpBox("Commands",
         "in order to move the camera."),
      ("The","<keyboard arrows>", "can also be used to scroll the map view.")])
 
-e_quit = thorpy.make_button("Quit", thorpy.functions.quit_func)
+e_quit = thorpy.make_button("Quit game", thorpy.functions.quit_func)
+e_settings = thorpy.make_button("Settings")
 e_save = thorpy.make_button("Save")
 e_load = thorpy.make_button("Load")
 
-menu_button = thorpy.make_menu_button() #==> load, save, settings
-menu_button_launched = thorpy.make_ok_box([help_box.launcher, e_quit])
-##thorpy.set_launcher(menu_button, menu_button_launched)
+menu_button = thorpy.make_menu_button()
+menu_button_launched = thorpy.make_ok_box([help_box.launcher, e_settings, e_save, e_load, e_quit])
+menu_button_launched.center()
+
 menu_button.user_func = thorpy.launch_blocking
 menu_button.user_params = {"element":menu_button_launched}
 
