@@ -431,13 +431,14 @@ misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_n
 
 help_box = gui.HelpBox([
 ("Move camera",
-    [("To move the map, drag it with", "<LBM>",
-        "or hold", "<left shift>", "while moving mouse."),
-     ("The minimap on the upper right can be clicked or hold with","<LBM>",
+    [("To move the map, drag it with", "<LMB>",
+        "or hold", "<LEFT SHIFT>", "while moving mouse."),
+     ("The minimap on the upper right can be clicked or hold with","<LMB>",
         "in order to move the camera."),
-     ("The","<keyboard arrows>", "can also be used to scroll the map view.")]),
+     ("The","<KEYBOARD ARROWS>", "can also be used to scroll the map view.")]),
 ("Zoom",
-    [("rofl")])])
+    [("Use the","zoom slider","or","<NUMPAD +/- >","to change zoom level."),
+     ("You can also alternate zoom levels by pressing","<RMB>",".")])])
 
 e_quit = thorpy.make_button("Quit game", thorpy.functions.quit_func)
 e_settings = thorpy.make_button("Settings")

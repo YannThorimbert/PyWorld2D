@@ -230,10 +230,11 @@ class HelpBox:
         elements = []
         for title, texts in helps:
             e_title = guip.get_title(title)
+            e_line = thorpy.Line.make(e_title.get_fus_size()[0])
             e_helps = []
             for h in texts:
                 e_helps.append(get_help_text_normal(*h))
-            elements += [e_title] + e_helps
+            elements += [e_line,e_title] + e_helps
         self.e = thorpy.make_ok_box(elements)
         self.b = thorpy.Element.make(size=thorpy.functions.get_screen_size())
         self.b.set_main_color((200,200,200,100))
