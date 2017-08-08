@@ -89,8 +89,12 @@ class LogicalMap(BaseGrid):
         self.tot_time = 0
         self.frame_slowness = 20
 
-    def add_layer(self, lay):
-        assert lay.nx == self.nx and lay.ny == self.ny
+    def add_layer(self, white_value=(255,255,255)):
+##        lay = WhiteLogicalMap(hmap, map_rects, outsides, desired_world_size,
+##                                    white_value=white_value)
+        self.zoom_levels
+        lay = WhiteLogicalMap(hmap, map_rect, outsides, self.cell_sizes,
+                                self.nframes, cam.world_size, white_value)
         lay.nframes = self.nframes
         lay.frame_slowness = self.frame_slowness
         self.layers.append(lay)

@@ -72,6 +72,7 @@ me.menu_width = 200 #width of the right menu in pixels
 me.max_wanted_minimap_size = 128 #in pixels.
 
 me.refresh_derived_parameters()
+me.build_camera()
 
 
 ################################################################################
@@ -144,30 +145,17 @@ snow2 = me.add_material("Snow", float("inf"), white_img)
 print("Building material couples")
 material_couples = tm.get_material_couples([shore,badlands], cell_radius_divider)
 
-
-################################################################################
-me.build_camera()
-
-
 ################################################################################
 
-frame_map = pygame.Surface(VIEWPORT_RECT.size)
-frame_map.fill(guip.FRAME_MAP_COLOR)
-pygame.draw.rect(frame_map, (255,255,255), cam.map_rect)
-frame_map.set_colorkey((255,255,255))
 
-
-################################################################################
-layer2 = WhiteLogicalMap(hmap, map_rects, outsides,
-                            cam.world_size, white_value=(255,255,255))
-
-################################################################################
-lm = LogicalMap(hmap, material_couples, map_rects, outsides, cam.world_size)
+lm = LogicalMap(hmap, material_couples, map_rects, outsides, desired_world_size)
 lm.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
 lm.refresh_cell_heights(hmap)
 lm.refresh_cell_types()
-lm.cells[3][3].name = "Roflburg"
-lm.add_layer(layer2)
+lm.cells[3][3].name = "Roflburg" #this is how we set the name of a cell
+
+#layer2 is a superimposed map on which we decide to blit some static objects:
+layer2 = lm.add_layer()
 
 cam.set_map_data(lm)
 
