@@ -113,7 +113,7 @@ mediumwater_img = tm.get_mixed_tiles(water_img, black_img, 50)
 shore_img = tm.get_mixed_tiles(sand_img, water_img, 127) # alpha of water is 127
 thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 160)
 
-#build materials
+#build materials - we need at least one material whose hmax value is >= 1.0
 #water movement is made by using a delta-x (dx_divider) and delta-y shifts,
 # here dx_divider = 10 and dy_divider = 8
 #hmax=0.1 means one will find deepwater only below height = 0.1
@@ -126,15 +126,17 @@ badlands = me.add_material("Grass", 0.8, grass_img)
 rock = me.add_material("Rock", 0.83, rock_img)
 snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
 snow2 = me.add_material("Snow", float("inf"), white_img)
-outside = me.add_material("Intergalactic Space", -1, black_img)
+#Outside material is mandatory. The only thing you can change is black_img
+outside = me.add_material("outside", -1, black_img)
 
+#this is the heavier computing part, especially if the maximum zoom is large:
 print("Building material couples")
-material_couples = tm.get_material_couples([shore,badlands], cell_radius_divider)
+me.build_materials(cell_radius_divider)
 
 ################################################################################
 
 
-lm = LogicalMap(hmap, material_couples, map_rects, outsides, desired_world_size)
+lm = me.build_map(hmap, desired_world_size)
 lm.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
 lm.cells[3][3].name = "Roflburg" #this is how we set the name of a cell
 me.set_map(lm) #we attach the map to the editor
@@ -156,19 +158,18 @@ fir.build_imgs()
 
 
 #2) We use another hmap to decide where we want trees
-forest_map = ng.generate_terrain(S,n_octaves=3,persistance=1.7)
+forest_map = ng.generate_terrain(S, n_octaves=3, persistance=1.7)
 ng.normalize(forest_map)
 
-for x in range(lm.nx):
-    for y in range(lm.ny):
-        h = forest_map[x][y]
-        if 0.3 < h < 0.35 or 0.8 < h < 0.85:
-            if lm.cells[x][y].material is badlands:
-                for i in range(3):
-                    if random.random() < 0.75:
-                        obj = fir.add_copy_on_cell(lm.cells[x][y])
-                        obj.randomize_relpos()
-                        static_objects.append(obj)
+for x,y in lm:
+    h = forest_map[x][y]
+    if 0.3 < h < 0.35 or 0.8 < h < 0.85: # a systematiser!!!!!!!!!!!!!!!!!!!!!!!
+        if lm.cells[x][y].material is badlands:
+            for i in range(3):
+                if random.random() < 0.75:
+                    obj = fir.add_copy_on_cell(lm.cells[x][y])
+                    obj.randomize_relpos()
+                    static_objects.append(obj)
 ##                        print(x,y)
 ##                        xrel = random.random()/10.
 ##                        yrel = random.random()/10.

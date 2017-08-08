@@ -30,6 +30,13 @@ class MapEditor:
         self.map_rects
         self.zoom_level = 0
         self.materials = {}
+        self.material_couples = None
+
+    def build_map(self, hmap, desired_world_size):
+        outsides = self.materials["outside"].imgs
+        self.lm = LogicalMap(hmap, self.material_couples, self.map_rects,
+                             outsides, desired_world_size)
+        return self.lm
 
     def set_map(self, logical_map):
         self.cam.set_map_data(logical_map)
@@ -217,6 +224,11 @@ class MapEditor:
     def add_material(self, name, hmax, img_fullsize, dx_divider=0, dy_divider=0):
         imgs = self.build_tiles(img_fullsize, dx_divider, dy_divider)
         self.materials[name] = tm.Material(name, hmax, imgs)
+
+    def build_materials(self, cell_radius_divider):
+        materials = list(self.materials.values())
+        self.material_couples = tm.get_material_couples(materials,
+                                                        cell_radius_divider)
 
 
 ################################################################################
