@@ -47,174 +47,45 @@ import saveload.io as io
 
 #effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
 
-#faire le outside en beachtiler?
+#faire le outside en beachtiler?==> fonction speciale qui met en hauteur negative les bords
+
+from editor.mapeditor import MapEditor
+
+W,H = 800, 600 #screen size you want
+
+#might be chosen by user:
+chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
+desired_world_size = (100,50) #in number of cells
+zoom_cell_sizes = [20, 12, 8] #side in pixels of the map's square cells
+max_wanted_minimap_size = 128 #in pixels.
 
 
-def set_zoom(level):
-    global CURRENT_ZOOM_LEVEL, img_cursor, cursors, frame_map
-    center_before = cam.get_center_coord()
-    CURRENT_ZOOM_LEVEL = level
-    refresh_derived_constants()
-    cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
-    lm.set_zoom(level)
-    cam.reinit_pos()
-    move_cam_and_refresh((center_before[0]-cam.nx//2,center_before[1]-cam.ny//2))
-    #cursor
-    cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
-    idx_cursor = 0
-    img_cursor = cursors[idx_cursor]
-    #
-    unblit_map()
-    draw_no_update()
+app = thorpy.Application((W,H))
+me = MapEditor()
+me.zoom_cell_sizes = zoom_cell_sizes
 
 
-
-def increment_zoom(value):
-    global CURRENT_ZOOM_LEVEL
-    CURRENT_ZOOM_LEVEL += value
-    CURRENT_ZOOM_LEVEL %= len(ZOOM_CELL_SIZES)
-    set_zoom(CURRENT_ZOOM_LEVEL)
-
-def update_cell_info():
-    mousepos = pygame.mouse.get_pos()
-    cell = cam.get_cell(mousepos)
-    if cell:
-##        pygame.draw.rect(screen, (0,0,0), get_rect_at_pix(mousepos), 1)
-        rcursor = img_cursor.get_rect()
-        rcursor.center = cam.get_rect_at_pix(mousepos).center
-        screen.blit(img_cursor, rcursor)
-        if cell_info.cell is not cell:
-            cell_info.update_e(cell)
-##        if cell.objects:
-##            print(cell.objects)
-
-def unblit_map():
-    pygame.draw.rect(screen, (0,0,0), cam.map_rect)
-
-def draw():
-    cam.set_rmouse_from_rcam()
-    #blit map frame
-    screen.fill((0,0,0))
-    #blit map
-    cam.draw_grid(screen)
-    #blit grid
-    if show_grid_lines:
-        cam.draw_grid_lines(screen)
-    #blit objects
-    cam.draw_objects(screen, dynamic_objects)
-    #update right pane
-    update_cell_info()
-    #blit map frame
-##    screen.blit(frame_map, (0,0))
-    #blit right pane and draw rect on minimap
-    box.blit()
-    pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
-
-def draw_no_update():
-    cam.draw_grid(screen)
-    box.blit()
-    pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
-
-def func_reac_time():
-    global img_cursor, idx_cursor
-    process_mouse_navigation()
-    draw()
-    ap.refresh()
-    ap.draw(screen, 20,20)
-    pygame.display.flip()
-    #
-    lm.next_frame()
-    if lm.tot_time%cursor_slowness == 0:
-        idx_cursor = (idx_cursor+1)%len(cursors)
-        img_cursor = cursors[idx_cursor]
-
-
-def func_reac_click(e):
-    if e.button == 1: #left click
-        if box_hmap.get_rect().collidepoint(e.pos):
-            cam.center_on(e.pos)
-    elif e.button == 3: #right click
-        print("Uh")
-        increment_zoom(1)
-
-def func_reac_unclick(e):
-    global cell_clicked
-    if e.button == 1:
-        cell = cam.get_cell(e.pos)
-        if cell:
-            if cell is not cell_clicked:
-                if not cell_info.launched:
-                    cell_clicked = cell
-                    cell_info.launch_em(cell, e.pos, cam.map_rect)
-        cell_clicked = None
-
-def func_reac_mousemotion(e):
-    global cell_clicked
-##    if pygame.key.get_mods() & pygame.KMOD_CTRL:
-    if pygame.mouse.get_pressed()[0]:
-        if box_hmap.get_rect().collidepoint(e.pos):
-            cam.center_on(e.pos)
-        elif cam.map_rect.collidepoint(e.pos):
-            delta = -V2(e.rel)/cam.cell_rect.w #assuming square cells
-            move_cam_and_refresh(delta)
-            cell_clicked = cam.get_cell(e.pos)
-            ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
-
-def move_cam_and_refresh(delta):
-    cam.move(delta)
-    cam.set_mg_pos_from_rcam()
-
-def process_mouse_navigation(): #cam can move even with no mousemotion!
-    if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
-        pos = pygame.mouse.get_pos()
-        d = V2(pos) - cam.map_rect.center
-        if d != (0,0):
-            intensity = 2e-8*d.length_squared()**1.5
-            if intensity > 1.:
-                intensity = 1.
-            d.scale_to_length(intensity)
-            delta = V2(cam.correct_move(d))
-            cam.move(delta)
-            cam.set_mg_pos_from_rcam()
-            ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
-
-
-def load_image(fn):
-    img = thorpy.load_image(fn)
-    return pygame.transform.smoothscale(img, (ZOOM_CELL_SIZES[0],)*2)
-
-
-#arbitrary constants
-W, H = 900, 600
-FPS = 80
-BOX_HMAP_MARGIN = 20 #box of the minimap
-MENU_WIDTH = 200
-MAX_WANTED_MINIMAP_SIZE = 128
-S = 128 #size of the produced hmap (to be completed with croping!)
-##ZOOM_CELL_SIZES = [32, 20, 14, 8, 4]
-ZOOM_CELL_SIZES = [16, 8, 4]
-##ZOOM_CELL_SIZES = [16]
-CURRENT_ZOOM_LEVEL = 0
-CELL_RADIUS_DIVIDER = 8 #cell_radius = cell_size//radius_divider
-NFRAMES = 16 #number of different tiles for one material (used for moving water)
-
-
-app = thorpy.Application((W,H), "PyWorld2D example")
-screen = thorpy.get_screen()
 
 ################################################################################
 print("Building hmap")
-hmap = ng.generate_terrain(S, chunk=(1310,14)) #1310,14, S=64
+
+power = int(math.log2(max(desired_world_size)))
+if 2**power < max(desired_world_size):
+    power += 1
+S = int(2**power)
+
+
+
+hmap = ng.generate_terrain(S, chunk)
 ng.normalize(hmap)
 hmap[2][1] = 0.7
 hmap[S-1][S-1] = 1.
 img_hmap = ng.build_surface(hmap)
 
 #possibility to use other sizes:
-new_img_hmap = pygame.Surface((S,S//3))
+new_img_hmap = pygame.Surface(desired_world_size)
 new_img_hmap.blit(img_hmap, (0,0))
 img_hmap = new_img_hmap
-
 
 ################################################################################
 print("Building tilers")
@@ -224,13 +95,13 @@ sand = "./rendering/tiles/sand1.jpg"
 grass = "./rendering/tiles/grass1.png"
 rock = "./rendering/tiles/rock1.png"
 #simple images
-water_img = load_image(water)
-sand_img = load_image(sand)
-grass_img = load_image(grass)
-rock_img = load_image(rock)
-black_img = pygame.Surface((ZOOM_CELL_SIZES[0],)*2)
-white_img = black_img.copy()
-white_img.fill((255,255,255))
+water_img = me.load_image(water)
+sand_img = me.load_image(sand)
+grass_img = me.load_image(grass)
+rock_img = me.load_image(rock)
+black_img = me.get_color_image((0,0,0))
+white_img = me.get_color_image((255,255,255))
+
 #mixed images
 deepwater = tm.get_mixed_tiles(water_img, black_img, 127)
 mediumwater = tm.get_mixed_tiles(water_img, black_img,50)

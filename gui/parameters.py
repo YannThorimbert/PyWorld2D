@@ -3,8 +3,6 @@ import thorpy, pygame
 DELAY_HELP = 5.
 
 
-#menus
-FRAME_MAP_COLOR = thorpy.style.DEF_COLOR
 
 #titles
 TFS = thorpy.style.TITLE_FONT_SIZE

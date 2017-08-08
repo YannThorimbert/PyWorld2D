@@ -1,4 +1,4 @@
-import random
+import math, random
 import pygame
 from pygame.math import Vector2 as V2
 import thorpy
@@ -11,25 +11,35 @@ from rendering.camera import Camera
 from mapobjects.objects import MapObject
 import saveload.io as io
 
-
 class MapEditor:
 
     def __init__(self):
-        pass
+        self.screen = thorpy.get_screen()
+        self.W, self.H = screen.size #screen size, wont change
+        self.fps = 80
+        self.box_hmap_margin = 20 #box of the minimap
+        self.menu_width = 200
+        MAX_WANTED_MINIMAP_SIZE = 128
+        ##self.zoom_cell_sizes = [32, 20, 14, 8, 4]
+        self.zoom_cell_sizes = None
+        self.zoom_level = 0
+        CELL_RADIUS_DIVIDER = 8 #cell_radius = cell_size//radius_divider
+        self.nframes = 16 #number of different tiles for one material (used for moving water)
+        #
+
 
     def set_zoom(self, level):
-        global CURRENT_ZOOM_LEVEL, img_cursor, cursors, frame_map
         center_before = cam.get_center_coord()
-        CURRENT_ZOOM_LEVEL = level
+        self.zoom_level = level
         refresh_derived_constants()
-        cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
+        cam.set_parameters(self.cell_size, self.viewport_rect, img_hmap, self.max_minimap_size)
         lm.set_zoom(level)
         cam.reinit_pos()
         move_cam_and_refresh((center_before[0]-cam.nx//2,center_before[1]-cam.ny//2))
         #cursor
-        cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
-        idx_cursor = 0
-        img_cursor = cursors[idx_cursor]
+        self.cursors = gui.get_self.cursors(self.cell_rect.inflate((2,2)), (255,255,0))
+        self.self.idx_cursor = 0
+        self.img_cursos = self.cursors[self.self.idx_cursor]
         #
         unblit_map()
         draw_no_update()
@@ -37,19 +47,18 @@ class MapEditor:
 
 
     def increment_zoom(self, value):
-        global CURRENT_ZOOM_LEVEL
-        CURRENT_ZOOM_LEVEL += value
-        CURRENT_ZOOM_LEVEL %= len(ZOOM_CELL_SIZES)
-        set_zoom(CURRENT_ZOOM_LEVEL)
+        self.zoom_level += value
+        self.zoom_level %= len(self.zoom_cell_sizes)
+        set_zoom(self.zoom_level)
 
     def update_cell_info(self):
         mousepos = pygame.mouse.get_pos()
         cell = cam.get_cell(mousepos)
         if cell:
     ##        pygame.draw.rect(screen, (0,0,0), get_rect_at_pix(mousepos), 1)
-            rcursor = img_cursor.get_rect()
+            rcursor = self.img_cursos.get_rect()
             rcursor.center = cam.get_rect_at_pix(mousepos).center
-            screen.blit(img_cursor, rcursor)
+            screen.blit(self.img_cursos, rcursor)
             if cell_info.cell is not cell:
                 cell_info.update_e(cell)
     ##        if cell.objects:
@@ -71,8 +80,6 @@ class MapEditor:
         cam.draw_objects(screen, dynamic_objects)
         #update right pane
         update_cell_info()
-        #blit map frame
-    ##    screen.blit(frame_map, (0,0))
         #blit right pane and draw rect on minimap
         box.blit()
         pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
@@ -83,7 +90,6 @@ class MapEditor:
         pygame.draw.rect(screen, (255,255,255), cam.rmouse, 1)
 
     def func_reac_time(self):
-        global img_cursor, idx_cursor
         process_mouse_navigation()
         draw()
         ap.refresh()
@@ -92,8 +98,8 @@ class MapEditor:
         #
         lm.next_frame()
         if lm.tot_time%cursor_slowness == 0:
-            idx_cursor = (idx_cursor+1)%len(cursors)
-            img_cursor = cursors[idx_cursor]
+            self.idx_cursor = (self.idx_cursor+1)%len(self.cursors)
+            self.img_cursos = self.cursors[self.idx_cursor]
 
 
     def func_reac_click(self, e):
@@ -105,18 +111,16 @@ class MapEditor:
             increment_zoom(1)
 
     def func_reac_unclick(self, e):
-        global cell_clicked
         if e.button == 1:
             cell = cam.get_cell(e.pos)
             if cell:
-                if cell is not cell_clicked:
+                if cell is not self.last_cell_clicked:
                     if not cell_info.launched:
-                        cell_clicked = cell
+                        self.last_cell_clicked = cell
                         cell_info.launch_em(cell, e.pos, cam.map_rect)
-            cell_clicked = None
+            self.last_cell_clicked = None
 
     def func_reac_mousemotion(self, e):
-        global cell_clicked
     ##    if pygame.key.get_mods() & pygame.KMOD_CTRL:
         if pygame.mouse.get_pressed()[0]:
             if box_hmap.get_rect().collidepoint(e.pos):
@@ -124,8 +128,8 @@ class MapEditor:
             elif cam.map_rect.collidepoint(e.pos):
                 delta = -V2(e.rel)/cam.cell_rect.w #assuming square cells
                 move_cam_and_refresh(delta)
-                cell_clicked = cam.get_cell(e.pos)
-                ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
+                self.last_cell_clicked = cam.get_cell(e.pos)
+                ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * self.fps)
 
     def move_cam_and_refresh(self, delta):
         cam.move(delta)
@@ -143,42 +147,51 @@ class MapEditor:
                 delta = V2(cam.correct_move(d))
                 cam.move(delta)
                 cam.set_mg_pos_from_rcam()
-                ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
+                ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * self.fps)
 
 
     def load_image(self, fn):
         img = thorpy.load_image(fn)
-        return pygame.transform.smoothscale(img, (ZOOM_CELL_SIZES[0],)*2)
+        return pygame.transform.smoothscale(img, (self.zoom_cell_sizes[0],)*2)
+
+    def get_color_image(self, color):
+        surface = pygame.Surface(self.zoom_cell_sizes[0])
+        surface.fill(color)
+        return surface
 
 
-#arbitrary constants
-W, H = 900, 600
-FPS = 80
-BOX_HMAP_MARGIN = 20 #box of the minimap
-MENU_WIDTH = 200
-MAX_WANTED_MINIMAP_SIZE = 128
-S = 128 #size of the produced hmap (to be completed with croping!)
-##ZOOM_CELL_SIZES = [32, 20, 14, 8, 4]
-ZOOM_CELL_SIZES = [16, 8, 4]
-##ZOOM_CELL_SIZES = [16]
-CURRENT_ZOOM_LEVEL = 0
-CELL_RADIUS_DIVIDER = 8 #cell_radius = cell_size//radius_divider
-NFRAMES = 16 #number of different tiles for one material (used for moving water)
 
+    def refresh_derived_constants(self, max_wanted_minimap_size):
+        self.cell_size = self.zoom_cell_sizes[self.zoom_level]
+        self.cell_rect = pygame.Rect(0,0,self.cell_size,self.cell_size)
+        self.max_minimap_size = (max_wanted_minimap_size,)*2
+        self.menu_size = (self.menu_width, self.H)
+        self.menu_rect = pygame.Rect((0,0),self.menu_size)
+        self.menu_rect.right = self.W
+        if self.menu_rect.w < self.max_minimap_size[0] + self.box_hmap_margin*2:
+            s = self.menu_rect.w - self.box_hmap_margin*2 - 2
+            self.max_minimap_size = (s,s)
+        self.viewport_rect = pygame.Rect((0,0),(self.menu_rect.left,self.menu_rect.bottom))
 
-app = thorpy.Application((W,H), "PyWorld2D example")
-screen = thorpy.get_screen()
 
 ################################################################################
 print("Building hmap")
-hmap = ng.generate_terrain(S, chunk=(1310,14)) #1310,14, S=64
+DESIRED_WORLD_SIZE = (100,50)
+power = int(math.log2(max(DESIRED_WORLD_SIZE)))
+if 2**power < max(DESIRED_WORLD_SIZE):
+    power += 1
+S = int(2**power)
+chunk=(1310,14) #to give when saving
+
+
+hmap = ng.generate_terrain(S, chunk)
 ng.normalize(hmap)
 hmap[2][1] = 0.7
 hmap[S-1][S-1] = 1.
 img_hmap = ng.build_surface(hmap)
 
 #possibility to use other sizes:
-new_img_hmap = pygame.Surface((S,S//3))
+new_img_hmap = pygame.Surface(DESIRED_WORLD_SIZE)
 new_img_hmap.blit(img_hmap, (0,0))
 img_hmap = new_img_hmap
 
@@ -195,7 +208,7 @@ water_img = load_image(water)
 sand_img = load_image(sand)
 grass_img = load_image(grass)
 rock_img = load_image(rock)
-black_img = pygame.Surface((ZOOM_CELL_SIZES[0],)*2)
+black_img = pygame.Surface((self.zoom_cell_sizes[0],)*2)
 white_img = black_img.copy()
 white_img.fill((255,255,255))
 #mixed images
@@ -204,17 +217,17 @@ mediumwater = tm.get_mixed_tiles(water_img, black_img,50)
 shore = tm.get_mixed_tiles(sand_img, water_img, 127)  #alpha of water is 127
 thinsnow = tm.get_mixed_tiles(rock_img, white_img, 160)
 #build tiles
-deepwaters = tm.build_tiles(deepwater, ZOOM_CELL_SIZES, NFRAMES,
+deepwaters = tm.build_tiles(deepwater, self.zoom_cell_sizes, self.nframes,
                             dx_divider=10, dy_divider=8) #water movement
-mediumwaters = tm.build_tiles(mediumwater, ZOOM_CELL_SIZES, NFRAMES, 10, 8)
-waters = tm.build_tiles(water_img, ZOOM_CELL_SIZES, NFRAMES, 10, 8)
-shores = tm.build_tiles(shore, ZOOM_CELL_SIZES, NFRAMES, 10, 8)
-sands = tm.build_tiles(sand_img, ZOOM_CELL_SIZES, NFRAMES)
-grasses = tm.build_tiles(grass_img, ZOOM_CELL_SIZES, NFRAMES)
-rocks = tm.build_tiles(rock_img, ZOOM_CELL_SIZES, NFRAMES)
-snows1 = tm.build_tiles(thinsnow, ZOOM_CELL_SIZES, NFRAMES)
-snows2 = tm.build_tiles(white_img, ZOOM_CELL_SIZES, NFRAMES)
-outsides = tm.build_tiles(black_img, ZOOM_CELL_SIZES, NFRAMES)
+mediumwaters = tm.build_tiles(mediumwater, self.zoom_cell_sizes, self.nframes, 10, 8)
+waters = tm.build_tiles(water_img, self.zoom_cell_sizes, self.nframes, 10, 8)
+shores = tm.build_tiles(shore, self.zoom_cell_sizes, self.nframes, 10, 8)
+sands = tm.build_tiles(sand_img, self.zoom_cell_sizes, self.nframes)
+grasses = tm.build_tiles(grass_img, self.zoom_cell_sizes, self.nframes)
+rocks = tm.build_tiles(rock_img, self.zoom_cell_sizes, self.nframes)
+snows1 = tm.build_tiles(thinsnow, self.zoom_cell_sizes, self.nframes)
+snows2 = tm.build_tiles(white_img, self.zoom_cell_sizes, self.nframes)
+outsides = tm.build_tiles(black_img, self.zoom_cell_sizes, self.nframes)
 #build materials
 deepwater = tm.Material("Very deep water", 0.1, deepwaters)
 mediumwater = tm.Material("Deep water", 0.4, mediumwaters)
@@ -236,54 +249,37 @@ material_couples = tm.get_material_couples([shore,badlands], CELL_RADIUS_DIVIDER
 ##material_couples = tm.get_material_couples(materials, CELL_RADIUS_DIVIDER)
 ################################################################################
 #derived constants
-CELL_SIZE = None
-CELL_RECT = None
-MENU_SIZE = None
-MENU_RECT = None
-VIEWPORT_RECT = None
-MAX_MINIMAP_SIZE = None
-def refresh_derived_constants():
-    global CELL_SIZE, CELL_RECT, MAX_MINIMAP_SIZE, MENU_SIZE, MENU_RECT, VIEWPORT_RECT
-    CELL_SIZE = ZOOM_CELL_SIZES[CURRENT_ZOOM_LEVEL]
-    CELL_RECT = pygame.Rect(0,0,CELL_SIZE,CELL_SIZE)
-    MAX_MINIMAP_SIZE = (MAX_WANTED_MINIMAP_SIZE,)*2
-    MENU_SIZE = (MENU_WIDTH, H)
-    MENU_RECT = pygame.Rect((0,0),MENU_SIZE)
-    MENU_RECT.right = W
-    if MENU_RECT.w < MAX_MINIMAP_SIZE[0] + BOX_HMAP_MARGIN*2:
-        s = MENU_RECT.w - BOX_HMAP_MARGIN*2 - 2
-        MAX_MINIMAP_SIZE = (s,s)
-    VIEWPORT_RECT = pygame.Rect((0,0),(MENU_RECT.left,MENU_RECT.bottom))
+self.cell_size = None
+self.cell_rect = None
+self.menu_size = None
+self.menu_rect = None
+self.viewport_rect = None
+self.max_minimap_size = None
+
+
+
 refresh_derived_constants()
 ################################################################################
 cam = Camera()
 
 map_rects = []
-for i,level in enumerate(ZOOM_CELL_SIZES):
-    CURRENT_ZOOM_LEVEL = i
+for i,level in enumerate(self.zoom_cell_sizes):
+    self.zoom_level = i
     refresh_derived_constants()
-    cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
+    cam.set_parameters(self.cell_size, self.viewport_rect, img_hmap, self.max_minimap_size)
     map_rects.append(pygame.Rect(cam.map_rect))
-CURRENT_ZOOM_LEVEL = 0 #reset to zero
+self.zoom_level = 0 #reset to zero
 refresh_derived_constants()
-cam.set_parameters(CELL_SIZE, VIEWPORT_RECT, img_hmap, MAX_MINIMAP_SIZE)
+cam.set_parameters(self.cell_size, self.viewport_rect, img_hmap, self.max_minimap_size)
 
 
 ################################################################################
-
-frame_map = pygame.Surface(VIEWPORT_RECT.size)
-frame_map.fill(guip.FRAME_MAP_COLOR)
-pygame.draw.rect(frame_map, (255,255,255), cam.map_rect)
-frame_map.set_colorkey((255,255,255))
-
-
-################################################################################
-layer2 = WhiteLogicalMap(hmap, map_rects, outsides, ZOOM_CELL_SIZES, NFRAMES,
+layer2 = WhiteLogicalMap(hmap, map_rects, outsides, self.zoom_cell_sizes, self.nframes,
                             cam.world_size, white_value=(255,255,255))
 
 ################################################################################
 lm = LogicalMap(hmap, material_couples, map_rects, outsides, cam.world_size)
-lm.frame_slowness = 0.1*FPS #frame will change every k*FPS [s]
+lm.frame_slowness = 0.1*self.fps #frame will change every k*self.fps [s]
 lm.refresh_cell_heights(hmap)
 lm.refresh_cell_types()
 lm.cells[3][3].name = "Roflburg"
@@ -297,10 +293,10 @@ layer2.refresh_cell_types()
 ################################################################################
 print("Adding objects")
 fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
-fir0_img = thorpy.get_resized_image(fir0_img, (ZOOM_CELL_SIZES[0]-1,)*2)
+fir0_img = thorpy.get_resized_image(fir0_img, (self.zoom_cell_sizes[0]-1,)*2)
 
 char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
-char1_img = thorpy.get_resized_image(char1_img, (ZOOM_CELL_SIZES[0]-1,)*2)
+char1_img = thorpy.get_resized_image(char1_img, (self.zoom_cell_sizes[0]-1,)*2)
 
 forest_map = ng.generate_terrain(S,n_octaves=3) #generer sur map + grande et reduite, ou alors avec persistance +- faible suivant ce qu'on veut
 ng.normalize(forest_map)
@@ -309,10 +305,10 @@ ng.normalize(forest_map)
 ##objects
 
 fir = MapObject(fir0_img)
-fir.build_imgs(ZOOM_CELL_SIZES)
+fir.build_imgs(self.zoom_cell_sizes)
 
 char1 = MapObject(char1_img)
-char1.build_imgs(ZOOM_CELL_SIZES)
+char1.build_imgs(self.zoom_cell_sizes)
 
 static_objects = []
 dynamic_objects = []
@@ -350,7 +346,7 @@ layer2.blit_objects(static_objects)
 
 ################################################################################
 print("Building GUI")
-cell_clicked = None
+self.last_cell_clicked = None
 show_grid_lines = False
 
 def set_show_grid_lines(value):
@@ -384,18 +380,18 @@ def rofl():
 thorpy.add_keydown_reaction(e_hmap, pygame.K_SPACE, rofl)
 
 ##commands = thorpy.commands.Commands(e_hmap)
-##thorpy.commands.playing(FPS)
+##thorpy.commands.playing(self.fps)
 ##commands.add_reaction(pygame.K_g, set_show_grid_lines)
 ##commands.default_func = reinit_frame
 
 e_title_hmap = guip.get_title("Map")
 box_hmap = thorpy.Box.make([e_hmap])
-box_hmap.fit_children((BOX_HMAP_MARGIN,)*2)
+box_hmap.fit_children((self.box_hmap_margin,)*2)
 topbox = thorpy.make_group([e_title_hmap, box_hmap], "v")
 
-cell_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
-unit_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
-misc_info = gui.CellInfo(MENU_RECT.inflate((-10,0)).size, CELL_RECT.size, draw_no_update, e_hmap)
+cell_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size, self.cell_rect.size, draw_no_update, e_hmap)
+unit_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size, self.cell_rect.size, draw_no_update, e_hmap)
+misc_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size, self.cell_rect.size, draw_no_update, e_hmap)
 
 help_box = gui.HelpBox([
 ("Move camera",
@@ -424,10 +420,10 @@ menu_button.user_func = thorpy.launch_blocking
 menu_button.user_params = {"element":menu_button_launched}
 
 
-e_zoom = thorpy.SliderX.make(MENU_WIDTH//4, (0, 100), "Zoom (%)", int)
+e_zoom = thorpy.SliderX.make(self.menu_width//4, (0, 100), "Zoom (%)", int)
 def troll(e):
     print("orofl",e_zoom.get_value())
-    levels = len(ZOOM_CELL_SIZES) - 1
+    levels = len(self.zoom_cell_sizes) - 1
     level = int(levels*e_zoom.get_value()/e_zoom.limvals[1])
     print(level)
     set_zoom(level)
@@ -438,12 +434,12 @@ reac_zoom = thorpy.Reaction(reacts_to=thorpy.constants.THORPY_EVENT,
 e_hmap.add_reaction(reac_zoom)
 
 box = thorpy.Element.make(elements=[e_zoom,
-                                    topbox, #thorpy.Line.make(MENU_RECT.w-20),
-                                    misc_info.e, #thorpy.Line.make(MENU_RECT.w-20),
-                                    cell_info.e, #thorpy.Line.make(MENU_RECT.w-20),
-                                    unit_info.e, #thorpy.Line.make(MENU_RECT.w-20),
+                                    topbox, #thorpy.Line.make(self.menu_rect.w-20),
+                                    misc_info.e, #thorpy.Line.make(self.menu_rect.w-20),
+                                    cell_info.e, #thorpy.Line.make(self.menu_rect.w-20),
+                                    unit_info.e, #thorpy.Line.make(self.menu_rect.w-20),
                                     menu_button],
-                            size=MENU_RECT.size)
+                            size=self.menu_rect.size)
 thorpy.store(box)
 box.stick_to("screen","right","right")
 
@@ -451,10 +447,10 @@ box.stick_to("screen","right","right")
 cam.set_elements(e_hmap, box_hmap)
 
 
-cursors = gui.get_cursors(CELL_RECT.inflate((2,2)), (255,255,0))
-idx_cursor = 0
-img_cursor = cursors[idx_cursor]
-cursor_slowness = int(0.3*FPS)
+self.cursors = gui.get_self.cursors(self.cell_rect.inflate((2,2)), (255,255,0))
+self.idx_cursor = 0
+self.img_cursos = self.cursors[self.idx_cursor]
+cursor_slowness = int(0.3*self.fps)
 
 
 thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
@@ -463,10 +459,10 @@ thorpy.makeup.add_basic_help(box_hmap, "Click to move camera on miniature map")
 ap = gui.AlertPool()
 e_help_move = gui.get_help_text("To move the map, drag it with", "<LBM>",
                                 "or hold", "<left shift>", "while moving mouse")
-ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * FPS)
+ap.add_alert_countdown(e_help_move, guip.DELAY_HELP * self.fps)
 
 set_zoom(0)
-m = thorpy.Menu([box],fps=FPS)
+m = thorpy.Menu([box],fps=self.fps)
 m.play()
 
 
