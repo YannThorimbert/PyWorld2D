@@ -41,7 +41,7 @@ class MapEditor:
         self.dynamic_objects = []
         self.last_cell_clicked = None
         #
-        self.cursor_color = (255,255,0)
+        self.cursor_color = 0 #0 = normal, 1 = select
         self.cursors = None
         self.idx_cursor = 0
         self.img_cursor = None
@@ -84,11 +84,11 @@ class MapEditor:
         def func_reac_zoom(e):
             levels = len(self.zoom_cell_sizes) - 1
             level = int(levels*self.e_zoom.get_value()/self.e_zoom.limvals[1])
-            self.set_zoom(levels-level)
+            self.set_zoom(levels-level,False)
         ########################################################################
         self.cell_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size,
                          self.cell_rect.size, self.draw_no_update, e_hmap)
-        self.unit_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size,
+        self.unit_info = gui.UnitInfo(self.menu_rect.inflate((-10,0)).size,
                          self.cell_rect.size, self.draw_no_update, e_hmap)
         self.misc_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size,
                          self.cell_rect.size, self.draw_no_update, e_hmap)
@@ -213,14 +213,17 @@ class MapEditor:
             lay.save_pure_surfaces()
             lay.blit_objects()
         #
-        self.cursors = gui.get_cursors(self.cell_rect.inflate((2,2)),
-                                        self.cursor_color)
+        cursors_n = gui.get_cursors(self.cell_rect.inflate((2,2)),
+                                        guip.CURSOR_COLOR_NORMAL)
+        cursors_s = gui.get_cursors(self.cell_rect.inflate((2,2)),
+                                        guip.CURSOR_COLOR_SELECT)
+        self.cursors = [cursors_n, cursors_s]
         self.idx_cursor = 0
-        self.img_cursor = self.cursors[self.idx_cursor]
+        self.img_cursor = self.cursors[self.cursor_color][self.idx_cursor]
         self.cursor_slowness = int(0.3*self.fps)
 
 
-    def set_zoom(self, level):
+    def set_zoom(self, level, refresh_slider=True):
         center_before = self.cam.get_center_coord()
         self.zoom_level = level
         self.refresh_derived_parameters()
@@ -232,11 +235,20 @@ class MapEditor:
         self.cam.reinit_pos()
         self.move_cam_and_refresh((center_before[0]-self.cam.nx//2,
                                     center_before[1]-self.cam.ny//2))
+        if refresh_slider:
+            n = len(self.zoom_cell_sizes) - 1
+##            lev = n*(1 - self.e_zoom.get_value()/self.e_zoom.limvals[1])
+##            lev/n - 1 = -v/M ==> (1-lev/n)*M = v
+            newval = self.e_zoom.limvals[1]*(1 - float(level)/n)
+            self.e_zoom.set_value(int(newval))
         #cursor
-        self.cursors = gui.get_cursors(self.cell_rect.inflate((2,2)),
-                                            self.cursor_color)
+        cursors_n = gui.get_cursors(self.cell_rect.inflate((2,2)),
+                                        guip.CURSOR_COLOR_NORMAL)
+        cursors_s = gui.get_cursors(self.cell_rect.inflate((2,2)),
+                                        guip.CURSOR_COLOR_SELECT)
+        self.cursors = [cursors_n, cursors_s]
         self.idx_cursor = 0
-        self.img_cursors = self.cursors[self.idx_cursor]
+        self.img_cursor = self.cursors[self.cursor_color][self.idx_cursor]
         #
         self.unblit_map()
         self.draw_no_update()
@@ -251,12 +263,16 @@ class MapEditor:
         mousepos = pygame.mouse.get_pos()
         cell = self.cam.get_cell(mousepos)
         if cell:
-    ##        pygame.draw.rect(self.screen, (0,0,0), get_rect_at_pix(mousepos), 1)
-            rcursor = self.img_cursors.get_rect()
+            rcursor = self.img_cursor.get_rect()
             rcursor.center = self.cam.get_rect_at_pix(mousepos).center
-            self.screen.blit(self.img_cursors, rcursor)
+            self.screen.blit(self.img_cursor, rcursor)
             if self.cell_info.cell is not cell:
                 self.cell_info.update_e(cell)
+            self.unit_info.update_e(cell.unit)
+            if cell.unit:
+                self.cursor_color = 1
+            else:
+                self.cursor_color = 0
     ##        if cell.objects:
     ##            print(cell.objects)
 
@@ -302,8 +318,8 @@ class MapEditor:
         #
         self.lm.next_frame()
         if self.lm.tot_time%self.cursor_slowness == 0:
-            self.idx_cursor = (self.idx_cursor+1)%len(self.cursors)
-            self.img_cursors = self.cursors[self.idx_cursor]
+            self.idx_cursor = (self.idx_cursor+1)%len(self.cursors[0])
+            self.img_cursor = self.cursors[self.cursor_color][self.idx_cursor]
 
 
     def func_reac_click(self, e):

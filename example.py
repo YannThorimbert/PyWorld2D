@@ -8,28 +8,15 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-from mapobjects.objects import MapObject, RandomObjectDistribution
+from mapobjects.objects import MapObject, RandomObjectDistribution, get_forest_distributor
 import saveload.io as io
 
 from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#space_material pour hauteurs negatives, qui sont mises sur la hmap apres que la miniature soit construite
-
-#temperature a la place de altitude!
-
-#objects avec des frames
-#restreindre les relpos par obj (pour sapin, relpos[1] tj positif
-#ajouter noms des objets dans infos cell
-
-#objets dynamiques
-#a l'interieur d'une cellule donnee, on peut se permettre de trier objs dynamiques en fonction de coord y pour un affichage correct
-
-#revoir le draw no update
-
 ################################################################################
-#objets de base: palmiers, feuillu, sapins(+ sapin enneige), montagnes, villages, chemin
+#objets de base: feuillu, montagnes, villages, chemin, rivieres.
 #pour fs: chateaux, murailles, units: (herite de objet dynamique)
 
 #peut etre que marche pas sans numpy a cause du beach tiler.
@@ -47,9 +34,8 @@ from editor.mapeditor import MapEditor
 
 #effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
 
-#faire le outside en beachtiler?==> fonction speciale qui met en hauteur negative les bords
-
 #ne pas oublier d'ajouter thorpy
+#objects avec des frames
 
 
 W,H = 800, 600 #screen size you want
@@ -66,7 +52,8 @@ desired_world_size = (100,50) #in number of cells. Put a power of 2 for tilable 
 cell_radius_divider = 8
 
 me = MapEditor()
-me.zoom_cell_sizes = [20, 16, 12, 8] #side in pixels of the map's square cells
+me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
+##me.zoom_cell_sizes = [25]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 200 #width of the right menu in pixels
@@ -119,15 +106,15 @@ thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 160)
 #water movement is made by using a delta-x (dx_divider) and delta-y shifts,
 # here dx_divider = 10 and dy_divider = 8
 #hmax=0.1 means one will find deepwater only below height = 0.1
-deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
-mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
-water = me.add_material("Water", 0.55, water_img, 10, 8)
-shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
+##deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
+##mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
+##water = me.add_material("Water", 0.55, water_img, 10, 8)
+##shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
 sand = me.add_material("Sand", 0.62, sand_img)
 badlands = me.add_material("Grass", 0.8, grass_img)
-rock = me.add_material("Rock", 0.83, rock_img)
-snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
-snow2 = me.add_material("Snow", float("inf"), white_img)
+##rock = me.add_material("Rock", 0.83, rock_img)
+##snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
+##snow2 = me.add_material("Snow", float("inf"), white_img)
 #Outside material is mandatory. The only thing you can change is black_img
 outside = me.add_material("outside", -1, black_img)
 
@@ -146,31 +133,61 @@ me.set_map(lm) #we attach the map to the editor
 ################################################################################
 print("Adding static objects")
 
-#1) We build a static object representing a Fir
+#1) We use another hmap to decide where we want trees
+forest_map = ng.generate_terrain(S, n_octaves=None, persistance=1.7, chunk=(12,23))
+ng.normalize(forest_map)
+
+#2) We build a static object representing a Fir
 #we can use as many layers as we want.
 #layer2 is a superimposed map on which we decide to blit some static objects:
 layer2 = me.add_layer()
+
+
 fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
 #dont forget to resize the object to the size corresponding to largest zoom:
 # its up to you to decide what should be the size of the object...
+# the size is set through the imgs_dict argument of get_forest_distributor
 fir0_img = thorpy.get_resized_image(fir0_img, (me.zoom_cell_sizes[0]-1,)*2)
-fir = MapObject(me, fir0_img)
-fir.build_imgs()
-fir.max_relpos[1] = 0. #to ensure the fir is not growing from another cell
+fir0 = MapObject(me, fir0_img, "forest")
+fir0.build_imgs()
+fir0.max_relpos[1] = 0. #to ensure the fir is not growing from another cell
+distributor = RandomObjectDistribution([fir0], forest_map, lm)
+distributor.materials.append(me.materials["Grass"])
+##distributor.materials.append(me.materials["Rock"])
+distributor.max_density = 3
+distributor.homogeneity = 0.75
+distributor.zones_spread = [(0.1, 0.02), (0.5,0.05), (0.9,0.05)]
+distributor.distribute_objects(layer2)
 
+palm_forest = {"./mapobjects/images/oasis0.png":("palm forest",1.,True)}
+distributor = get_forest_distributor(me, palm_forest, forest_map, ["Sand"])
+distributor.distribute_objects(layer2)
 
-#2) We use another hmap to decide where we want trees
-forest_map = ng.generate_terrain(S, n_octaves=None, persistance=1.7)
-ng.normalize(forest_map)
-
-fir_distributor = RandomObjectDistribution(fir, forest_map, lm)
-fir_distributor.materials.append(me.materials["Grass"])
-fir_distributor.materials.append(me.materials["Rock"])
-fir_distributor.max_density = 3
-fir_distributor.homogeneity = 0.75
-fir_distributor.zones_spread = [(0.1, 0.02), (0.5,0.05), (0.9,0.05)]
-fir_distributor.distribute_objects(layer2)
-random.seed(0)
+##snowfir_img = thorpy.load_image("./mapobjects/images/firsnow2.png", (255,255,255))
+##snowfir_img = thorpy.get_resized_image(snowfir_img, (me.zoom_cell_sizes[0]-3,)*2)
+##snowfir = MapObject(me, snowfir_img, "forest")
+##snowfir.build_imgs()
+##snowfir.max_relpos[1] = 0. #to ensure the fir is not growing from another cell
+##distributor = RandomObjectDistribution([snowfir], forest_map, lm)
+##distributor.materials.append(me.materials["Thin snow"])
+##distributor.materials.append(me.materials["Snow"])
+##distributor.max_density = 3
+##distributor.homogeneity = 0.75
+##distributor.zones_spread = [(0.1, 0.05), (0.5,0.05), (0.9,0.05)]
+##distributor.distribute_objects(layer2)
+##
+##palm_img = thorpy.load_image("./mapobjects/images/oasis0.png", (255,255,255))
+##palm_img = thorpy.get_resized_image(palm_img, (me.zoom_cell_sizes[0]-1,)*2)
+##palm = MapObject(me, palm_img, "forest")
+##palm.build_imgs()
+##palm.max_relpos[1] = 0. #to ensure the palm is not growing from another cell
+##palm2 = palm.get_flipped_true_copy()
+##distributor = RandomObjectDistribution([palm, palm2], forest_map, lm)
+##distributor.materials.append(me.materials["Sand"])
+##distributor.max_density = 1
+##distributor.homogeneity = 0.5
+##distributor.zones_spread = [(0.3, 0.05), (0.6,0.05)]
+##distributor.distribute_objects(layer2)
 
 #Now that we finished to add static objects, we generate the surface
 print("Building surfaces") #this is also a long process
@@ -179,10 +196,11 @@ me.build_surfaces()
 ################################################################################
 #Here we add a dynamic object
 char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
-char1_img = thorpy.get_resized_image(char1_img, (me.zoom_cell_sizes[0]-1,)*2)
-char1 = MapObject(me, char1_img)
+char1_img = thorpy.get_resized_image(char1_img, (me.zoom_cell_sizes[0],)*2)
+char1 = MapObject(me, char1_img, "My Unit")
 char1.build_imgs()
-obj = char1.add_copy_on_cell(lm.cells[32][15])
+obj = char1.add_unit_on_cell(lm.cells[32][15])
+obj.quantity = 12 #logical (not graphical) quantity
 me.dynamic_objects.append(obj)
 
 

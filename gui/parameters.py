@@ -2,7 +2,9 @@ import thorpy, pygame
 
 DELAY_HELP = 5.
 
-
+#cursor
+CURSOR_COLOR_SELECT = (255,0,0)
+CURSOR_COLOR_NORMAL = (255,255,0)
 
 #titles
 TFS = thorpy.style.TITLE_FONT_SIZE

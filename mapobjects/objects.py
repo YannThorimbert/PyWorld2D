@@ -1,10 +1,36 @@
 import random
 import pygame
+import thorpy
+
+
+
+def get_forest_distributor(me, imgdict, forest_map, material_names):
+    """<imgdict> is a dict of the form:
+                    {img_filename:(object_name, size_factor, also_flip)}"""
+    objects = []
+    ref_size = me.zoom_cell_sizes[0]
+    for fn in imgdict:
+        name, factor, flip = imgdict[fn]
+        img = thorpy.load_image(fn, colorkey=(255,255,255))
+        img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
+        obj = MapObject(me, img, name)
+        obj.build_imgs()
+        obj.max_relpos[1] = 0.
+        objects.append(obj)
+        if flip:
+            objects.append(obj.get_flipped_true_copy())
+    distributor = RandomObjectDistribution(objects, forest_map, me.lm)
+    for name in material_names:
+        distributor.materials.append(me.materials[name])
+    distributor.max_density = 3
+    distributor.homogeneity = 0.75
+    distributor.zones_spread = [(0.1, 0.02), (0.5,0.02), (0.9,0.02)]
+    return distributor
 
 class RandomObjectDistribution:
 
-    def __init__(self, obj, hmap, master_map):
-        self.obj = obj
+    def __init__(self, objs, hmap, master_map):
+        self.objs = objs
         self.hmap = hmap
         self.master_map = master_map
         assert master_map.nx <= len(hmap) and master_map.ny <= len(hmap[0])
@@ -27,7 +53,8 @@ class RandomObjectDistribution:
                 if cell.material in self.materials:
                     for i in range(self.max_density):
                         if random.random() < self.homogeneity:
-                            obj = self.obj.add_copy_on_cell(cell)
+                            obj = random.choice(self.objs)
+                            obj = obj.add_copy_on_cell(cell)
                             obj.randomize_relpos()
                             layer.static_objects.append(obj)
 
@@ -43,7 +70,8 @@ class MapObject:
         self.name = name
         self.ncopies = 0
         self.min_relpos = [-0.5, -0.5]
-        self.max_relpos = [0.5, 0.5]
+        self.max_relpos = [0.5,   0.5]
+        self.quantity = 1 #not necessarily 1 for units
 
     def randomize_relpos(self):
         self.relpos[0] = self.min_relpos[0] +\
@@ -62,10 +90,27 @@ class MapObject:
         obj.max_relpos = list(self.max_relpos)
         return obj
 
+    def get_flipped_true_copy(self, x=True, y=False):
+        img = pygame.transform.flip(self.original_img, x, y)
+        obj = MapObject(self.editor, img)
+        obj.name = self.name
+        obj.build_imgs()
+        obj.relpos = list(self.relpos)
+        obj.min_relpos = list(self.min_relpos)
+        obj.max_relpos = list(self.max_relpos)
+        return obj
+
     def add_copy_on_cell(self, cell):
         copy = self.copy()
         copy.cell = cell
         cell.objects.append(copy)
+        return copy
+
+    def add_unit_on_cell(self, cell):
+        assert cell.unit is None
+        copy = self.copy()
+        copy.cell = cell
+        cell.unit = copy
         return copy
 
     def build_imgs(self):

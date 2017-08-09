@@ -103,8 +103,15 @@ class CellInfo:
             self.launched = False
 
     def update_em(self, cell):
-        self.em_mat_img_img.set_image(cell.get_img_at_zoom(0))
-        self.em_mat_name.set_text(cell.material.name)
+        new_img = cell.extract_all_layers_img_at_zoom(0)
+        self.em_mat_img_img.set_image(new_img)
+        text = cell.material.name
+        objs = set([])
+        for obj in cell.objects:
+            objs.add(obj.name.split(" ")[0]) #split to not take the id
+        for name in objs:
+            text += " ("+name+")"
+        self.em_mat_name.set_text(text)
         thorpy.store(self.em_mat, mode="h")
         self.em_coord.set_text("Coordinates: "+str(cell.coord))
         self.em_altitude.set_text("Altitude: "+str(round(cell.get_altitude()))+"m")
@@ -176,12 +183,131 @@ class CellInfo:
         coord_text = str(cell.coord) + "     "
         self.e_coordalt.set_text(coord_text+alt_text)
         self.e_coordalt.recenter()
+
+
+class UnitInfo: #name, image, nombre(=vie dans FS!)
+    def __init__(self, size, cell_size, redraw, external_e):
+        self.unit = None
+        self.e_img = thorpy.Image.make(pygame.Surface(cell_size))
+        self.blank_img = pygame.Surface(cell_size)
+        self.e_name = guip.get_text("")
+        self.e_group = thorpy.make_group([self.e_img, self.e_name])
+        self.elements = [self.e_group]
+        self.e = thorpy.Box.make(self.elements)
+        self.e.set_size((size[0],None))
+        for e in self.e.get_elements():
+            e.recenter()
+##        #emap : to be displayed when a cell is clicked
+##        self.em_title = guip.get_title("Cell informations")
+##        self.em_coord = guip.get_text("")
+##        self.em_altitude = guip.get_text("")
+##        self.em_name = guip.get_small_text("")
+##        self.em_rename = guip.get_small_button("Rename", self.rename_current_cell)
+##        self.em_name_rename = thorpy.make_group([self.em_name, self.em_rename])
+####        self.em_name_rename = thorpy.Clickable.make(elements=[self.em_name, self.em_rename])
+####        thorpy.store(self.em_name_rename)
+##        self.em_name_rename.fit_children()
+##        self.em_mat_img_img = thorpy.Image.make(pygame.Surface(cell_size))
+##        self.em_mat_img = thorpy.Clickable.make(elements=[self.em_mat_img_img])
+##        self.em_mat_img.fit_children()
+##        self.em_mat_name = guip.get_text("")
+##        self.em_mat = thorpy.make_group([self.em_mat_img, self.em_mat_name])
+##        self.em_elements = [self.em_title, thorpy.Line.make(100), self.em_mat, self.em_coord, self.em_altitude, self.em_name_rename]
+##        self.em = thorpy.Box.make(self.em_elements)
+##        self.em.set_main_color((200,200,200,150))
+##        self.launched = False
+##        self.redraw = redraw
+##        self.external_e = external_e
+##        reac = thorpy.Reaction(thorpy.THORPY_EVENT, self.set_unlaunched,
+##                                {"id":thorpy.constants.EVENT_UNLAUNCH})
+##        external_e.add_reaction(reac)
+
+    def set_unlaunched(self, e):
+        if e.launcher.launched == self.em:
+            self.launched = False
+
+    def update_em(self, cell):
+        new_img = cell.extract_all_layers_img_at_zoom(0)
+        self.em_mat_img_img.set_image(new_img)
+        text = cell.material.name
+        objs = set([])
+        for obj in cell.objects:
+            objs.add(obj.name.split(" ")[0]) #split to not take the id
+        for name in objs:
+            text += " ("+name+")"
+        self.em_mat_name.set_text(text)
+        thorpy.store(self.em_mat, mode="h")
+        self.em_coord.set_text("Coordinates: "+str(cell.coord))
+        self.em_altitude.set_text("Altitude: "+str(round(cell.get_altitude()))+"m")
+        if not cell.name:
+            cellname = "This location has no name"
+        else:
+            cellname = cell.name
+        self.em_name.set_text(cellname)
+        thorpy.store(self.em_name_rename, mode="h")
+        self.em.store()
+        self.em.fit_children()
+
+    def launch_em(self, cell, pos, rect):
+        if not self.launched:
+            self.launched = True
+            self.redraw()
+            self.update_em(cell)
+            #
+            self.em.set_visible(False)
+            for e in self.em.get_descendants():
+                e.set_visible(False)
+            thorpy.launch_nonblocking(self.em,True)
+            self.em.set_visible(True)
+            for e in self.em.get_descendants():
+                e.set_visible(True)
+            self.em.set_center(pos)
+            self.em.clamp(rect)
+            self.em.blit()
+            self.em.update()
+        else:
+            print("Already launched!")
+
+    def rename_current_cell(self):
+        varset = thorpy.VarSet()
+        varset.add("newname", "", "New name")
+##        ps = thorpy.ParamSetterLauncher.make(varset)
+        ps = thorpy.ParamSetter.make([varset])
+        for h in ps.get_handlers():
+            ins = ps.handlers[h]
+        ins.set_main_color((200,200,200,150))
+        ps.center()
+        ins.enter() #put focus on inserter
+        thorpy.launch_blocking(ps)
+        newname = ins.get_value()
+        if newname:
+            self.cell.name = newname
+        self.update_em(self.cell)
+        self.redraw()
+        self.em.blit()
+        pygame.display.flip()
+
+##    def em_react(self, event):
+##        if self.launched:
+##            self.menu.react(event)
+
+    def update_e(self, unit):
+        changed = False
+        if unit:
+            name = unit.name + " (" + str(unit.quantity) + ")"
+            new_img = unit.imgs[0] #frame...
+            changed = True
+        elif self.unit is not None:
+            name = ""
+            new_img = self.blank_img
+            changed = True
         #
-##        if cell.name:
-##            self.e_title.set_text(cell.name)
-##            self.e_title.recenter()
-        #
-##        self.e.blit()
+        if changed:
+            self.e_name.set_text(name)
+            self.e_img.set_image(new_img)
+            thorpy.store(self.e_group, mode="h")
+            self.unit = unit
+
 
 class AlertPool:
 

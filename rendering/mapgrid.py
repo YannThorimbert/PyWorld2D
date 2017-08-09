@@ -29,6 +29,7 @@ class LogicalCell:
         self.type = None
         self.name = ""
         self.objects = []
+        self.unit = None
         self.imgs = None
 
     def get_altitude(self):
