@@ -15,7 +15,10 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-################################################################################
+#trier les statics pour blit dans le bon ordre ?
+
+#rename unit
+
 #objets de base: feuillu, montagnes, villages, chemin, rivieres.
 #pour fs: chateaux, murailles, units: (herite de objet dynamique)
 
@@ -100,21 +103,20 @@ white_img = me.get_color_image((255,255,255))
 deepwater_img = tm.get_mixed_tiles(water_img, black_img, 127)
 mediumwater_img = tm.get_mixed_tiles(water_img, black_img, 50)
 shore_img = tm.get_mixed_tiles(sand_img, water_img, 127) # alpha of water is 127
-thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 160)
+thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 200)
 
-#build materials - we need at least one material whose hmax value is >= 1.0 <== c'est vrai?????
-#water movement is made by using a delta-x (dx_divider) and delta-y shifts,
+#water movement is obtained by using a delta-x (dx_divider) and delta-y shifts,
 # here dx_divider = 10 and dy_divider = 8
 #hmax=0.1 means one will find deepwater only below height = 0.1
 ##deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
-##mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
-##water = me.add_material("Water", 0.55, water_img, 10, 8)
-##shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
+mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
+water = me.add_material("Water", 0.55, water_img, 10, 8)
+shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
 sand = me.add_material("Sand", 0.62, sand_img)
 badlands = me.add_material("Grass", 0.8, grass_img)
-##rock = me.add_material("Rock", 0.83, rock_img)
-##snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
-##snow2 = me.add_material("Snow", float("inf"), white_img)
+rock = me.add_material("Rock", 0.83, rock_img)
+snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
+snow2 = me.add_material("Snow", float("inf"), white_img)
 #Outside material is mandatory. The only thing you can change is black_img
 outside = me.add_material("outside", -1, black_img)
 
@@ -143,51 +145,25 @@ ng.normalize(forest_map)
 layer2 = me.add_layer()
 
 
-fir0_img = thorpy.load_image("./mapobjects/images/fir0.png", (255,255,255))
+#3) we add the objects via distributors
 #dont forget to resize the object to the size corresponding to largest zoom:
 # its up to you to decide what should be the size of the object...
 # the size is set through the imgs_dict argument of get_forest_distributor
-fir0_img = thorpy.get_resized_image(fir0_img, (me.zoom_cell_sizes[0]-1,)*2)
-fir0 = MapObject(me, fir0_img, "forest")
-fir0.build_imgs()
-fir0.max_relpos[1] = 0. #to ensure the fir is not growing from another cell
-distributor = RandomObjectDistribution([fir0], forest_map, lm)
-distributor.materials.append(me.materials["Grass"])
-##distributor.materials.append(me.materials["Rock"])
-distributor.max_density = 3
-distributor.homogeneity = 0.75
-distributor.zones_spread = [(0.1, 0.02), (0.5,0.05), (0.9,0.05)]
+trees = {"./mapobjects/images/fir0.png":("forest",1.,False)}
+distributor = get_forest_distributor(me, trees, forest_map, ["Grass","Rock"])
 distributor.distribute_objects(layer2)
 
-palm_forest = {"./mapobjects/images/oasis0.png":("palm forest",1.,True)}
-distributor = get_forest_distributor(me, palm_forest, forest_map, ["Sand"])
+trees = {"./mapobjects/images/firsnow2.png":("forest",1.,True)}
+distributor = get_forest_distributor(me, trees, forest_map, ["Thin snow","Snow"])
 distributor.distribute_objects(layer2)
 
-##snowfir_img = thorpy.load_image("./mapobjects/images/firsnow2.png", (255,255,255))
-##snowfir_img = thorpy.get_resized_image(snowfir_img, (me.zoom_cell_sizes[0]-3,)*2)
-##snowfir = MapObject(me, snowfir_img, "forest")
-##snowfir.build_imgs()
-##snowfir.max_relpos[1] = 0. #to ensure the fir is not growing from another cell
-##distributor = RandomObjectDistribution([snowfir], forest_map, lm)
-##distributor.materials.append(me.materials["Thin snow"])
-##distributor.materials.append(me.materials["Snow"])
-##distributor.max_density = 3
-##distributor.homogeneity = 0.75
-##distributor.zones_spread = [(0.1, 0.05), (0.5,0.05), (0.9,0.05)]
-##distributor.distribute_objects(layer2)
-##
-##palm_img = thorpy.load_image("./mapobjects/images/oasis0.png", (255,255,255))
-##palm_img = thorpy.get_resized_image(palm_img, (me.zoom_cell_sizes[0]-1,)*2)
-##palm = MapObject(me, palm_img, "forest")
-##palm.build_imgs()
-##palm.max_relpos[1] = 0. #to ensure the palm is not growing from another cell
-##palm2 = palm.get_flipped_true_copy()
-##distributor = RandomObjectDistribution([palm, palm2], forest_map, lm)
-##distributor.materials.append(me.materials["Sand"])
-##distributor.max_density = 1
-##distributor.homogeneity = 0.5
-##distributor.zones_spread = [(0.3, 0.05), (0.6,0.05)]
-##distributor.distribute_objects(layer2)
+trees = {"./mapobjects/images/oasis0.png":("palmforest",1.3,True)}
+distributor = get_forest_distributor(me, trees, forest_map, ["Sand"])
+distributor.max_density = 1
+distributor.homogeneity = 0.5
+distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
+distributor.distribute_objects(layer2)
+
 
 #Now that we finished to add static objects, we generate the surface
 print("Building surfaces") #this is also a long process

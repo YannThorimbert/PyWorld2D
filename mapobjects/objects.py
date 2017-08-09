@@ -21,7 +21,8 @@ def get_forest_distributor(me, imgdict, forest_map, material_names):
             objects.append(obj.get_flipped_true_copy())
     distributor = RandomObjectDistribution(objects, forest_map, me.lm)
     for name in material_names:
-        distributor.materials.append(me.materials[name])
+        if name in me.materials:
+            distributor.materials.append(me.materials[name])
     distributor.max_density = 3
     distributor.homogeneity = 0.75
     distributor.zones_spread = [(0.1, 0.02), (0.5,0.02), (0.9,0.02)]
