@@ -17,9 +17,9 @@ def get_forest_distributor(me, imgdict, forest_map, material_names):
         obj = MapObject(me, img, name)
         obj.build_imgs()
         obj.max_relpos[1] = 0.
-        obj.min_relpos[1] = -0.4 a eclaircir
-        if ref_size < h:
-            obj.max_relpos[1] = (ref_size-h)/float(h)
+        obj.min_relpos[1] = -0.4
+        if h > ref_size:
+            obj.max_relpos[1] = 2.*h/(h-ref_size)
 ##            if obj.min_relpos[1] > obj.max_relpos[1]:
 ##                obj.min_relpos[1] = obj.max_relpos[1]
         objects.append(obj)
@@ -81,7 +81,9 @@ class MapObject:
         self.quantity = 1 #not necessarily 1 for units
 
     def ypos(self):
-        return self.cell.coord[1]  +self.relpos[1]
+        h = self.original_img.get_size()[1]
+        s = self.editor.zoom_cell_sizes[0]
+        return self.cell.coord[1]  + h*(0.5 - self.max_relpos[1])/s
 
     def randomize_relpos(self):
         self.relpos[0] = self.min_relpos[0] +\
