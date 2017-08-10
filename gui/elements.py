@@ -108,7 +108,7 @@ class CellInfo:
         text = cell.material.name
         objs = set([])
         for obj in cell.objects:
-            objs.add(obj.name.split(" ")[0]) #split to not take the id
+            objs.add(obj.name) #split to not take the id
         for name in objs:
             text += " ("+name+")"
         self.em_mat_name.set_text(text)

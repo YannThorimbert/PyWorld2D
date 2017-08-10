@@ -74,6 +74,9 @@ class MapObject:
         self.max_relpos = [0.5,   0.5]
         self.quantity = 1 #not necessarily 1 for units
 
+    def ypos(self):
+        return self.cell.coord[1]  +self.relpos[1]
+
     def randomize_relpos(self):
         self.relpos[0] = self.min_relpos[0] +\
                          random.random()*(self.max_relpos[0]-self.min_relpos[0])
@@ -84,8 +87,9 @@ class MapObject:
         self.ncopies += 1
         obj = MapObject(self.editor, self.original_img)
         obj.imgs = self.imgs
-        if self.name:
-            obj.name = self.name + " " + str(self.ncopies)
+        obj.name = self.name
+##        if self.name:
+##            obj.name = self.name + " " + str(self.ncopies)
         obj.relpos = list(self.relpos)
         obj.min_relpos = list(self.min_relpos)
         obj.max_relpos = list(self.max_relpos)

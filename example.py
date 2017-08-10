@@ -85,17 +85,12 @@ me.build_camera(img_hmap)
 
 ################################################################################
 print("Building tilers")
-#Here and below we arbitrary choose how to interpret height as type of terrain
-water = "./rendering/tiles/water1.png"
-sand = "./rendering/tiles/sand1.jpg"
-grass = "./rendering/tiles/grass1.png"
-rock = "./rendering/tiles/rock1.png"
 
 #we load simple images - they can be of any size, they will be resized
-water_img = me.load_image(water)
-sand_img = me.load_image(sand)
-grass_img = me.load_image(grass)
-rock_img = me.load_image(rock)
+water_img = me.load_image("./rendering/tiles/water1.png")
+sand_img = me.load_image("./rendering/tiles/sand1.jpg")
+grass_img = me.load_image("./rendering/tiles/grass1.png")
+rock_img = me.load_image("./rendering/tiles/rock1.png")
 black_img = me.get_color_image((0,0,0))
 white_img = me.get_color_image((255,255,255))
 
@@ -149,15 +144,16 @@ layer2 = me.add_layer()
 #dont forget to resize the object to the size corresponding to largest zoom:
 # its up to you to decide what should be the size of the object...
 # the size is set through the imgs_dict argument of get_forest_distributor
-trees = {"./mapobjects/images/fir0.png":("forest",1.,False)}
+trees = {"./mapobjects/images/fir0.png":("forest",1.5,False)}
 distributor = get_forest_distributor(me, trees, forest_map, ["Grass","Rock"])
 distributor.distribute_objects(layer2)
 
-trees = {"./mapobjects/images/firsnow2.png":("forest",1.,True)}
+trees = {"./mapobjects/images/firsnow2.png":("forest",1.5,True)}
 distributor = get_forest_distributor(me, trees, forest_map, ["Thin snow","Snow"])
+distributor.homogeneity = 0.5
 distributor.distribute_objects(layer2)
 
-trees = {"./mapobjects/images/oasis0.png":("palmforest",1.3,True)}
+trees = {"./mapobjects/images/oasis0.png":("palm forest",1.3,True)}
 distributor = get_forest_distributor(me, trees, forest_map, ["Sand"])
 distributor.max_density = 1
 distributor.homogeneity = 0.5
@@ -165,8 +161,16 @@ distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
 distributor.distribute_objects(layer2)
 
 
+trees = {"./mapobjects/images/yar_bush.png":("bush",1.,False)}
+distributor = get_forest_distributor(me, trees, forest_map, ["Grass"])
+distributor.max_density = 2
+distributor.homogeneity = 0.2
+distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
+distributor.distribute_objects(layer2)
+
 #Now that we finished to add static objects, we generate the surface
 print("Building surfaces") #this is also a long process
+layer2.static_objects.sort(key=lambda x:x.ypos())
 me.build_surfaces()
 
 ################################################################################
