@@ -263,9 +263,11 @@ class LogicalMap(BaseGrid):
             gm.surfaces = gm.pure_surfaces
             gm.save_pure_surfaces()
 
-    def blit_objects(self, objects=None): #this is permanent
+    def blit_objects(self, objects=None, sort=True): #this is permanent
         if objects is None:
             objects = self.static_objects
+        if sort:
+            objects.sort(key=lambda x: x.ypos())
         for obj in objects:
             self.blit_img(obj.imgs, obj.cell.coord, obj.relpos)
 

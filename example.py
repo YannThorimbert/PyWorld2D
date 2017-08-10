@@ -15,7 +15,7 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#trier les statics pour blit dans le bon ordre ?
+#meilleur herbe
 
 #rename unit
 
@@ -90,6 +90,7 @@ print("Building tilers")
 water_img = me.load_image("./rendering/tiles/water1.png")
 sand_img = me.load_image("./rendering/tiles/sand1.jpg")
 grass_img = me.load_image("./rendering/tiles/grass1.png")
+grass_img2 = me.load_image("./rendering/tiles/grass8.png")
 rock_img = me.load_image("./rendering/tiles/rock1.png")
 black_img = me.get_color_image((0,0,0))
 white_img = me.get_color_image((255,255,255))
@@ -104,14 +105,15 @@ thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 200)
 # here dx_divider = 10 and dy_divider = 8
 #hmax=0.1 means one will find deepwater only below height = 0.1
 ##deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
-mediumwater = me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
-water = me.add_material("Water", 0.55, water_img, 10, 8)
-shore = me.add_material("Shallow water", 0.6, shore_img, 10, 8)
-sand = me.add_material("Sand", 0.62, sand_img)
-badlands = me.add_material("Grass", 0.8, grass_img)
-rock = me.add_material("Rock", 0.83, rock_img)
-snow1 = me.add_material("Thin snow", 0.9, thinsnow_img)
-snow2 = me.add_material("Snow", float("inf"), white_img)
+me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
+me.add_material("Water", 0.55, water_img, 10, 8)
+me.add_material("Shallow water", 0.6, shore_img, 10, 8)
+me.add_material("Sand", 0.62, sand_img)
+me.add_material("Grass", 0.7, grass_img2)
+me.add_material("Grass", 0.8, grass_img, id_="Grass2")
+me.add_material("Rock", 0.83, rock_img)
+me.add_material("Thin snow", 0.9, thinsnow_img)
+me.add_material("Snow", float("inf"), white_img)
 #Outside material is mandatory. The only thing you can change is black_img
 outside = me.add_material("outside", -1, black_img)
 
@@ -144,8 +146,16 @@ layer2 = me.add_layer()
 #dont forget to resize the object to the size corresponding to largest zoom:
 # its up to you to decide what should be the size of the object...
 # the size is set through the imgs_dict argument of get_forest_distributor
-trees = {"./mapobjects/images/fir0.png":("forest",1.5,False)}
-distributor = get_forest_distributor(me, trees, forest_map, ["Grass","Rock"])
+trees = {"./mapobjects/images/yar_fir1.png":("forest",1.5,False),
+            "./mapobjects/images/yar_fir2.png":("forest",1.5,False)}
+distributor = get_forest_distributor(me, trees, forest_map, ["Grass2","Rock"])
+distributor.distribute_objects(layer2)
+
+trees = {"./mapobjects/images/yar_tree2.png":("forest",3.,False)}
+distributor = get_forest_distributor(me, trees, forest_map, ["Grass"])
+distributor.max_density = 1
+distributor.homogeneity = 0.1
+distributor.zones_spread = [(0.5,0.2)]
 distributor.distribute_objects(layer2)
 
 trees = {"./mapobjects/images/firsnow2.png":("forest",1.5,True)}

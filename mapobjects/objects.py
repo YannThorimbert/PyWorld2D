@@ -13,9 +13,15 @@ def get_forest_distributor(me, imgdict, forest_map, material_names):
         name, factor, flip = imgdict[fn]
         img = thorpy.load_image(fn, colorkey=(255,255,255))
         img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
+        w,h = img.get_size()
         obj = MapObject(me, img, name)
         obj.build_imgs()
         obj.max_relpos[1] = 0.
+        obj.min_relpos[1] = -0.4 a eclaircir
+        if ref_size < h:
+            obj.max_relpos[1] = (ref_size-h)/float(h)
+##            if obj.min_relpos[1] > obj.max_relpos[1]:
+##                obj.min_relpos[1] = obj.max_relpos[1]
         objects.append(obj)
         if flip:
             objects.append(obj.get_flipped_true_copy())

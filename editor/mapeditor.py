@@ -204,14 +204,14 @@ class MapEditor:
             self.e_box.get_reaction(name).params["delta"] = value
 
 
-    def build_surfaces(self):
+    def build_surfaces(self, sort_objects=True):
         self.lm.build_surfaces()
-        self.lm.blit_objects()
+        self.lm.blit_objects(sort=sort_objects)
         for lay in self.lm.layers:
             lay.build_surfaces()
              #save BEFORE we blit objects (unless we want the objects to be part of the permanent map)
-            lay.save_pure_surfaces()
-            lay.blit_objects()
+##            lay.save_pure_surfaces()
+            lay.blit_objects(sort=sort_objects)
         #
         cursors_n = gui.get_cursors(self.cell_rect.inflate((2,2)),
                                         guip.CURSOR_COLOR_NORMAL)
@@ -395,9 +395,12 @@ class MapEditor:
         return tm.build_tiles(img_full_size, self.zoom_cell_sizes, self.nframes,
                                 dx_divider, dy_divider)
 
-    def add_material(self, name, hmax, img_fullsize, dx_divider=0, dy_divider=0):
+    def add_material(self, name, hmax, img_fullsize, dx_divider=0, dy_divider=0,
+                     id_=None):
         imgs = self.build_tiles(img_fullsize, dx_divider, dy_divider)
-        self.materials[name] = tm.Material(name, hmax, imgs)
+        if id_ is None:
+            id_ = name
+        self.materials[id_] = tm.Material(name, hmax, imgs)
 
     def build_materials(self, cell_radius_divider):
         materials = list(self.materials.values())
