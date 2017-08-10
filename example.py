@@ -15,18 +15,18 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#meilleur herbe
+#objets de base: montagnes, chemins, rivieres.
 
 #rename unit
-
-#objets de base: feuillu, montagnes, villages, chemin, rivieres.
-#pour fs: chateaux, murailles, units: (herite de objet dynamique)
 
 #peut etre que marche pas sans numpy a cause du beach tiler.
 #Dans ce cas, favoriser la hmap issue de version numpy
 #==> a tester sur une machine vierge
 
 #finalement: editeur, load/save/quit
+
+#meilleur herbe
+#meilleur palmier
 
 #alerts pour autres trucs
 
@@ -47,7 +47,7 @@ app = thorpy.Application((W,H))
 #might be chosen by user:
 
 chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
-desired_world_size = (100,50) #in number of cells. Put a power of 2 for tilable maps
+desired_world_size = (30,30) #in number of cells. Put a power of 2 for tilable maps
 
 
 #cell_radius = cell_size//radius_divider
@@ -163,7 +163,7 @@ distributor = get_forest_distributor(me, trees, forest_map, ["Thin snow","Snow"]
 distributor.homogeneity = 0.5
 distributor.distribute_objects(layer2)
 
-trees = {"./mapobjects/images/oasis0.png":("palm forest",1.3,True)}
+trees = {"./mapobjects/images/oasis0.png":("palm forest",1.7,True)}
 distributor = get_forest_distributor(me, trees, forest_map, ["Sand"])
 distributor.max_density = 1
 distributor.homogeneity = 0.5
@@ -173,14 +173,21 @@ distributor.distribute_objects(layer2)
 
 trees = {"./mapobjects/images/yar_bush.png":("bush",1.,False)}
 distributor = get_forest_distributor(me, trees, forest_map, ["Grass"])
-distributor.max_density = 2
+distributor.max_density = 1
 distributor.homogeneity = 0.2
 distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
 distributor.distribute_objects(layer2)
 
+trees = {"./mapobjects/images/pepperRacoon.png":("Village",1.6,True),
+         "./mapobjects/images/rgbfumes.png":("Village",1.6,True)}
+distributor = get_forest_distributor(me, trees, forest_map, ["Grass"])
+distributor.max_density = 2
+distributor.homogeneity = 0.2
+distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
+distributor.distribute_objects(layer2, exclusive = True)
+
 #Now that we finished to add static objects, we generate the surface
 print("Building surfaces") #this is also a long process
-layer2.static_objects.sort(key=lambda x:x.ypos())
 me.build_surfaces()
 
 ################################################################################
@@ -189,7 +196,7 @@ char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
 char1_img = thorpy.get_resized_image(char1_img, (me.zoom_cell_sizes[0],)*2)
 char1 = MapObject(me, char1_img, "My Unit")
 char1.build_imgs()
-obj = char1.add_unit_on_cell(lm.cells[32][15])
+obj = char1.add_unit_on_cell(lm.cells[15][15])
 obj.quantity = 12 #logical (not graphical) quantity
 me.dynamic_objects.append(obj)
 
@@ -238,3 +245,4 @@ app.quit()
 
 #pour FS: ajouter un info box quand on click sur material name, quand on click sur une cellule
 
+#pour fs: chateaux, murailles, units: (herite de objet dynamique)

@@ -16,12 +16,11 @@ def get_forest_distributor(me, imgdict, forest_map, material_names):
         w,h = img.get_size()
         obj = MapObject(me, img, name)
         obj.build_imgs()
-        obj.max_relpos[1] = 0.
-        obj.min_relpos[1] = -0.4
-        if h > ref_size:
-            obj.max_relpos[1] = 2.*h/(h-ref_size)
-##            if obj.min_relpos[1] > obj.max_relpos[1]:
-##                obj.min_relpos[1] = obj.max_relpos[1]
+        obj.max_relpos[1] = (1. - factor)/2.
+        if obj.max_relpos[1] > 0.:
+            print("MAX = ", fn, "w,h=", w, h, ref_size, factor,"maxrelpos=",obj.max_relpos, factor - 1.)
+        if obj.min_relpos[1] > obj.max_relpos[1]:
+            obj.min_relpos[1] = obj.max_relpos[1]
         objects.append(obj)
         if flip:
             objects.append(obj.get_flipped_true_copy())
@@ -47,7 +46,7 @@ class RandomObjectDistribution:
         self.zones_spread = [(0.,1.)]
 
 
-    def distribute_objects(self, layer):
+    def distribute_objects(self, layer, exclusive=False):
         for x,y in self.master_map:
             h = self.hmap[x][y]
             right_h = False
@@ -58,12 +57,19 @@ class RandomObjectDistribution:
             if right_h:
                 cell = self.master_map.cells[x][y]
                 if cell.material in self.materials:
+                    if exclusive:
+                        if cell.objects:
+                            for obj in cell.objects:
+                                layer.static_objects.remove(obj)
+                            cell.objects = []
                     for i in range(self.max_density):
                         if random.random() < self.homogeneity:
                             obj = random.choice(self.objs)
                             obj = obj.add_copy_on_cell(cell)
                             obj.randomize_relpos()
                             layer.static_objects.append(obj)
+
+
 
 class MapObject:
 
@@ -83,7 +89,7 @@ class MapObject:
     def ypos(self):
         h = self.original_img.get_size()[1]
         s = self.editor.zoom_cell_sizes[0]
-        return self.cell.coord[1]  + h*(0.5 - self.max_relpos[1])/s
+        return self.cell.coord[1]  + 0.5*h/s + self.relpos[1]
 
     def randomize_relpos(self):
         self.relpos[0] = self.min_relpos[0] +\

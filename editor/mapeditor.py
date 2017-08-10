@@ -273,6 +273,7 @@ class MapEditor:
                 self.cursor_color = 1
             else:
                 self.cursor_color = 0
+            self.img_cursor = self.cursors[self.cursor_color][self.idx_cursor]
     ##        if cell.objects:
     ##            print(cell.objects)
 
