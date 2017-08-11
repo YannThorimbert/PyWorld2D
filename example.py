@@ -15,9 +15,6 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#distributor : part de pos aleatoire et modulo, ou bien flip map.
-#parametre : n et spread
-
 #inclure les rgbfumes
 
 #objets de base: montagnes, collines, chemins, rivieres.
@@ -159,15 +156,17 @@ palm.max_relpos[0] = 0.1 #restrict because they are near to water
 palm.min_relpos[0] = -0.1
 bush = MapObject(me,"./mapobjects/images/yar_bush.png","bush",1.)
 village1 = MapObject(me,"./mapobjects/images/pepperRacoon.png","village",1.3)
-village1.max_relpos = [0., 0.]
-village1.min_relpos = [0., 0.]
-village2 = MapObject(me,"./mapobjects/images/rgbfumes.png","village",2.2)
-village2.max_relpos = [0., 0.]
-village2.min_relpos = [0., 0.]
+village2 = MapObject(me,"./mapobjects/images/rgbfumes1.png","village",2.2)
+village3 = MapObject(me,"./mapobjects/images/rgbfumes2.png","village",2.2)
+village4 = MapObject(me,"./mapobjects/images/rgbfumes3.png","village",2.2)
+
+for v in[village1,village2,village3,village4]:
+    v.max_relpos = [0., 0.]
+    v.min_relpos = [0., 0.]
 
 
 #4) we add the objects via distributors
-distributor = get_distributor(me, [fir1, fir2], forest_map, ["Grass2","Rock"])
+distributor = get_distributor(me, [fir1, fir2, tree], forest_map, ["Grass2","Rock"])
 distributor.distribute_objects(layer2)
 
 ##         "./mapobjects/images/yar_tree2.png":("forest",3.,False),
@@ -184,13 +183,6 @@ distributor.distribute_objects(layer2)
 
 
 brul = [palm, palm.flip()]
-print("0")
-app = thorpy.get_application()
-app.fill((255,255,255))
-app.blit(brul[0].imgs[0], (0,0))
-app.blit(brul[1].imgs[0], (100, 100))
-app.update()
-app.pause()
 distributor = get_distributor(me, brul, forest_map, ["Sand"])
 distributor.max_density = 1
 distributor.homogeneity = 0.5
@@ -205,7 +197,8 @@ distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
 distributor.distribute_objects(layer2)
 
 distributor = get_distributor(me,
-                        [village1, village1.flip(), village2, village2.flip()],
+                        [village1, village1.flip(), village2, village2.flip(),
+                         village3, village3.flip(), village4, village4.flip()],
                         forest_map, ["Grass"], limit_relpos_y=False)
 distributor.max_density = 1
 distributor.homogeneity = 0.2

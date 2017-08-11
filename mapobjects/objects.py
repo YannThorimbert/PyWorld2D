@@ -34,8 +34,10 @@ class RandomObjectDistribution:
 
 
     def distribute_objects(self, layer, exclusive=False):
+        nx,ny = self.master_map.nx, self.master_map.ny
+        dx, dy = random.randint(0,nx-1), random.randint(0,ny-1)
         for x,y in self.master_map:
-            h = self.hmap[x][y]
+            h = self.hmap[(x+dx)%nx][(y+dy)%ny]
             right_h = False
             for heigth,spread in self.zones_spread:
                 if abs(h-heigth) < spread:
