@@ -285,10 +285,7 @@ class MapEditor:
         #blit map frame
         self.screen.fill((0,0,0))
         #blit map
-        self.cam.draw_grid(self.screen)
-        #blit grid
-        if self.show_grid_lines:
-            self.cam.draw_grid_lines(self.screen)
+        self.cam.draw_grid(self.screen, self.show_grid_lines)
         #blit objects
         self.cam.draw_objects(self.screen, self.dynamic_objects)
         #update right pane
@@ -301,10 +298,7 @@ class MapEditor:
         #blit map frame
         self.screen.fill((0,0,0))
         #blit map
-        self.cam.draw_grid(self.screen)
-        #blit grid
-        if self.show_grid_lines:
-            self.cam.draw_grid_lines(self.screen)
+        self.cam.draw_grid(self.screen, self.show_grid_lines)
         #blit objects
         self.cam.draw_objects(self.screen, self.dynamic_objects)
         #blit right pane and draw rect on minimap

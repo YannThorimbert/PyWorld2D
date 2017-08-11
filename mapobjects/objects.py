@@ -4,26 +4,13 @@ import thorpy
 
 
 
-def get_forest_distributor(me, imgdict, forest_map, material_names):
-    """<imgdict> is a dict of the form:
-                    {img_filename:(object_name, size_factor, also_flip)}"""
-    objects = []
-    ref_size = me.zoom_cell_sizes[0]
-    for fn in imgdict:
-        name, factor, flip = imgdict[fn]
-        img = thorpy.load_image(fn, colorkey=(255,255,255))
-        img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
-        w,h = img.get_size()
-        obj = MapObject(me, img, name)
-        obj.build_imgs()
-        obj.max_relpos[1] = (1. - factor)/2.
-        if obj.max_relpos[1] > 0.:
-            print("MAX = ", fn, "w,h=", w, h, ref_size, factor,"maxrelpos=",obj.max_relpos, factor - 1.)
-        if obj.min_relpos[1] > obj.max_relpos[1]:
-            obj.min_relpos[1] = obj.max_relpos[1]
-        objects.append(obj)
-        if flip:
-            objects.append(obj.get_flipped_true_copy())
+def get_distributor(me, objects, forest_map, material_names,
+                    limit_relpos_y=True):
+    if limit_relpos_y:
+        for obj in objects:
+            obj.max_relpos[1] = (1. - obj.factor)/2.
+            if obj.min_relpos[1] > obj.max_relpos[1]:
+                obj.min_relpos[1] = obj.max_relpos[1]
     distributor = RandomObjectDistribution(objects, forest_map, me.lm)
     for name in material_names:
         if name in me.materials:
@@ -73,18 +60,29 @@ class RandomObjectDistribution:
 
 class MapObject:
 
-    def __init__(self, editor, img, name="", relpos=(0,0)):
+    def __init__(self, editor, fn, name="", factor=1., relpos=(0,0), build=True):
         """Object that looks the same at each frame"""
         self.editor = editor
+        ref_size = editor.zoom_cell_sizes[0]
+        if fn:
+            img = thorpy.load_image(fn, colorkey=(255,255,255))
+            img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
+        else:
+            img = None
+        self.factor = factor
         self.original_img = img
         self.relpos = [0,0]
         self.imgs = None
         self.cell = None
         self.name = name
         self.ncopies = 0
-        self.min_relpos = [-0.5, -0.5]
-        self.max_relpos = [0.5,   0.5]
+        self.min_relpos = [-0.4, -0.4]
+        self.max_relpos = [0.4,   0.4]
+##        self.min_relpos = [-0.1, -0.1]
+##        self.max_relpos = [0.1,   0.1]
         self.quantity = 1 #not necessarily 1 for units
+        if build and fn:
+            self.build_imgs()
 
     def ypos(self):
         h = self.original_img.get_size()[1]
@@ -98,25 +96,29 @@ class MapObject:
                          random.random()*(self.max_relpos[1]-self.min_relpos[1])
 
     def copy(self):
+        """The copy references the same images as the original !"""
         self.ncopies += 1
-        obj = MapObject(self.editor, self.original_img)
+        obj = MapObject(self.editor, "", self.name, self.factor, list(self.relpos))
+        obj.original_img = self.original_img
         obj.imgs = self.imgs
-        obj.name = self.name
-##        if self.name:
-##            obj.name = self.name + " " + str(self.ncopies)
-        obj.relpos = list(self.relpos)
         obj.min_relpos = list(self.min_relpos)
         obj.max_relpos = list(self.max_relpos)
         return obj
 
-    def get_flipped_true_copy(self, x=True, y=False):
-        img = pygame.transform.flip(self.original_img, x, y)
-        obj = MapObject(self.editor, img)
-        obj.name = self.name
-        obj.build_imgs()
-        obj.relpos = list(self.relpos)
+    def deep_copy(self):
+        obj = MapObject(self.editor, "", self.name, self.factor, list(self.relpos))
+        obj.original_img = self.original_img.copy()
+        obj.imgs = [i.copy() for i in self.imgs]
         obj.min_relpos = list(self.min_relpos)
         obj.max_relpos = list(self.max_relpos)
+        return obj
+
+
+    def flip(self, x=True, y=False):
+        obj = self.deep_copy()
+        obj.original_img = pygame.transform.flip(obj.original_img, x, y)
+        for i in range(len(obj.imgs)):
+            obj.imgs[i] = pygame.transform.flip(obj.imgs[i], x, y)
         return obj
 
     def add_copy_on_cell(self, cell):

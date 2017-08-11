@@ -8,14 +8,22 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-from mapobjects.objects import MapObject, RandomObjectDistribution, get_forest_distributor
+from mapobjects.objects import MapObject, RandomObjectDistribution, get_distributor
 import saveload.io as io
 
 from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#objets de base: montagnes, chemins, rivieres.
+#distributor : part de pos aleatoire et modulo, ou bien flip map.
+#parametre : n et spread
+
+#inclure les rgbfumes
+
+#objets de base: montagnes, collines, chemins, rivieres.
+#objects avec des frames(rivieres)
+#meilleur herbe
+#harmoniser les ombres
 
 #rename unit
 
@@ -25,9 +33,6 @@ from editor.mapeditor import MapEditor
 
 #finalement: editeur, load/save/quit
 
-#meilleur herbe
-#meilleur palmier
-
 #alerts pour autres trucs
 
 #v2:
@@ -35,19 +40,20 @@ from editor.mapeditor import MapEditor
 
 #ridged noise
 
-#effets: vent dans arbres et fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
+#effets: fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
 
 #ne pas oublier d'ajouter thorpy
-#objects avec des frames
+
 
 
 W,H = 800, 600 #screen size you want
 app = thorpy.Application((W,H))
+##
 
 #might be chosen by user:
 
 chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
-desired_world_size = (30,30) #in number of cells. Put a power of 2 for tilable maps
+desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable maps
 
 
 #cell_radius = cell_size//radius_divider
@@ -141,49 +147,69 @@ ng.normalize(forest_map)
 #layer2 is a superimposed map on which we decide to blit some static objects:
 layer2 = me.add_layer()
 
-
-#3) we add the objects via distributors
-#dont forget to resize the object to the size corresponding to largest zoom:
+#3) We build the objects that we want.
 # its up to you to decide what should be the size of the object...
-# the size is set through the imgs_dict argument of get_forest_distributor
-trees = {"./mapobjects/images/yar_fir1.png":("forest",1.5,False),
-            "./mapobjects/images/yar_fir2.png":("forest",1.5,False)}
-distributor = get_forest_distributor(me, trees, forest_map, ["Grass2","Rock"])
+# the size is set through the imgs_dict argument of get_distributor
+fir1 = MapObject(me,"./mapobjects/images/yar_fir1.png","forest",1.5)
+fir2 = MapObject(me,"./mapobjects/images/yar_fir2.png","forest",1.5)
+fir3 = MapObject(me,"./mapobjects/images/firsnow2.png","forest",1.5)
+tree = MapObject(me,"./mapobjects/images/tree.png","forest",1.5)
+palm = MapObject(me,"./mapobjects/images/skeddles.png","forest",1.7)
+palm.max_relpos[0] = 0.1 #restrict because they are near to water
+palm.min_relpos[0] = -0.1
+bush = MapObject(me,"./mapobjects/images/yar_bush.png","bush",1.)
+village1 = MapObject(me,"./mapobjects/images/pepperRacoon.png","village",1.3)
+village1.max_relpos = [0., 0.]
+village1.min_relpos = [0., 0.]
+village2 = MapObject(me,"./mapobjects/images/rgbfumes.png","village",2.2)
+village2.max_relpos = [0., 0.]
+village2.min_relpos = [0., 0.]
+
+
+#4) we add the objects via distributors
+distributor = get_distributor(me, [fir1, fir2], forest_map, ["Grass2","Rock"])
 distributor.distribute_objects(layer2)
 
-trees = {"./mapobjects/images/yar_tree2.png":("forest",3.,False)}
-distributor = get_forest_distributor(me, trees, forest_map, ["Grass"])
+##         "./mapobjects/images/yar_tree2.png":("forest",3.,False),
+distributor = get_distributor(me, [tree], forest_map, ["Grass"])
 distributor.max_density = 1
 distributor.homogeneity = 0.1
 distributor.zones_spread = [(0.5,0.2)]
 distributor.distribute_objects(layer2)
 
-trees = {"./mapobjects/images/firsnow2.png":("forest",1.5,True)}
-distributor = get_forest_distributor(me, trees, forest_map, ["Thin snow","Snow"])
+distributor = get_distributor(me, [fir3, fir3.flip()],
+                                forest_map, ["Thin snow","Snow"])
 distributor.homogeneity = 0.5
 distributor.distribute_objects(layer2)
 
-trees = {"./mapobjects/images/oasis0.png":("palm forest",1.7,True)}
-distributor = get_forest_distributor(me, trees, forest_map, ["Sand"])
+
+brul = [palm, palm.flip()]
+print("0")
+app = thorpy.get_application()
+app.fill((255,255,255))
+app.blit(brul[0].imgs[0], (0,0))
+app.blit(brul[1].imgs[0], (100, 100))
+app.update()
+app.pause()
+distributor = get_distributor(me, brul, forest_map, ["Sand"])
 distributor.max_density = 1
 distributor.homogeneity = 0.5
 distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
 distributor.distribute_objects(layer2)
 
 
-trees = {"./mapobjects/images/yar_bush.png":("bush",1.,False)}
-distributor = get_forest_distributor(me, trees, forest_map, ["Grass"])
-distributor.max_density = 1
-distributor.homogeneity = 0.2
-distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
-distributor.distribute_objects(layer2)
-
-trees = {"./mapobjects/images/pepperRacoon.png":("Village",1.6,True),
-         "./mapobjects/images/rgbfumes.png":("Village",1.6,True)}
-distributor = get_forest_distributor(me, trees, forest_map, ["Grass"])
+distributor = get_distributor(me, [bush], forest_map, ["Grass"])
 distributor.max_density = 2
 distributor.homogeneity = 0.2
 distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
+distributor.distribute_objects(layer2)
+
+distributor = get_distributor(me,
+                        [village1, village1.flip(), village2, village2.flip()],
+                        forest_map, ["Grass"], limit_relpos_y=False)
+distributor.max_density = 1
+distributor.homogeneity = 0.2
+distributor.zones_spread = [(0.1, 0.05), (0.2,0.05), (0.4,0.05)]
 distributor.distribute_objects(layer2, exclusive = True)
 
 #Now that we finished to add static objects, we generate the surface
@@ -192,10 +218,7 @@ me.build_surfaces()
 
 ################################################################################
 #Here we add a dynamic object
-char1_img = thorpy.load_image("./mapobjects/images/char1.png", (255,255,255))
-char1_img = thorpy.get_resized_image(char1_img, (me.zoom_cell_sizes[0],)*2)
-char1 = MapObject(me, char1_img, "My Unit")
-char1.build_imgs()
+char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
 obj = char1.add_unit_on_cell(lm.cells[15][15])
 obj.quantity = 12 #logical (not graphical) quantity
 me.dynamic_objects.append(obj)
@@ -246,3 +269,6 @@ app.quit()
 #pour FS: ajouter un info box quand on click sur material name, quand on click sur une cellule
 
 #pour fs: chateaux, murailles, units: (herite de objet dynamique)
+
+#pour fs : vu que statis prennet de la place, on considere qu'on est dans un village quand on est pres de lui ?
+# ou sinon relpos tres petit...

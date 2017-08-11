@@ -51,9 +51,11 @@ class Camera:
        y = (self.campos.y - self.rcam.y)*self.cell_rect.h
        return x,y
 
-    def draw_grid(self, screen):
+    def draw_grid(self, screen, show_grid_lines):
         xpix, ypix = self.get_dpix()
         self.lm.draw(screen, self.map_rect.topleft, xpix, ypix)
+        if show_grid_lines:
+            self.draw_grid_lines(screen)
         for lay in self.lm.layers:
             lay.draw(screen, self.map_rect.topleft, xpix, ypix)
 
