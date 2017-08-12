@@ -1,4 +1,4 @@
-import random
+import random, math
 import pygame
 import thorpy
 
@@ -47,10 +47,7 @@ class RandomObjectDistribution:
                 cell = self.master_map.cells[x][y]
                 if cell.material in self.materials:
                     if exclusive:
-                        if cell.objects:
-                            for obj in cell.objects:
-                                layer.static_objects.remove(obj)
-                            cell.objects = []
+                        remove_objects(cell, layer)
                     for i in range(self.max_density):
                         if random.random() < self.homogeneity:
                             obj = random.choice(self.objs)
@@ -59,6 +56,11 @@ class RandomObjectDistribution:
                             layer.static_objects.append(obj)
 
 
+def remove_objects(cell, layer):
+    if cell.objects:
+        for obj in cell.objects:
+            layer.static_objects.remove(obj)
+        cell.objects = []
 
 class MapObject:
 
@@ -149,5 +151,67 @@ class MapObject:
 
     def get_current_img(self):
         return self.imgs[self.cell.map.current_zoom_level]
+
+
+
+def distribute_random_path(editor, layer, cobbles, woods, cell_i, cell_f, k=3):
+    villages = [o for o in layer.static_objects if "village" in o.name]
+    if villages:
+        if cell_i == "auto":
+            cell_i = random.choice(villages).cell
+        if cell_f == "auto":
+            cell_f = random.choice(villages).cell
+
+
+##            if editor.cells[x][y].objects
+##    path = build_random_path(cell_i.coord[0], cell_i.coord[1],
+##                             cell_f.coord[0], cell_f.coord[1], k)
+
+
+##for x,y in build_random_path(30,30, 45,32, k=3):
+##    c = random.choice(cobbles)
+##    c = c.add_copy_on_cell(lm.cells[x][y])
+##    c.randomize_relpos()
+##    layer2.static_objects.append(c)
+
+def sgn(x):
+    if x < 0:
+        return -1.
+    elif x > 0:
+        return 1.
+    return 0.
+
+def build_random_path(xi,yi, xf,yf, k=3, nmax=10000):
+    x,y = xi,yi
+    path = set([(x,y)])
+    dx = xf-xi
+    dy = yf-yi
+    if dx != 0:
+        choices_x = [int(sgn(dx)),]*k + [-1*int(sgn(dx))]
+    else:
+        choices_x = [-1,1]
+    if dy != 0:
+        choices_y = [int(sgn(dy)),]*k + [-1*int(sgn(dy))]
+    else:
+        choices_y = [-1,1]
+    iters = 0
+    while x != xf or y != yf:
+        if iters > nmax:
+            break
+        dx = xf-x
+        dy = yf-y
+        if dy != 0:
+            probx = 1. / (1. + math.exp(-abs(float(dx)/dy)))
+        else:
+            probx = 1.
+        if random.random() < probx:
+            x += random.choice(choices_x)
+        else:
+            y += random.choice(choices_y)
+        path.add((x,y))
+        iters += 1
+    return path
+
+
 
 

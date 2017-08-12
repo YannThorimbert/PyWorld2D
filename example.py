@@ -8,16 +8,23 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-from mapobjects.objects import MapObject, RandomObjectDistribution, get_distributor
+from mapobjects.objects import MapObject, RandomObjectDistribution, get_distributor, distribute_random_path
 import saveload.io as io
 
 from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#inclure les rgbfumes
+#identifier chaque type d'objet en interne
 
-#objets de base: montagnes, collines, chemins, rivieres.
+#si chemin passe sur l'eau, c'est un pont.
+#chemin est exclusif
+#chemin = + court chemin avec obstacles = objets, eau penalisee
+
+#update_cell_info montre qu'il y a un village en dynamique...
+
+
+#objets de base: montagnes, collines, rivieres.
 #objects avec des frames(rivieres)
 #meilleur herbe
 #harmoniser les ombres
@@ -50,7 +57,7 @@ app = thorpy.Application((W,H))
 #might be chosen by user:
 
 chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
-desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable maps
+desired_world_size = (32,32) #in number of cells. Put a power of 2 for tilable maps
 
 
 #cell_radius = cell_size//radius_divider
@@ -58,8 +65,8 @@ desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable
 cell_radius_divider = 8
 
 me = MapEditor()
-me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
-##me.zoom_cell_sizes = [25]
+##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
+me.zoom_cell_sizes = [16]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 200 #width of the right menu in pixels
@@ -77,6 +84,9 @@ if 2**power < max(desired_world_size):
 S = int(2**power)
 hmap = ng.generate_terrain(S, chunk=chunk)
 ng.normalize(hmap)
+##for x in range(S):
+##    for y in range(S):
+##        hmap[x][y] = 0.7
 ##hmap[2][1] = 0.7 #this is how you manually change the height of a cell
 
 #Here we build the miniature map image
@@ -112,8 +122,8 @@ me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
 me.add_material("Water", 0.55, water_img, 10, 8)
 me.add_material("Shallow water", 0.6, shore_img, 10, 8)
 me.add_material("Sand", 0.62, sand_img)
-me.add_material("Grass", 0.7, grass_img2)
-me.add_material("Grass", 0.8, grass_img, id_="Grass2")
+me.add_material("Grass", 0.8, grass_img)
+##me.add_material("Grass", 0.8, grass_img2, id_="Grass2")
 me.add_material("Rock", 0.83, rock_img)
 me.add_material("Thin snow", 0.9, thinsnow_img)
 me.add_material("Snow", float("inf"), white_img)
@@ -157,8 +167,12 @@ palm.min_relpos[0] = -0.1
 bush = MapObject(me,"./mapobjects/images/yar_bush.png","bush",1.)
 village1 = MapObject(me,"./mapobjects/images/pepperRacoon.png","village",1.3)
 village2 = MapObject(me,"./mapobjects/images/rgbfumes1.png","village",2.2)
-village3 = MapObject(me,"./mapobjects/images/rgbfumes2.png","village",2.2)
-village4 = MapObject(me,"./mapobjects/images/rgbfumes3.png","village",2.2)
+village3 = MapObject(me,"./mapobjects/images/rgbfumes2.png","village",2.6)
+village4 = MapObject(me,"./mapobjects/images/rgbfumes3.png","village",2.6)
+##village5 = MapObject(me,"./mapobjects/images/rgbfumes4.png","village",2.2)
+
+cobble = MapObject(me,"./mapobjects/images/cobblestone3.png","cobblestone",1.)
+wood = MapObject(me,"./mapobjects/images/wood1.png","wooden bridge",1.)
 
 for v in[village1,village2,village3,village4]:
     v.max_relpos = [0., 0.]
@@ -166,7 +180,7 @@ for v in[village1,village2,village3,village4]:
 
 
 #4) we add the objects via distributors
-distributor = get_distributor(me, [fir1, fir2, tree], forest_map, ["Grass2","Rock"])
+distributor = get_distributor(me, [fir1, fir2, tree], forest_map, ["Grass","Rock"])
 distributor.distribute_objects(layer2)
 
 ##         "./mapobjects/images/yar_tree2.png":("forest",3.,False),
@@ -201,9 +215,33 @@ distributor = get_distributor(me,
                          village3, village3.flip(), village4, village4.flip()],
                         forest_map, ["Grass"], limit_relpos_y=False)
 distributor.max_density = 1
-distributor.homogeneity = 0.2
+distributor.homogeneity = 0.05
 distributor.zones_spread = [(0.1, 0.05), (0.2,0.05), (0.4,0.05)]
 distributor.distribute_objects(layer2, exclusive = True)
+
+
+cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip(True,True)]
+
+################################################################################
+from ia.path import BranchAndBoundForMap
+costs = {name:100. for name in me.materials}#cout des objets!
+costs["Grass"] = 1.
+##costs["Snow"] = 2.
+##for name in costs:
+##    if "water" in name.lower():
+####        costs[name] = float("inf")
+##        costs[name] = 1.
+##sp = ShortestPath(me, lm.cells[31][0], lm.cells[11][14], costs)
+sp = BranchAndBoundForMap(lm, lm.cells[31][0], lm.cells[11][14], costs)
+path = sp.solve() #pk ne marche pas? essayer sur toute petite map pour voir si au moins trouve la solution
+print(path)
+for cell in path:
+    c = random.choice(cobbles)
+    c = c.add_copy_on_cell(cell)
+    layer2.static_objects.append(c)
+
+##distribute_random_path(me, layer2, cobbles, [wood], cell_i="auto", cell_f="auto")
+
 
 #Now that we finished to add static objects, we generate the surface
 print("Building surfaces") #this is also a long process
@@ -215,6 +253,8 @@ char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
 obj = char1.add_unit_on_cell(lm.cells[15][15])
 obj.quantity = 12 #logical (not graphical) quantity
 me.dynamic_objects.append(obj)
+
+
 
 
 ################################################################################

@@ -79,12 +79,13 @@ class MapEditor:
         ########################################################################
         self.cam.set_gui_elements(e_hmap, box_hmap)
         ########################################################################
-        self.e_zoom = thorpy.SliderX.make(self.menu_width//4, (0, 100),
-                                            "Zoom (%)", int, initial_value=100)
-        def func_reac_zoom(e):
-            levels = len(self.zoom_cell_sizes) - 1
-            level = int(levels*self.e_zoom.get_value()/self.e_zoom.limvals[1])
-            self.set_zoom(levels-level,False)
+        if len(self.zoom_cell_sizes) > 1:
+            self.e_zoom = thorpy.SliderX.make(self.menu_width//4, (0, 100),
+                                                "Zoom (%)", int, initial_value=100)
+            def func_reac_zoom(e):
+                levels = len(self.zoom_cell_sizes) - 1
+                level = int(levels*self.e_zoom.get_value()/self.e_zoom.limvals[1])
+                self.set_zoom(levels-level,False)
         ########################################################################
         self.cell_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size,
                          self.cell_rect.size, self.draw_no_update, e_hmap)
@@ -94,22 +95,26 @@ class MapEditor:
                          self.cell_rect.size, self.draw_no_update, e_hmap)
         self.menu_button = thorpy.make_menu_button()
         ########################################################################
-        self.e_box = thorpy.Element.make(elements=[self.e_zoom,
-                                                self.topbox,
-                                                self.misc_info.e,
-                                                self.cell_info.e,
-                                                self.unit_info.e,
-                                                self.menu_button],
+        elements =[
+                    self.topbox,
+                    self.misc_info.e,
+                    self.cell_info.e,
+                    self.unit_info.e,
+                    self.menu_button]
+        if len(self.zoom_cell_sizes) > 1:
+            elements.insert(0, self.e_zoom)
+        self.e_box = thorpy.Element.make(elements=elements,
                                         size=self.menu_rect.size)
         thorpy.store(self.e_box)
         self.e_box.stick_to("screen","right","right")
         ########################################################################
-        reac_zoom = thorpy.Reaction(reacts_to=thorpy.constants.THORPY_EVENT,
-                                    reac_func=func_reac_zoom,
-                                    event_args={"id":thorpy.constants.EVENT_SLIDE,
-                                                "el":self.e_zoom},
-                                    reac_name="zoom slide")
-        self.e_box.add_reaction(reac_zoom)
+        if len(self.zoom_cell_sizes) > 1:
+            reac_zoom = thorpy.Reaction(reacts_to=thorpy.constants.THORPY_EVENT,
+                                        reac_func=func_reac_zoom,
+                                        event_args={"id":thorpy.constants.EVENT_SLIDE,
+                                                    "el":self.e_zoom},
+                                        reac_name="zoom slide")
+            self.e_box.add_reaction(reac_zoom)
         ########################################################################
         thorpy.add_keydown_reaction(self.e_box, pygame.K_KP_PLUS,
                                     self.increment_zoom, params={"value":-1},
@@ -237,10 +242,9 @@ class MapEditor:
                                     center_before[1]-self.cam.ny//2))
         if refresh_slider:
             n = len(self.zoom_cell_sizes) - 1
-##            lev = n*(1 - self.e_zoom.get_value()/self.e_zoom.limvals[1])
-##            lev/n - 1 = -v/M ==> (1-lev/n)*M = v
-            newval = self.e_zoom.limvals[1]*(1 - float(level)/n)
-            self.e_zoom.set_value(int(newval))
+            if n > 0:
+                newval = self.e_zoom.limvals[1]*(1 - float(level)/n)
+                self.e_zoom.set_value(int(newval))
         #cursor
         cursors_n = gui.get_cursors(self.cell_rect.inflate((2,2)),
                                         guip.CURSOR_COLOR_NORMAL)

@@ -41,6 +41,12 @@ class LogicalCell:
     def extract_all_layers_img_at_zoom(self, level):
         return self.map.extract_all_layers_img_at_zoom(self.coord, level)
 
+    def has_object_name(self, name):
+        for o in self.objects:
+            if o.name == name:
+                return True
+        return False
+
 class WhiteLogicalCell:
 
     def __init__(self, logical_map):
