@@ -57,7 +57,7 @@ app = thorpy.Application((W,H))
 #might be chosen by user:
 
 chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
-desired_world_size = (32,32) #in number of cells. Put a power of 2 for tilable maps
+desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable maps
 
 
 #cell_radius = cell_size//radius_divider
@@ -171,7 +171,7 @@ village3 = MapObject(me,"./mapobjects/images/rgbfumes2.png","village",2.6)
 village4 = MapObject(me,"./mapobjects/images/rgbfumes3.png","village",2.6)
 ##village5 = MapObject(me,"./mapobjects/images/rgbfumes4.png","village",2.2)
 
-cobble = MapObject(me,"./mapobjects/images/cobblestone3.png","cobblestone",1.)
+cobble = MapObject(me,"./mapobjects/images/cobblestone2.png","cobblestone",1.)
 wood = MapObject(me,"./mapobjects/images/wood1.png","wooden bridge",1.)
 
 for v in[village1,village2,village3,village4]:
@@ -224,21 +224,19 @@ cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip
 
 ################################################################################
 from ia.path import BranchAndBoundForMap
-costs = {name:100. for name in me.materials}#cout des objets!
-costs["Grass"] = 1.
-##costs["Snow"] = 2.
-##for name in costs:
-##    if "water" in name.lower():
-####        costs[name] = float("inf")
-##        costs[name] = 1.
-##sp = ShortestPath(me, lm.cells[31][0], lm.cells[11][14], costs)
-sp = BranchAndBoundForMap(lm, lm.cells[31][0], lm.cells[11][14], costs)
+costs = {name:1. for name in me.materials}#cout des objets!
+costs["Snow"] = 20.
+costs["Sand"] = 10.
+for name in costs:
+    if "water" in name.lower():
+        costs[name] = float("inf")
+sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81], costs)
 path = sp.solve() #pk ne marche pas? essayer sur toute petite map pour voir si au moins trouve la solution
 print(path)
 for cell in path:
     c = random.choice(cobbles)
     c = c.add_copy_on_cell(cell)
-    layer2.static_objects.append(c)
+    lm.static_objects.append(c)
 
 ##distribute_random_path(me, layer2, cobbles, [wood], cell_i="auto", cell_f="auto")
 

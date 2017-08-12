@@ -81,7 +81,7 @@ class BranchAndBoundForMap(object):
         self.enode = None #enode = Expanding-Node
 
     def cost(self, state):
-        return self.distance(state), state.time_so_far
+        return self.distance(state) + state.time_so_far
 
     def distance(self, state):
         x0,y0 = state.cell.coord
@@ -115,11 +115,15 @@ class BranchAndBoundForMap(object):
         self.lnl = [initial_state]
         self.enode = self.lnl.pop()
         already = set([self.enode.cell.coord])
+        i = 0
         while True:
-            print(self.enode.cell.coord, self.distance(self.enode))
+##            print(self.enode.cell.coord, self.distance(self.enode))
             if self.distance(self.enode) == 0:
                 return self.enode
             else:
+                if i > 1e3:
+                    print("Fail")
+                    return None
                 self.lnl += self.get_children(self.enode)
                 if not self.lnl:
                     print("Fail")
@@ -129,8 +133,9 @@ class BranchAndBoundForMap(object):
                     self.lnl.sort(key=self.cost, reverse=True)
                     #updates enode
                     self.enode = self.lnl.pop()
-                    if self.enode.cell.coord in already:
-                        raise Exception(self.enode.cell.coord)
+                    while self.enode.cell.coord in already:
+                        self.enode = self.lnl.pop()
                     already.add(self.enode.cell.coord)
+                    i += 1
 
 
