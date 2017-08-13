@@ -2,52 +2,6 @@
 Yann Thorimbert, 04.11.2014
 """
 
-
-class BranchAndBound(object):
-    """
-    Generic Branch & Bound strategy implementation for Least Cost Live Node List.
-    """
-
-    def __init__(self, sol, chil, g, f=None, h=None):
-        """
-        sol : sol(x) returns True if the state x is a solution of the problem.
-        chil : chil(x) returns a list of childrens states of x.
-        g : g(x) is the guide function (heuristic)
-        f : you can specify f (see cost method), default is f(x) = x.
-        h : you can specify h (see cost methode), defaut is h(x) = depth of x.
-        """
-        self.sol = sol
-        self.chil = chil
-        self.g = g
-        if f is None:
-            self.f = lambda x: x
-        if h is None:
-            self.h = lambda x: x.depth #by default x is a Solution instance
-        self.lnl = [] #lln = Live Nodes List
-        self.enode = None #enode = Expanding-Node
-
-    def cost(self, x):
-        """c(x) = f(h(x)) + g(x)"""
-        return self.f(self.h(x)) + self.g(x)
-
-    def solve(self, lnl):
-        """Generic B&B solve function"""
-        self.lnl = lnl
-        self.enode = self.lnl.pop()
-        while True:
-            if self.sol(self.enode): #if solution, returns
-                return self.enode
-            else:
-                self.lnl += self.chil(self.enode)
-                if not self.lnl:
-                    print("Fail")
-                    return
-                else:
-                    #sort the lnl and reverse so that default pop function can be called
-                    self.lnl.sort(key=self.cost, reverse=True)
-                    #updates enode
-                    self.enode = self.lnl.pop()
-
 class State(object):
     """
     Generic datatype for storing a state.
@@ -72,12 +26,13 @@ class State(object):
 
 
 class BranchAndBoundForMap(object):
-    def __init__(self, lm, cell_i, cell_f, costs):
+    def __init__(self, lm, cell_i, cell_f, costs_materials, costs_objects):
         self.lm = lm
         self.cell_i = cell_i
         self.cell_f = cell_f
-        self.costs = costs
-        self.lnl = [] #lln = Live Nodes List
+        self.costs_materials = costs_materials
+        self.costs_objects = costs_objects
+        self.lnl = [] #lnl = Live Nodes List
         self.enode = None #enode = Expanding-Node
 
     def cost(self, state):
@@ -98,7 +53,9 @@ class BranchAndBoundForMap(object):
         left = self.lm.get_cell_at(x-1,y)
         for cell in [up,down,right,left]:
             if cell:
-                time = self.costs[cell.material.name]
+                time = self.costs_materials[cell.material.name]
+                if cell.objects:
+                    time += self.costs_objects[cell.objects[0].name]
                 child = State(cell, state, state.time_so_far + time)
                 children.append(child)
         return children
@@ -111,7 +68,7 @@ class BranchAndBoundForMap(object):
         return solution.get_all_parents()
 
     def process(self):
-        initial_state = State(self.cell_i, None, self.costs[self.cell_i.material.name])
+        initial_state = State(self.cell_i, None, self.costs_materials[self.cell_i.material.name])
         self.lnl = [initial_state]
         self.enode = self.lnl.pop()
         already = set([self.enode.cell.coord])
@@ -121,7 +78,7 @@ class BranchAndBoundForMap(object):
             if self.distance(self.enode) == 0:
                 return self.enode
             else:
-                if i > 1e3:
+                if i > 1e4:
                     print("Fail")
                     return None
                 self.lnl += self.get_children(self.enode)

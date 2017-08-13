@@ -16,6 +16,7 @@ from editor.mapeditor import MapEditor
 ##thorpy.application.SHOW_FPS = True
 
 #identifier chaque type d'objet en interne
+#==> ajouter au shortest path
 
 #si chemin passe sur l'eau, c'est un pont.
 #chemin est exclusif
@@ -23,11 +24,12 @@ from editor.mapeditor import MapEditor
 
 #update_cell_info montre qu'il y a un village en dynamique...
 
-
 #objets de base: montagnes, collines, rivieres.
+#couples additionnels (ex: shallow_water with all the others...) ajoute au moment de la creation de riviere
 #objects avec des frames(rivieres)
 #meilleur herbe
 #harmoniser les ombres
+#ombres des objets en mode pil
 
 #rename unit
 
@@ -57,7 +59,7 @@ app = thorpy.Application((W,H))
 #might be chosen by user:
 
 chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
-desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable maps
+desired_world_size = (500,500) #in number of cells. Put a power of 2 for tilable maps
 
 
 #cell_radius = cell_size//radius_divider
@@ -230,7 +232,7 @@ costs["Sand"] = 10.
 for name in costs:
     if "water" in name.lower():
         costs[name] = float("inf")
-sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81], costs)
+sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81], costs, costobjs)
 path = sp.solve() #pk ne marche pas? essayer sur toute petite map pour voir si au moins trouve la solution
 print(path)
 for cell in path:
