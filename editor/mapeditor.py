@@ -140,6 +140,15 @@ class MapEditor:
                                     self.move_cam_and_refresh,
                                     params={"delta":(0,velocity)},
                                     reac_name="k down")
+        wheel_reac1 = thorpy.ConstantReaction(pygame.MOUSEBUTTONDOWN,
+                                            self.increment_zoom,
+                                            {"button":4},
+                                            {"value":1})
+        wheel_reac2 = thorpy.ConstantReaction(pygame.MOUSEBUTTONDOWN,
+                                            self.increment_zoom,
+                                            {"button":5},
+                                            {"value":-1})
+        self.e_box.add_reactions([wheel_reac1, wheel_reac2])
         ########################################################################
         self.help_box = gui.HelpBox([
         ("Move camera",

@@ -70,8 +70,8 @@ desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable
 cell_radius_divider = 8
 
 me = MapEditor()
-##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
-me.zoom_cell_sizes = [16]
+me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
+# me.zoom_cell_sizes = [16]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 200 #width of the right menu in pixels
