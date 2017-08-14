@@ -88,7 +88,7 @@ class BranchAndBoundForMap:
             if self.distance(self.enode) == 0:
                 return self.enode
             else:
-                if i > 1e4:
+                if i > 1e5:
                     print("Fail")
                     return None
                 self.lnl += self.get_children(self.enode)

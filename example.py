@@ -8,22 +8,21 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-from mapobjects.objects import MapObject, RandomObjectDistribution, get_distributor, distribute_random_path
+from mapobjects.objects import MapObject, RandomObjectDistribution, get_distributor, draw_path, add_random_road
 import saveload.io as io
 from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
+#riviere
 
-#zoom avec molette
+#nb: pour path des vrais units, les chemins ont un cost < 1, et mettre interdiction d'aller
+#comment gerer brulage d'arbres ? Si ca doit changer l'architecture, y penser maintenant...
+
+#meilleur wood : taper wood texture pixel art sur google
+
 #bug de w,h > max pix
-
-#chemin: possibilite de donner des materiaux/objs interdits pour get_children
-
-#si chemin passe sur l'eau, c'est un pont.
-#chemin est exclusif
-#chemin = + court chemin avec obstacles = objets, eau penalisee
 
 #update_cell_info montre qu'il y a un village en dynamique...
 
@@ -70,8 +69,8 @@ desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable
 cell_radius_divider = 8
 
 me = MapEditor()
-me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
-# me.zoom_cell_sizes = [16]
+# me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
+me.zoom_cell_sizes = [16]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 200 #width of the right menu in pixels
@@ -190,7 +189,6 @@ for v in[village1,village2,village3,village4]:
 distributor = get_distributor(me, [fir1, fir2, tree], forest_map, ["Grass","Rock"])
 distributor.distribute_objects(layer2)
 
-##         "./mapobjects/images/yar_tree2.png":("forest",3.,False),
 distributor = get_distributor(me, [tree], forest_map, ["Grass"])
 distributor.max_density = 1
 distributor.homogeneity = 0.1
@@ -203,13 +201,11 @@ distributor.homogeneity = 0.5
 distributor.distribute_objects(layer2)
 
 
-brul = [palm, palm.flip()]
-distributor = get_distributor(me, brul, forest_map, ["Sand"])
+distributor = get_distributor(me, [palm, palm.flip()], forest_map, ["Sand"])
 distributor.max_density = 1
 distributor.homogeneity = 0.5
 distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
 distributor.distribute_objects(layer2)
-
 
 distributor = get_distributor(me, [bush], forest_map, ["Grass"])
 distributor.max_density = 2
@@ -224,40 +220,39 @@ distributor = get_distributor(me,
 distributor.max_density = 1
 distributor.homogeneity = 0.05
 distributor.zones_spread = [(0.1, 0.05), (0.2,0.05), (0.4,0.05)]
-distributor.distribute_objects(layer2, exclusive = True)
+distributor.distribute_objects(layer2, exclusive=True)
 
 
 cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip(True,True)]
 
 ################################################################################
+#Here we show how to use the path finder for a given unit of the game
 
-costs_materials = {name:1. for name in me.materials}#cout des objets!
+costs_materials = {name:1. for name in me.materials}
 costs_materials["Snow"] = 10. #unit is 10 times slower in snow
 costs_materials["Thin snow"] = 2.
 costs_materials["Sand"] = 2.
-
-costs_objects = {bush.object_type: 2.} #unit is 2 times slower in bushes
-
-possible_materials=list(me.materials)
-for name in costs_materials: #unit carnot swim
+for name in me.materials:
     if "water" in name.lower():
-        possible_materials.remove(name)
-
-possible_objects=[cobble.object_type] #cobble is the only object allowing unit to walk on
-
-
-sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
-                        costs_materials, costs_objects,
-                        possible_materials, possible_objects)
-path = sp.solve()
+        costs_materials[name] = 1.1
+costs_objects = {bush.object_type: 2., #unit is 2 times slower in bushes
+                 cobble.object_type: 0.9}
+#Materials allowing unit to walk on (here we allow water because we add bridges)
+possible_materials=list(me.materials)
+#Objects allowing unit to walk on
+possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
 
 
-for cell in path:
-    c = random.choice(cobbles)
-    c = c.add_copy_on_cell(cell)
-    lm.static_objects.append(c)
+for i in range(5):
+    add_random_road(lm, layer2, cobbles, [wood], costs_materials,
+                        costs_objects, possible_materials, possible_objects)
 
-##distribute_random_path(me, layer2, cobbles, [wood], cell_i="auto", cell_f="auto")
+# sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
+#                         costs_materials, costs_objects,
+#                         possible_materials, possible_objects)
+# path = sp.solve()
+# draw_path(path, objects=cobbles, layer=lm)
+
 
 
 #Now that we finished to add static objects, we generate the surface

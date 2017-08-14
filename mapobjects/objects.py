@@ -2,6 +2,8 @@ import random, math
 import pygame
 import thorpy
 
+from ia.path import BranchAndBoundForMap
+
 
 
 def get_distributor(me, objects, forest_map, material_names,
@@ -169,10 +171,79 @@ class MapObject:
 
 
 
-def distribute_random_path(editor, layer, cobbles, woods, cell_i, cell_f, k=3):
+def distance(coord1, coord2):
+    return abs(coord1[0]-coord2[0]) + abs(coord1[1]-coord2[1])
+
+
+VON_NEUMAN = [(-1,0), (1,0), (0,-1), (0,1)]
+
+def find_free_next_to(lm, coord):
+    ok = []
+    for x,y in VON_NEUMAN:
+        cell = lm.get_cell_at(coord[0]+x,coord[1]+y)
+        if cell:
+            if not cell.objects:
+                if not cell.unit:
+                    ok.append(cell)
+    if ok:
+        return random.choice(ok)
+
+def add_random_road(lm, layer,
+                    cobbles, woods,
+                    costs_materials, costs_objects,
+                    possible_materials, possible_objects):
+    """Computes and draw a random road between two random villages."""
     villages = [o for o in layer.static_objects if "village" in o.name]
-    if villages:
-        if cell_i == "auto":
-            cell_i = random.choice(villages).cell
-        if cell_f == "auto":
-            cell_f = random.choice(villages).cell
+    v1 = random.choice(villages)
+    c1 = find_free_next_to(lm, v1.cell.coord)
+    # c1 = v1.cell
+    if c1:
+        v2 = random.choice(villages)
+        c2 = find_free_next_to(lm, v2.cell.coord)
+        # c2 = v2.cell
+        if c2:
+            sp = BranchAndBoundForMap(lm, c1, c2,
+                                    costs_materials, costs_objects,
+                                    possible_materials, possible_objects)
+            path = sp.solve()
+            draw_road(path, cobbles, woods, lm)
+
+def add_random_river(lm, layer,
+                    objs,
+                    costs_materials, costs_objects,
+                    possible_materials, possible_objects):
+    """Computes and draw a random road between two random villages."""
+    #1) pick one random source and one random end in water:
+    a faire
+    v1 = random.choice(villages)
+    c1 = find_free_next_to(lm, v1.cell.coord)
+    # c1 = v1.cell
+    if c1:
+        v2 = random.choice(villages)
+        c2 = find_free_next_to(lm, v2.cell.coord)
+        # c2 = v2.cell
+        if c2:
+            sp = BranchAndBoundForMap(lm, c1, c2,
+                                    costs_materials, costs_objects,
+                                    possible_materials, possible_objects)
+            path = sp.solve()
+            draw_road(path, cobbles, woods, lm)
+
+
+
+def draw_path(path, objects, layer):
+    """<path> is a list of cells"""
+    for cell in path:
+        c = random.choice(objects)
+        c = c.add_copy_on_cell(cell)
+        layer.static_objects.append(c)
+
+def draw_road(path, cobbles, woods, layer):
+    """<path> is a list of cells"""
+    for cell in path:
+        if "water" in cell.material.name.lower():
+            c = random.choice(woods)
+        else:
+            c = random.choice(cobbles)
+        c = c.add_copy_on_cell(cell)
+        layer.static_objects.append(c)
