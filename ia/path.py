@@ -25,13 +25,16 @@ class State(object):
             return [self.cell]
 
 
-class BranchAndBoundForMap(object):
-    def __init__(self, lm, cell_i, cell_f, costs_materials, costs_objects):
+class BranchAndBoundForMap:
+    def __init__(self, lm, cell_i, cell_f, costs_materials, costs_objects,
+                 possible_materials, possible_objects):
         self.lm = lm
         self.cell_i = cell_i
         self.cell_f = cell_f
         self.costs_materials = costs_materials
         self.costs_objects = costs_objects
+        self.possible_materials = possible_materials
+        self.possible_objects = possible_objects
         self.lnl = [] #lnl = Live Nodes List
         self.enode = None #enode = Expanding-Node
 
@@ -53,11 +56,18 @@ class BranchAndBoundForMap(object):
         left = self.lm.get_cell_at(x-1,y)
         for cell in [up,down,right,left]:
             if cell:
-                time = self.costs_materials[cell.material.name]
+                obj_type = None
+                possible = False
                 if cell.objects:
-                    time += self.costs_objects[cell.objects[0].name]
-                child = State(cell, state, state.time_so_far + time)
-                children.append(child)
+                    obj_type = cell.objects[0].object_type
+                    if obj_type in self.possible_objects:
+                        possible = True #e.g, bridge is on material water!
+                elif cell.material.name in self.possible_materials:
+                    time = self.costs_materials.get(cell.material.name,0.)
+                    if cell.objects:
+                        time += self.costs_objects.get(obj_type,0.)
+                    child = State(cell, state, state.time_so_far + time)
+                    children.append(child)
         return children
 
     def solve(self):
@@ -90,9 +100,7 @@ class BranchAndBoundForMap(object):
                     self.lnl.sort(key=self.cost, reverse=True)
                     #updates enode
                     self.enode = self.lnl.pop()
-                    while self.enode.cell.coord in already:
+                    while self.enode.cell.coord in already and self.lnl:
                         self.enode = self.lnl.pop()
                     already.add(self.enode.cell.coord)
                     i += 1
-
-

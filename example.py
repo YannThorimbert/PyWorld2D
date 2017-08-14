@@ -10,13 +10,16 @@ import gui.elements as gui
 from rendering.camera import Camera
 from mapobjects.objects import MapObject, RandomObjectDistribution, get_distributor, distribute_random_path
 import saveload.io as io
-
+from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#identifier chaque type d'objet en interne
-#==> ajouter au shortest path
+
+#zoom avec molette
+#bug de w,h > max pix
+
+#chemin: possibilite de donner des materiaux/objs interdits pour get_children
 
 #si chemin passe sur l'eau, c'est un pont.
 #chemin est exclusif
@@ -59,7 +62,7 @@ app = thorpy.Application((W,H))
 #might be chosen by user:
 
 chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
-desired_world_size = (500,500) #in number of cells. Put a power of 2 for tilable maps
+desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable maps
 
 
 #cell_radius = cell_size//radius_divider
@@ -136,9 +139,9 @@ outside = me.add_material("outside", -1, black_img)
 print("Building material couples")
 me.build_materials(cell_radius_divider)
 
-################################################################################
 
 
+print("Building map surfaces")
 lm = me.build_map(hmap, desired_world_size)
 lm.frame_slowness = 0.1*me.fps #frame will change every k*FPS [s]
 lm.cells[3][3].name = "Roflburg" #this is how we set the name of a cell
@@ -162,6 +165,7 @@ layer2 = me.add_layer()
 fir1 = MapObject(me,"./mapobjects/images/yar_fir1.png","forest",1.5)
 fir2 = MapObject(me,"./mapobjects/images/yar_fir2.png","forest",1.5)
 fir3 = MapObject(me,"./mapobjects/images/firsnow2.png","forest",1.5)
+fir1.set_same_type([fir2, fir3])
 tree = MapObject(me,"./mapobjects/images/tree.png","forest",1.5)
 palm = MapObject(me,"./mapobjects/images/skeddles.png","forest",1.7)
 palm.max_relpos[0] = 0.1 #restrict because they are near to water
@@ -172,6 +176,7 @@ village2 = MapObject(me,"./mapobjects/images/rgbfumes1.png","village",2.2)
 village3 = MapObject(me,"./mapobjects/images/rgbfumes2.png","village",2.6)
 village4 = MapObject(me,"./mapobjects/images/rgbfumes3.png","village",2.6)
 ##village5 = MapObject(me,"./mapobjects/images/rgbfumes4.png","village",2.2)
+village1.set_same_type([village2, village3, village4])
 
 cobble = MapObject(me,"./mapobjects/images/cobblestone2.png","cobblestone",1.)
 wood = MapObject(me,"./mapobjects/images/wood1.png","wooden bridge",1.)
@@ -225,16 +230,28 @@ distributor.distribute_objects(layer2, exclusive = True)
 cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip(True,True)]
 
 ################################################################################
-from ia.path import BranchAndBoundForMap
-costs = {name:1. for name in me.materials}#cout des objets!
-costs["Snow"] = 20.
-costs["Sand"] = 10.
-for name in costs:
+
+costs_materials = {name:1. for name in me.materials}#cout des objets!
+costs_materials["Snow"] = 10. #unit is 10 times slower in snow
+costs_materials["Thin snow"] = 2.
+costs_materials["Sand"] = 2.
+
+costs_objects = {bush.object_type: 2.} #unit is 2 times slower in bushes
+
+possible_materials=list(me.materials)
+for name in costs_materials: #unit carnot swim
     if "water" in name.lower():
-        costs[name] = float("inf")
-sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81], costs, costobjs)
-path = sp.solve() #pk ne marche pas? essayer sur toute petite map pour voir si au moins trouve la solution
-print(path)
+        possible_materials.remove(name)
+
+possible_objects=[cobble.object_type] #cobble is the only object allowing unit to walk on
+
+
+sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
+                        costs_materials, costs_objects,
+                        possible_materials, possible_objects)
+path = sp.solve()
+
+
 for cell in path:
     c = random.choice(cobbles)
     c = c.add_copy_on_cell(cell)

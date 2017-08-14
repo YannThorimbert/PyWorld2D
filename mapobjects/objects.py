@@ -63,8 +63,10 @@ def remove_objects(cell, layer):
         cell.objects = []
 
 class MapObject:
+    current_id = 1
 
-    def __init__(self, editor, fn, name="", factor=1., relpos=(0,0), build=True):
+    def __init__(self, editor, fn, name="", factor=1., relpos=(0,0), build=True,
+                 new_type=True):
         """Object that looks the same at each frame"""
         self.editor = editor
         ref_size = editor.zoom_cell_sizes[0]
@@ -87,6 +89,11 @@ class MapObject:
         self.quantity = 1 #not necessarily 1 for units
         if build and fn:
             self.build_imgs()
+        if new_type:
+            self.object_type = MapObject.current_id
+            MapObject.current_id += 1
+        else:
+            self.object_type = None
 
     def ypos(self):
         h = self.original_img.get_size()[1]
@@ -102,19 +109,23 @@ class MapObject:
     def copy(self):
         """The copy references the same images as the original !"""
         self.ncopies += 1
-        obj = MapObject(self.editor, "", self.name, self.factor, list(self.relpos))
+        obj = MapObject(self.editor, "", self.name, self.factor,
+                        list(self.relpos), new_type=False)
         obj.original_img = self.original_img
         obj.imgs = self.imgs
         obj.min_relpos = list(self.min_relpos)
         obj.max_relpos = list(self.max_relpos)
+        obj.object_type = self.object_type
         return obj
 
     def deep_copy(self):
-        obj = MapObject(self.editor, "", self.name, self.factor, list(self.relpos))
+        obj = MapObject(self.editor, "", self.name, self.factor,
+                        list(self.relpos), new_type=False)
         obj.original_img = self.original_img.copy()
         obj.imgs = [i.copy() for i in self.imgs]
         obj.min_relpos = list(self.min_relpos)
         obj.max_relpos = list(self.max_relpos)
+        obj.object_type = self.object_type
         return obj
 
 
@@ -152,6 +163,10 @@ class MapObject:
     def get_current_img(self):
         return self.imgs[self.cell.map.current_zoom_level]
 
+    def set_same_type(self, objs):
+        for o in objs:
+            o.object_type = self.object_type
+
 
 
 def distribute_random_path(editor, layer, cobbles, woods, cell_i, cell_f, k=3):
@@ -161,4 +176,3 @@ def distribute_random_path(editor, layer, cobbles, woods, cell_i, cell_f, k=3):
             cell_i = random.choice(villages).cell
         if cell_f == "auto":
             cell_f = random.choice(villages).cell
-
