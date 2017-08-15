@@ -73,7 +73,10 @@ class MapObject:
         self.editor = editor
         ref_size = editor.zoom_cell_sizes[0]
         if fn:
-            img = thorpy.load_image(fn, colorkey=(255,255,255))
+            if isinstance(fn,str):
+                img = thorpy.load_image(fn, colorkey=(255,255,255))
+            else:
+                img = fn
             img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
         else:
             img = None
@@ -208,26 +211,38 @@ def add_random_road(lm, layer,
             path = sp.solve()
             draw_road(path, cobbles, woods, lm)
 
-def add_random_river(lm, layer,
-                    objs,
+def add_random_river(lm,
+                    objects,
                     costs_materials, costs_objects,
                     possible_materials, possible_objects):
     """Computes and draw a random road between two random villages."""
     #1) pick one random source and one random end in water:
-    a faire
-    v1 = random.choice(villages)
-    c1 = find_free_next_to(lm, v1.cell.coord)
-    # c1 = v1.cell
-    if c1:
-        v2 = random.choice(villages)
-        c2 = find_free_next_to(lm, v2.cell.coord)
-        # c2 = v2.cell
-        if c2:
-            sp = BranchAndBoundForMap(lm, c1, c2,
-                                    costs_materials, costs_objects,
-                                    possible_materials, possible_objects)
-            path = sp.solve()
-            draw_road(path, cobbles, woods, lm)
+    for i in range(1000):
+        x,y = random.randint(0,lm.nx-1), random.randint(0,lm.ny-1)
+        cell_water = lm.cells[x][y]
+        if "shallow" in cell_water.material.name.lower():
+            break
+    else:
+        return
+    for i in range(1000):
+        x,y = random.randint(0,lm.nx-1), random.randint(0,lm.ny-1)
+        cell_land = lm.cells[x][y]
+        if "snow" in cell_land.material.name.lower():
+            break
+    else:
+        return
+    sp = BranchAndBoundForMap(lm, cell_land, cell_water,
+                            costs_materials, costs_objects,
+                            possible_materials, possible_objects)
+    path = sp.solve()
+    actual_path = []
+    for cell in path:
+        if "shallow" in cell.material.name.lower():
+            actual_path.append(cell)
+            break
+        else:
+            actual_path.append(cell)
+    draw_path(actual_path, objects, lm)
 
 
 

@@ -8,7 +8,7 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-from mapobjects.objects import MapObject, RandomObjectDistribution, get_distributor, draw_path, add_random_road
+from mapobjects.objects import MapObject, RandomObjectDistribution, get_distributor, draw_path, add_random_road, add_random_river
 import saveload.io as io
 from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
@@ -69,8 +69,8 @@ desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable
 cell_radius_divider = 8
 
 me = MapEditor()
-# me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
-me.zoom_cell_sizes = [16]
+me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
+# me.zoom_cell_sizes = [16]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 200 #width of the right menu in pixels
@@ -228,24 +228,38 @@ cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip
 ################################################################################
 #Here we show how to use the path finder for a given unit of the game
 
+# costs_materials = {name:1. for name in me.materials}
+# costs_materials["Snow"] = 10. #unit is 10 times slower in snow
+# costs_materials["Thin snow"] = 2.
+# costs_materials["Sand"] = 2.
+# for name in me.materials:
+#     if "water" in name.lower():
+#         costs_materials[name] = 1.1
+# costs_objects = {bush.object_type: 2., #unit is 2 times slower in bushes
+#                  cobble.object_type: 0.9}
+# #Materials allowing unit to walk on (here we allow water because we add bridges)
+# possible_materials=list(me.materials)
+# #Objects allowing unit to walk on
+# possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
+#
+# for i in range(5):
+#     add_random_road(lm, layer2, cobbles, [wood], costs_materials,
+#                         costs_objects, possible_materials, possible_objects)
+
+
 costs_materials = {name:1. for name in me.materials}
 costs_materials["Snow"] = 10. #unit is 10 times slower in snow
 costs_materials["Thin snow"] = 2.
 costs_materials["Sand"] = 2.
-for name in me.materials:
-    if "water" in name.lower():
-        costs_materials[name] = 1.1
-costs_objects = {bush.object_type: 2., #unit is 2 times slower in bushes
-                 cobble.object_type: 0.9}
+costs_objects = {bush.object_type: 2.}
 #Materials allowing unit to walk on (here we allow water because we add bridges)
 possible_materials=list(me.materials)
 #Objects allowing unit to walk on
 possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
 
-
-for i in range(5):
-    add_random_road(lm, layer2, cobbles, [wood], costs_materials,
-                        costs_objects, possible_materials, possible_objects)
+shallow_obj = MapObject(me, shore_img, "river", 1.)
+random.seed()
+add_random_river(lm, [shallow_obj], costs_materials, costs_objects, possible_materials, possible_objects)
 
 # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
 #                         costs_materials, costs_objects,
