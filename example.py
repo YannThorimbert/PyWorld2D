@@ -15,7 +15,10 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#riviere
+#riviere qui bouge
+
+#vraiment scaler les surfaces plutot que reblitter
+#version sans numpy ==> sans roundtiler
 
 #nb: pour path des vrais units, les chemins ont un cost < 1, et mettre interdiction d'aller
 #comment gerer brulage d'arbres ? Si ca doit changer l'architecture, y penser maintenant...
@@ -86,7 +89,7 @@ S = len(hmap)
 
 #Here we build the miniature map image
 img_hmap = ng.build_surface(hmap)
-new_img_hmap = pygame.Surface(desired_world_size)
+new_img_hmap = pygame.Surface(me.world_size)
 new_img_hmap.blit(img_hmap, (0,0))
 img_hmap = new_img_hmap
 me.build_camera(img_hmap)
@@ -132,7 +135,7 @@ me.build_materials(cell_radius_divider)
 
 
 print("Building map surfaces")
-lm = me.build_map(hmap, desired_world_size)
+lm = me.build_map(hmap, me.world_size)
 lm.frame_slowness = 0.1*me.fps #frame will change every k*FPS [s]
 lm.cells[3][3].name = "Roflburg" #this is how we set the name of a cell
 me.set_map(lm) #we attach the map to the editor
@@ -219,23 +222,23 @@ cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip
 ################################################################################
 #Here we show how to use the path finder for a given unit of the game
 
-# costs_materials = {name:1. for name in me.materials}
-# costs_materials["Snow"] = 10. #unit is 10 times slower in snow
-# costs_materials["Thin snow"] = 2.
-# costs_materials["Sand"] = 2.
-# for name in me.materials:
-#     if "water" in name.lower():
-#         costs_materials[name] = 1.1
-# costs_objects = {bush.object_type: 2., #unit is 2 times slower in bushes
-#                  cobble.object_type: 0.9}
-# #Materials allowing unit to walk on (here we allow water because we add bridges)
-# possible_materials=list(me.materials)
-# #Objects allowing unit to walk on
-# possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
-#
-# for i in range(5):
-#     add_random_road(lm, layer2, cobbles, [wood], costs_materials,
-#                         costs_objects, possible_materials, possible_objects)
+costs_materials = {name:1. for name in me.materials}
+costs_materials["Snow"] = 10. #unit is 10 times slower in snow
+costs_materials["Thin snow"] = 2.
+costs_materials["Sand"] = 2.
+for name in me.materials:
+    if "water" in name.lower():
+        costs_materials[name] = 1.1
+costs_objects = {bush.object_type: 2., #unit is 2 times slower in bushes
+                 cobble.object_type: 0.9}
+#Materials allowing unit to walk on (here we allow water because we add bridges)
+possible_materials=list(me.materials)
+#Objects allowing unit to walk on
+possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
+
+for i in range(5):
+    add_random_road(lm, layer2, cobbles, [wood], costs_materials,
+                     costs_objects, possible_materials, possible_objects)
 
 
 costs_materials = {name:1. for name in me.materials}
