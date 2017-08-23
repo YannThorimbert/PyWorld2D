@@ -16,11 +16,11 @@ class Camera:
         self.nx, self.ny = 0, 0
         self.img_hmap = None
 
-    def set_parameters(self, cell_size, viewport_rect, img_hmap, max_minimap_size):
-        ws, ms = get_world_and_minimap_sizes(img_hmap, max_minimap_size)
-        self.img_hmap = img_hmap
-        self.world_size = V2(ws)
-        minimap_size = ms
+    def set_parameters(self, world_size, cell_size, viewport_rect, img_hmap, max_minimap_size):
+        ws, img = get_world_and_minimap_sizes(img_hmap, max_minimap_size)
+        self.img_hmap = img
+        ms = self.img_hmap.get_size()
+        self.world_size = V2(world_size)
         self.cell_rect.size = (cell_size,)*2
         self.nx = viewport_rect.w//self.cell_rect.w - 1
         self.ny = viewport_rect.h//self.cell_rect.h - 1
@@ -28,8 +28,8 @@ class Camera:
         self.map_rect = pygame.Rect((0,0), map_size)
         self.map_rect.center = viewport_rect.center
         self.rcam = pygame.Rect(0,0,self.nx,self.ny)
-        w = int(self.nx*minimap_size[0]/self.world_size.x)
-        h = int(self.ny*minimap_size[1]/self.world_size.y)
+        w = int(self.nx*ms[0]/self.world_size.x)
+        h = int(self.ny*ms[1]/self.world_size.y)
         self.rmouse = pygame.Rect(0,0,w,h)
 
 
@@ -40,7 +40,7 @@ class Camera:
     def set_gui_elements(self, e_hmap, box_hmap):
         self.e_hmap = e_hmap
         self.box_hmap = box_hmap
-        self.reinit_pos
+        self.reinit_pos()
 
     def set_map_data(self, lm):
         self.lm = lm
@@ -97,6 +97,9 @@ class Camera:
         rminimap = self.e_hmap.get_rect()
         self.rmouse.x = self.rcam.x*rminimap.w/self.world_size.x + rminimap.x
         self.rmouse.y = self.rcam.y*rminimap.h/self.world_size.y + rminimap.y
+##        print("rcam.x =",self.rcam.x, "  world size x = ",self.world_size.x)
+##        print("     rminimap.w=", rminimap.w, "ratio1", (self.rmouse.x-rminimap.x)/rminimap.w,
+##                                            "ratio2", (self.rcam.x/self.world_size.x))
 
     def move(self, delta):
         self.campos += delta
@@ -169,16 +172,12 @@ def get_world_and_minimap_sizes(img_hmap, max_minimap_size):
     w,h = world_size
     if w >= h and w > max_minimap_size[0]:
         M = max_minimap_size[0]
-        scale_factor = M / w #scale factor is always smaller or equal to 1
         size_y = int(max_minimap_size[1]*h/w)
         img_hmap = pygame.transform.smoothscale(img_hmap, (M,size_y))
     elif w < h and h > max_minimap_size[1]:
         M = max_minimap_size[1]
-        scale_factor = M / h
         size_x = int(max_minimap_size[0]*w/h)
         img_hmap = pygame.transform.smoothscale(img_hmap, (size_x,M))
-    else:
-        scale_factor = 1. #to update if (un)zoom the map!!!
-    minimap_size = img_hmap.get_size() #can differ from world_size !
-    return world_size, minimap_size
+    #minimap_size can differ from world_size !
+    return world_size, img_hmap
 

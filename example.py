@@ -59,39 +59,30 @@ app = thorpy.Application((W,H))
 ##
 
 #might be chosen by user:
-
-chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
-desired_world_size = (100,100) #in number of cells. Put a power of 2 for tilable maps
-
-
 #cell_radius = cell_size//radius_divider
 # change how "round" look cell transitions
 cell_radius_divider = 8
+chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
 
 me = MapEditor()
-me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
-# me.zoom_cell_sizes = [16]
-me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
-me.fps = 60 #frame per second
-me.menu_width = 200 #width of the right menu in pixels
-me.max_wanted_minimap_size = 128 #in pixels.
+#here we can use me.from_file() to load parameters instead of what follow:
+me.from_file("saved_map.dat")
 
-me.refresh_derived_parameters()
-
+##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
+##me.zoom_cell_sizes = [16, 12, 8]
+##me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
+##me.fps = 60 #frame per second
+##me.menu_width = 150 #width of the right menu in pixels
+##me.max_wanted_minimap_size = 64 #in pixels.
+##me.world_size = (128, 128) #in number of cells. Put a power of 2 for tilable maps
+##me.refresh_derived_parameters()
 
 
 ################################################################################
 print("Building hmap")
-power = int(math.log2(max(desired_world_size)))
-if 2**power < max(desired_world_size):
-    power += 1
-S = int(2**power)
-hmap = ng.generate_terrain(S, chunk=chunk)
-ng.normalize(hmap)
-##for x in range(S):
-##    for y in range(S):
-##        hmap[x][y] = 0.7
-##hmap[2][1] = 0.7 #this is how you manually change the height of a cell
+hmap = me.build_hmap(chunk=chunk, n_octaves="max", persistance=2.)
+S = len(hmap)
+##hmap[2][1] = 0.7 #this is how you manually change the height of a given cell
 
 #Here we build the miniature map image
 img_hmap = ng.build_surface(hmap)

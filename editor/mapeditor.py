@@ -9,6 +9,8 @@ import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
 import saveload.io as io
+import thornoise.purepython.noisegen as ng
+import saveload.io as io
 
 def sgn(x):
     if x < 0:
@@ -28,6 +30,7 @@ class MapEditor:
         self.box_hmap_margin = 20 #box of the minimap
         self.menu_width = 200
         self.zoom_cell_sizes = [20,16,10]
+        self.world_size = (128,128)
         self.nframes = 16 #number of different tiles for one material (used for moving water)
         self.max_wanted_minimap_size = 128 #in pixels.
         self.show_grid_lines = False
@@ -58,6 +61,10 @@ class MapEditor:
         self.e_ap_move = gui.get_help_text("To move the map, drag it with", "<LBM>",
                                         "or hold", "<left shift>", "while moving mouse")
         self.ap.add_alert_countdown(self.e_ap_move, guip.DELAY_HELP * self.fps)
+        #
+        self.saved_attrs = ["zoom_cell_sizes", "nframes", "fps", "menu_width",
+                            "max_wanted_minimap_size", "world_size"]
+        self.primitive_types = {}
 
     def build_gui_elements(self): #worst function ever
         e_hmap = thorpy.Image.make(self.cam.img_hmap)
@@ -122,6 +129,15 @@ class MapEditor:
         thorpy.add_keydown_reaction(self.e_box, pygame.K_KP_MINUS,
                                     self.increment_zoom, params={"value":1},
                                     reac_name="k minus")
+        wheel_reac1 = thorpy.ConstantReaction(pygame.MOUSEBUTTONDOWN,
+                                            self.increment_zoom,
+                                            {"button":4},
+                                            {"value":1})
+        wheel_reac2 = thorpy.ConstantReaction(pygame.MOUSEBUTTONDOWN,
+                                            self.increment_zoom,
+                                            {"button":5},
+                                            {"value":-1})
+        self.e_box.add_reactions([wheel_reac1, wheel_reac2])
         ########################################################################
         velocity = 0.2
         thorpy.add_keydown_reaction(self.e_box, pygame.K_LEFT,
@@ -140,15 +156,6 @@ class MapEditor:
                                     self.move_cam_and_refresh,
                                     params={"delta":(0,velocity)},
                                     reac_name="k down")
-        wheel_reac1 = thorpy.ConstantReaction(pygame.MOUSEBUTTONDOWN,
-                                            self.increment_zoom,
-                                            {"button":4},
-                                            {"value":1})
-        wheel_reac2 = thorpy.ConstantReaction(pygame.MOUSEBUTTONDOWN,
-                                            self.increment_zoom,
-                                            {"button":5},
-                                            {"value":-1})
-        self.e_box.add_reactions([wheel_reac1, wheel_reac2])
         ########################################################################
         self.help_box = gui.HelpBox([
         ("Move camera",
@@ -200,12 +207,14 @@ class MapEditor:
         for level in range(len(self.zoom_cell_sizes)):
             self.zoom_level = level
             self.refresh_derived_parameters()
-            cam.set_parameters(self.cell_size, self.viewport_rect, img_hmap,
+            cam.set_parameters(self.world_size,
+                                self.cell_size, self.viewport_rect, img_hmap,
                                 self.max_minimap_size)
             map_rects.append(pygame.Rect(cam.map_rect))
         self.zoom_level = 0
         self.refresh_derived_parameters()
-        cam.set_parameters(self.cell_size, self.viewport_rect, img_hmap,
+        cam.set_parameters(self.world_size,
+                            self.cell_size, self.viewport_rect, img_hmap,
                                 self.max_minimap_size)
         self.cam = cam
         self.map_rects = map_rects
@@ -241,7 +250,8 @@ class MapEditor:
         center_before = self.cam.get_center_coord()
         self.zoom_level = level
         self.refresh_derived_parameters()
-        self.cam.set_parameters(self.cell_size,
+        self.cam.set_parameters(self.world_size,
+                            self.cell_size,
                             self.viewport_rect,
                             self.cam.img_hmap,
                             self.max_minimap_size)
@@ -394,7 +404,7 @@ class MapEditor:
         self.menu_rect = pygame.Rect((0,0),self.menu_size)
         self.menu_rect.right = self.W
         if self.menu_rect.w < self.max_minimap_size[0] + self.box_hmap_margin*2:
-            s = self.menu_rect.w - self.box_hmap_margin*2 - 2
+            s = self.menu_rect.w - self.box_hmap_margin*2 - 2 #bug
             self.max_minimap_size = (s,s)
         self.viewport_rect = pygame.Rect((0,0),(self.menu_rect.left,
                                                 self.menu_rect.bottom))
@@ -414,3 +424,24 @@ class MapEditor:
         materials = list(self.materials.values())
         self.material_couples = tm.get_material_couples(materials,
                                                         cell_radius_divider)
+
+    def build_hmap(self, chunk, n_octaves=None, persistance=2.):
+        if n_octaves == "auto" or n_octaves == "max":
+            n_octaves = None
+        M = max(self.world_size)
+        power = int(math.log2(M))
+        if 2**power < M:
+            power += 1
+        S = int(2**power)
+        hmap = ng.generate_terrain(S, n_octaves, chunk, persistance)
+        ng.normalize(hmap)
+        return hmap
+
+    def to_file(self, fn):
+        io.to_file(self, fn)
+
+    def from_file(self, fn):
+        io.from_file(self, fn)
+        self.refresh_derived_parameters()
+
+
