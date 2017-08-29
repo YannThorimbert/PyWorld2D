@@ -275,6 +275,7 @@ class LogicalMap(BaseGrid):
         if sort:
             objects.sort(key=lambda x: x.ypos())
         for obj in objects:
+            imgs = obj.get_current_imgs()
             self.blit_img(obj.imgs, obj.cell.coord, obj.relpos)
 
 ##    def show(self):

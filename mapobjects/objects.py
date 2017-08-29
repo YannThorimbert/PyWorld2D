@@ -64,6 +64,9 @@ def remove_objects(cell, layer):
             layer.static_objects.remove(obj)
         cell.objects = []
 
+
+
+
 class MapObject:
     current_id = 1
 
@@ -173,6 +176,128 @@ class MapObject:
             o.object_type = self.object_type
 
 
+class MapObjectMultiframes:
+    current_id = 1
+
+    def __init__(self, editor, fns, name="", factor=1., relpos=(0,0), build=True,
+                 new_type=True):
+        """Object that looks the same at each frame"""
+        self.editor = editor
+        ref_size = editor.zoom_cell_sizes[0]
+        self.frame_imgs = []
+        self.original_imgs = []
+        for fn in fns:
+            if fn:
+                if isinstance(fn,str):
+                    img = thorpy.load_image(fn, colorkey=(255,255,255))
+                else:
+                    img = fn
+                img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
+            else:
+                img = None
+            self.frame_imgs.append(img)
+            self.original_imgs.append(img)
+        self.factor = factor
+        self.relpos = [0,0]
+        self.imgs_imgs = None
+        self.cell = None
+        self.name = name
+        self.ncopies = 0
+        self.min_relpos = [-0.4, -0.4]
+        self.max_relpos = [0.4,   0.4]
+##        self.min_relpos = [-0.1, -0.1]
+##        self.max_relpos = [0.1,   0.1]
+        self.quantity = 1 #not necessarily 1 for units
+        if build and fn:
+            self.build_imgs()
+        if new_type:
+            self.object_type = MapObject.current_id
+            MapObject.current_id += 1
+        else:
+            self.object_type = None
+
+    def ypos(self):
+        h = self.original_imgs[0].get_size()[1]
+        s = self.editor.zoom_cell_sizes[0]
+        return self.cell.coord[1]  + 0.5*h/s + self.relpos[1]
+
+    def randomize_relpos(self):
+        self.relpos[0] = self.min_relpos[0] +\
+                         random.random()*(self.max_relpos[0]-self.min_relpos[0])
+        self.relpos[1] = self.min_relpos[1] +\
+                         random.random()*(self.max_relpos[1]-self.min_relpos[1])
+
+    def copy(self):
+        """The copy references the same images as the original !"""
+        self.ncopies += 1
+        obj = MapObjectMultiframes(self.editor, [""], self.name, self.factor,
+                        list(self.relpos), new_type=False)
+        obj.original_imgs = self.original_imgs
+        obj.imgs_imgs = self.imgs_imgs
+        obj.min_relpos = list(self.min_relpos)
+        obj.max_relpos = list(self.max_relpos)
+        obj.object_type = self.object_type
+        return obj
+
+    def deep_copy(self):
+        obj = MapObjectMultiframes(self.editor, [""], self.name, self.factor,
+                        list(self.relpos), new_type=False)
+        obj.original_imgs = self.original_imgs.copy()
+        obj.imgs_imgs = []
+        for imgs in self.imgs_imgs:
+            obj.imgs_imgs = [i.copy() for i in imgs]
+        obj.min_relpos = list(self.min_relpos)
+        obj.max_relpos = list(self.max_relpos)
+        obj.object_type = self.object_type
+        return obj
+
+
+    def flip(self, x=True, y=False):
+        obj = self.deep_copy()
+        obj.original_imgs = [pygame.transform.flip(i, x, y) for i in obj.original_imgs]
+
+        for i in range(len(obj.imgs_imgs)):
+            for j in range(len(obj.imgs_imgs[i])):
+                obj.imgs_imgs[i][j] = pygame.transform.flip(obj.imgs_imgs[i][j], x, y)
+        return obj
+
+    def add_copy_on_cell(self, cell):
+        copy = self.copy()
+        copy.cell = cell
+        cell.objects.append(copy)
+        return copy
+
+    def add_unit_on_cell(self, cell):
+        assert cell.unit is None
+        copy = self.copy()
+        copy.cell = cell
+        cell.unit = copy
+        return copy
+
+    def build_imgs(self):
+        self.imgs_imgs = [] #list of list of images
+        for img in self.original_imgs:
+            W,H = img.get_size()
+            w0 = float(self.editor.zoom_cell_sizes[0])
+            imgs = []
+            for w in self.editor.zoom_cell_sizes:
+                factor = w/w0
+                zoom_size = (int(factor*W), int(factor*H))
+                img = pygame.transform.scale(img, zoom_size)
+                imgs.append(img)
+            self.imgs_imgs.append(imgs)
+
+    def get_current_zoomed_img(self):
+        return self.imgs_imgs[self.cell.map.t][self.cell.map.current_zoom_level]
+
+    def get_current_imgs(self):
+        return self.imgs_imgs[self.cell.map.t]
+
+    def set_same_type(self, objs):
+        for o in objs:
+            o.object_type = self.object_type
+
+
 
 def distance(coord1, coord2):
     return abs(coord1[0]-coord2[0]) + abs(coord1[1]-coord2[1])
@@ -212,10 +337,20 @@ def add_random_road(lm, layer,
             draw_road(path, cobbles, woods, lm)
 
 def add_random_river(lm,
-                    objects,
+                    img_fullsize,
                     costs_materials, costs_objects,
                     possible_materials, possible_objects):
     """Computes and draw a random road between two random villages."""
+    #0)build tiles
+##    delta = img_fullsize.get_width() // lm.nframes
+    to_left = tm.build_tiles(img_fullsize, lm.cell_sizes, lm.nframes,
+                             lm.nframes, 0, sin=False)
+    to_right = tm.build_tiles(img_fullsize, lm.cell_sizes, lm.nframes,
+                              -lm.nframes, 0, sin=False)
+    to_top = tm.build_tiles(img_fullsize, lm.cell_sizes, lm.nframes,
+                              0, lm.nframes, sin=False)
+    to_bottom = tm.build_tiles(img_fullsize, lm.cell_sizes, lm.nframes,
+                              0, -lm.nframes, sin=False)
     #1) pick one random source and one random end in water:
     for i in range(1000):
         x,y = random.randint(0,lm.nx-1), random.randint(0,lm.ny-1)
@@ -236,13 +371,16 @@ def add_random_river(lm,
                             possible_materials, possible_objects)
     path = sp.solve()
     actual_path = []
-    for cell in path:
+    for cell in path: #mettre riviere qui bouge (mais besoin d'objets frames)
         if "shallow" in cell.material.name.lower():
             actual_path.append(cell)
             break
         else:
             actual_path.append(cell)
-    draw_path(actual_path, objects, lm)
+##    for cell in path:
+##        c = choisir bon object
+##        c = c.add_copy_on_cell(cell)
+##        layer.static_objects.append(c)
 
 
 
