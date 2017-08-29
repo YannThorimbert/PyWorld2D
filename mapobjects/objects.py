@@ -57,6 +57,9 @@ class RandomObjectDistribution:
                             obj.randomize_relpos()
                             layer.static_objects.append(obj)
 
+def put_static_obj(obj, lm, coord, layer):
+    cop = obj.add_copy_on_cell(lm[coord])
+    layer.static_objects.append(cop)
 
 def remove_objects(cell, layer):
     if cell.objects:
@@ -67,116 +70,116 @@ def remove_objects(cell, layer):
 
 
 
+##class MapObject:
+##    current_id = 1
+##
+##    def __init__(self, editor, fn, name="", factor=1., relpos=(0,0), build=True,
+##                 new_type=True):
+##        """Object that looks the same at each frame"""
+##        self.editor = editor
+##        ref_size = editor.zoom_cell_sizes[0]
+##        if fn:
+##            if isinstance(fn,str):
+##                img = thorpy.load_image(fn, colorkey=(255,255,255))
+##            else:
+##                img = fn
+##            img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
+##        else:
+##            img = None
+##        self.factor = factor
+##        self.original_img = img
+##        self.relpos = [0,0]
+##        self.imgs = None
+##        self.cell = None
+##        self.name = name
+##        self.ncopies = 0
+##        self.min_relpos = [-0.4, -0.4]
+##        self.max_relpos = [0.4,   0.4]
+####        self.min_relpos = [-0.1, -0.1]
+####        self.max_relpos = [0.1,   0.1]
+##        self.quantity = 1 #not necessarily 1 for units
+##        if build and fn:
+##            self.build_imgs()
+##        if new_type:
+##            self.object_type = MapObject.current_id
+##            MapObject.current_id += 1
+##        else:
+##            self.object_type = None
+##
+##    def ypos(self):
+##        h = self.original_img.get_size()[1]
+##        s = self.editor.zoom_cell_sizes[0]
+##        return self.cell.coord[1]  + 0.5*h/s + self.relpos[1]
+##
+##    def randomize_relpos(self):
+##        self.relpos[0] = self.min_relpos[0] +\
+##                         random.random()*(self.max_relpos[0]-self.min_relpos[0])
+##        self.relpos[1] = self.min_relpos[1] +\
+##                         random.random()*(self.max_relpos[1]-self.min_relpos[1])
+##
+##    def copy(self):
+##        """The copy references the same images as the original !"""
+##        self.ncopies += 1
+##        obj = MapObject(self.editor, "", self.name, self.factor,
+##                        list(self.relpos), new_type=False)
+##        obj.original_img = self.original_img
+##        obj.imgs = self.imgs
+##        obj.min_relpos = list(self.min_relpos)
+##        obj.max_relpos = list(self.max_relpos)
+##        obj.object_type = self.object_type
+##        return obj
+##
+##    def deep_copy(self):
+##        obj = MapObject(self.editor, "", self.name, self.factor,
+##                        list(self.relpos), new_type=False)
+##        obj.original_img = self.original_img.copy()
+##        obj.imgs = [i.copy() for i in self.imgs]
+##        obj.min_relpos = list(self.min_relpos)
+##        obj.max_relpos = list(self.max_relpos)
+##        obj.object_type = self.object_type
+##        return obj
+##
+##
+##    def flip(self, x=True, y=False):
+##        obj = self.deep_copy()
+##        obj.original_img = pygame.transform.flip(obj.original_img, x, y)
+##        for i in range(len(obj.imgs)):
+##            obj.imgs[i] = pygame.transform.flip(obj.imgs[i], x, y)
+##        return obj
+##
+##    def add_copy_on_cell(self, cell):
+##        copy = self.copy()
+##        copy.cell = cell
+##        cell.objects.append(copy)
+##        return copy
+##
+##    def add_unit_on_cell(self, cell):
+##        assert cell.unit is None
+##        copy = self.copy()
+##        copy.cell = cell
+##        cell.unit = copy
+##        return copy
+##
+##    def build_imgs(self):
+##        W,H = self.original_img.get_size()
+##        w0 = float(self.editor.zoom_cell_sizes[0])
+##        imgs = []
+##        for w in self.editor.zoom_cell_sizes:
+##            factor = w/w0
+##            zoom_size = (int(factor*W), int(factor*H))
+##            img = pygame.transform.scale(self.original_img, zoom_size)
+##            imgs.append(img)
+##        self.imgs = imgs
+##
+##    def get_current_img(self):
+##        return self.imgs[self.cell.map.current_zoom_level]
+##
+##    def set_same_type(self, objs):
+##        for o in objs:
+##            o.object_type = self.object_type
+
+
 class MapObject:
-    current_id = 1
-
-    def __init__(self, editor, fn, name="", factor=1., relpos=(0,0), build=True,
-                 new_type=True):
-        """Object that looks the same at each frame"""
-        self.editor = editor
-        ref_size = editor.zoom_cell_sizes[0]
-        if fn:
-            if isinstance(fn,str):
-                img = thorpy.load_image(fn, colorkey=(255,255,255))
-            else:
-                img = fn
-            img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
-        else:
-            img = None
-        self.factor = factor
-        self.original_img = img
-        self.relpos = [0,0]
-        self.imgs = None
-        self.cell = None
-        self.name = name
-        self.ncopies = 0
-        self.min_relpos = [-0.4, -0.4]
-        self.max_relpos = [0.4,   0.4]
-##        self.min_relpos = [-0.1, -0.1]
-##        self.max_relpos = [0.1,   0.1]
-        self.quantity = 1 #not necessarily 1 for units
-        if build and fn:
-            self.build_imgs()
-        if new_type:
-            self.object_type = MapObject.current_id
-            MapObject.current_id += 1
-        else:
-            self.object_type = None
-
-    def ypos(self):
-        h = self.original_img.get_size()[1]
-        s = self.editor.zoom_cell_sizes[0]
-        return self.cell.coord[1]  + 0.5*h/s + self.relpos[1]
-
-    def randomize_relpos(self):
-        self.relpos[0] = self.min_relpos[0] +\
-                         random.random()*(self.max_relpos[0]-self.min_relpos[0])
-        self.relpos[1] = self.min_relpos[1] +\
-                         random.random()*(self.max_relpos[1]-self.min_relpos[1])
-
-    def copy(self):
-        """The copy references the same images as the original !"""
-        self.ncopies += 1
-        obj = MapObject(self.editor, "", self.name, self.factor,
-                        list(self.relpos), new_type=False)
-        obj.original_img = self.original_img
-        obj.imgs = self.imgs
-        obj.min_relpos = list(self.min_relpos)
-        obj.max_relpos = list(self.max_relpos)
-        obj.object_type = self.object_type
-        return obj
-
-    def deep_copy(self):
-        obj = MapObject(self.editor, "", self.name, self.factor,
-                        list(self.relpos), new_type=False)
-        obj.original_img = self.original_img.copy()
-        obj.imgs = [i.copy() for i in self.imgs]
-        obj.min_relpos = list(self.min_relpos)
-        obj.max_relpos = list(self.max_relpos)
-        obj.object_type = self.object_type
-        return obj
-
-
-    def flip(self, x=True, y=False):
-        obj = self.deep_copy()
-        obj.original_img = pygame.transform.flip(obj.original_img, x, y)
-        for i in range(len(obj.imgs)):
-            obj.imgs[i] = pygame.transform.flip(obj.imgs[i], x, y)
-        return obj
-
-    def add_copy_on_cell(self, cell):
-        copy = self.copy()
-        copy.cell = cell
-        cell.objects.append(copy)
-        return copy
-
-    def add_unit_on_cell(self, cell):
-        assert cell.unit is None
-        copy = self.copy()
-        copy.cell = cell
-        cell.unit = copy
-        return copy
-
-    def build_imgs(self):
-        W,H = self.original_img.get_size()
-        w0 = float(self.editor.zoom_cell_sizes[0])
-        imgs = []
-        for w in self.editor.zoom_cell_sizes:
-            factor = w/w0
-            zoom_size = (int(factor*W), int(factor*H))
-            img = pygame.transform.scale(self.original_img, zoom_size)
-            imgs.append(img)
-        self.imgs = imgs
-
-    def get_current_img(self):
-        return self.imgs[self.cell.map.current_zoom_level]
-
-    def set_same_type(self, objs):
-        for o in objs:
-            o.object_type = self.object_type
-
-
-class MapObjectMultiframes:
     current_id = 1
 
     def __init__(self, editor, fns, name="", factor=1., relpos=(0,0), build=True,
@@ -186,6 +189,8 @@ class MapObjectMultiframes:
         ref_size = editor.zoom_cell_sizes[0]
         self.frame_imgs = []
         self.original_imgs = []
+        if isinstance(fns, str):
+            fns = [fns]
         for fn in fns:
             if fn:
                 if isinstance(fn,str):
@@ -197,6 +202,7 @@ class MapObjectMultiframes:
                 img = None
             self.frame_imgs.append(img)
             self.original_imgs.append(img)
+        self.nframes = len(self.original_imgs)
         self.factor = factor
         self.relpos = [0,0]
         self.imgs_imgs = None
@@ -205,8 +211,6 @@ class MapObjectMultiframes:
         self.ncopies = 0
         self.min_relpos = [-0.4, -0.4]
         self.max_relpos = [0.4,   0.4]
-##        self.min_relpos = [-0.1, -0.1]
-##        self.max_relpos = [0.1,   0.1]
         self.quantity = 1 #not necessarily 1 for units
         if build and fn:
             self.build_imgs()
@@ -230,7 +234,7 @@ class MapObjectMultiframes:
     def copy(self):
         """The copy references the same images as the original !"""
         self.ncopies += 1
-        obj = MapObjectMultiframes(self.editor, [""], self.name, self.factor,
+        obj = MapObject(self.editor, [""], self.name, self.factor,
                         list(self.relpos), new_type=False)
         obj.original_imgs = self.original_imgs
         obj.imgs_imgs = self.imgs_imgs
@@ -240,12 +244,16 @@ class MapObjectMultiframes:
         return obj
 
     def deep_copy(self):
-        obj = MapObjectMultiframes(self.editor, [""], self.name, self.factor,
+        obj = MapObject(self.editor, [""], self.name, self.factor,
                         list(self.relpos), new_type=False)
-        obj.original_imgs = self.original_imgs.copy()
+        obj.original_imgs = [i.copy() for i in self.original_imgs]
         obj.imgs_imgs = []
-        for imgs in self.imgs_imgs:
-            obj.imgs_imgs = [i.copy() for i in imgs]
+        for frame in range(len(self.imgs_imgs)):
+            obj.imgs_imgs.append([])
+            for scale in range(len(self.imgs_imgs[frame])):
+                obj.imgs_imgs[frame].append(self.imgs_imgs[frame][scale].copy())
+##        for imgs in self.imgs_imgs:
+##            obj.imgs_imgs = [i.copy() for i in imgs]
         obj.min_relpos = list(self.min_relpos)
         obj.max_relpos = list(self.max_relpos)
         obj.object_type = self.object_type
@@ -255,10 +263,9 @@ class MapObjectMultiframes:
     def flip(self, x=True, y=False):
         obj = self.deep_copy()
         obj.original_imgs = [pygame.transform.flip(i, x, y) for i in obj.original_imgs]
-
-        for i in range(len(obj.imgs_imgs)):
-            for j in range(len(obj.imgs_imgs[i])):
-                obj.imgs_imgs[i][j] = pygame.transform.flip(obj.imgs_imgs[i][j], x, y)
+        for frame in range(len(obj.imgs_imgs)):
+            for scale in range(len(obj.imgs_imgs[frame])):
+                obj.imgs_imgs[frame][scale] = pygame.transform.flip(obj.imgs_imgs[frame][scale], x, y)
         return obj
 
     def add_copy_on_cell(self, cell):
@@ -275,12 +282,12 @@ class MapObjectMultiframes:
         return copy
 
     def build_imgs(self):
-        self.imgs_imgs = [] #list of list of images
-        for img in self.original_imgs:
+        self.imgs_imgs = [] #list of list of images - idx0:frame, idx1:scale
+        for img in self.original_imgs: #loop over frames
             W,H = img.get_size()
             w0 = float(self.editor.zoom_cell_sizes[0])
             imgs = []
-            for w in self.editor.zoom_cell_sizes:
+            for w in self.editor.zoom_cell_sizes: #loop over sizes
                 factor = w/w0
                 zoom_size = (int(factor*W), int(factor*H))
                 img = pygame.transform.scale(img, zoom_size)
@@ -288,10 +295,10 @@ class MapObjectMultiframes:
             self.imgs_imgs.append(imgs)
 
     def get_current_zoomed_img(self):
-        return self.imgs_imgs[self.cell.map.t][self.cell.map.current_zoom_level]
+        return self.get_current_imgs()[self.cell.map.current_zoom_level]
 
     def get_current_imgs(self):
-        return self.imgs_imgs[self.cell.map.t]
+        return self.imgs_imgs[self.cell.map.t%self.nframes]
 
     def set_same_type(self, objs):
         for o in objs:

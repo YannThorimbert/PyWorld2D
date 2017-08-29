@@ -8,7 +8,8 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-from mapobjects.objects import MapObject, RandomObjectDistribution, get_distributor, draw_path, add_random_road, add_random_river
+import mapobjects.objects as objs
+from mapobjects.objects import MapObject
 import saveload.io as io
 from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
@@ -73,6 +74,7 @@ me = MapEditor()
 
 me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
 me.zoom_cell_sizes = [16, 12, 8]
+me.zoom_cell_sizes = [20]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 150 #width of the right menu in pixels
@@ -178,7 +180,9 @@ wood = MapObject(me,"./mapobjects/images/wood1.png","wooden bridge",1.)
 magic = MapObject(me,
                  [  "./mapobjects/images/wood1.png",
                     "./mapobjects/images/yar_bush.png"],
-                 "wooden bridge",1.)
+                 "magic",1.)
+
+objs.put_static_obj(magic, me.lm, (12,12), layer2)
 
 for v in[village1,village2,village3,village4]:
     v.max_relpos = [0., 0.]
@@ -186,34 +190,34 @@ for v in[village1,village2,village3,village4]:
 
 
 #4) we add the objects via distributors
-distributor = get_distributor(me, [fir1, fir2, tree], forest_map, ["Grass","Rock"])
+distributor = objs.get_distributor(me, [fir1, fir2, tree], forest_map, ["Grass","Rock"])
 distributor.distribute_objects(layer2)
 
-distributor = get_distributor(me, [tree], forest_map, ["Grass"])
+distributor = objs.get_distributor(me, [tree], forest_map, ["Grass"])
 distributor.max_density = 1
 distributor.homogeneity = 0.1
 distributor.zones_spread = [(0.5,0.2)]
 distributor.distribute_objects(layer2)
 
-distributor = get_distributor(me, [fir3, fir3.flip()],
+distributor = objs.get_distributor(me, [fir3, fir3.flip()],
                                 forest_map, ["Thin snow","Snow"])
 distributor.homogeneity = 0.5
 distributor.distribute_objects(layer2)
 
 
-distributor = get_distributor(me, [palm, palm.flip()], forest_map, ["Sand"])
+distributor = objs.get_distributor(me, [palm, palm.flip()], forest_map, ["Sand"])
 distributor.max_density = 1
 distributor.homogeneity = 0.5
 distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
 distributor.distribute_objects(layer2)
 
-distributor = get_distributor(me, [bush], forest_map, ["Grass"])
+distributor = objs.get_distributor(me, [bush], forest_map, ["Grass"])
 distributor.max_density = 2
 distributor.homogeneity = 0.2
 distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
 distributor.distribute_objects(layer2)
 
-distributor = get_distributor(me,
+distributor = objs.get_distributor(me,
                         [village1, village1.flip(), village2, village2.flip(),
                          village3, village3.flip(), village4, village4.flip()],
                         forest_map, ["Grass"], limit_relpos_y=False)
@@ -243,7 +247,7 @@ possible_materials=list(me.materials)
 possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
 
 for i in range(5):
-    add_random_road(lm, layer2, cobbles, [wood], costs_materials,
+    objs.add_random_road(lm, layer2, cobbles, [wood], costs_materials,
                      costs_objects, possible_materials, possible_objects)
 
 

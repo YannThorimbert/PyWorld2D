@@ -155,7 +155,7 @@ class Camera:
         for o in objs:
             r = self.get_rect_at_coord(o.cell.coord)
             #if self.map_rect.colliderect(r):
-            img = o.get_current_img()
+            img = o.get_current_zoomed_img()
             ir = img.get_rect()
             ir.center = r.center
             ir.move_ip(o.relpos[0]*s, o.relpos[1]*s)
