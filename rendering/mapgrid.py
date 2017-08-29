@@ -219,31 +219,6 @@ class LogicalMap(BaseGrid):
     def get_graphical_cell(self, coord, zoom):
         return self.graphical_maps[zoom][coord]
 
-    def draw_on_cell(self, img, x, y, relx, rely): #used for dynamic objects
-        """relx and rely are the relative center coordinates"""
-        cell_size0 = self.cell_sizes[0]
-        wobj0, hobj0 = img.get_size()
-        coord = (x,y)
-##        self.cells[x][y].objects.append("lol")
-        for zoom, cell_size in enumerate(self.cell_sizes):
-            factor = float(cell_size) / cell_size0
-            w = int(wobj0 * factor)
-            h = int(hobj0 * factor)
-            #no smoothscale because problems with colorkey
-            obj_img = pygame.transform.scale(img, (w,h))
-            obj_rect = obj_img.get_rect()
-            obj_rect.center = (cell_size//2,)*2
-            dx, dy = int(relx*cell_size), int(rely*cell_size)
-            obj_rect.move_ip(dx,dy)
-            #
-            gc = self.get_graphical_cell(coord, zoom)
-            new_imgs = []
-            for original in gc.imgs:
-                new_ = original.copy()
-                new_.blit(obj_img, obj_rect.topleft)
-                new_imgs.append(new_)
-            gc.imgs = [new_ for new_ in new_imgs]
-
 
     def draw(self, screen, topleft, dx_pix, dy_pix):
         x0 = self.current_x
@@ -256,7 +231,11 @@ class LogicalMap(BaseGrid):
 
     def blit_img(self, imgs, coord, relpos): #this is permanent
         """Permanently blit images <imgs> corresponding to different zoom levels
-        onto self's surfaces."""
+        onto self's surfaces.
+        <imgs> is a matrix on the form:
+            index 0: zoom level
+            index 1: frame
+        """
         for level, gm in enumerate(self.graphical_maps):
             gm.blit_img(imgs[level], coord, relpos)
 
@@ -275,7 +254,11 @@ class LogicalMap(BaseGrid):
         if sort:
             objects.sort(key=lambda x: x.ypos())
         for obj in objects:
+            imgs = []
+            for level in self.zoom_levels:
+                imgs.append(obj.imgs_imgs[])
             imgs = obj.get_current_imgs()
+            formated =
             self.blit_img(imgs, obj.cell.coord, obj.relpos)
 
 ##    def show(self):
