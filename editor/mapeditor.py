@@ -229,6 +229,7 @@ class MapEditor:
 
     def build_surfaces(self, sort_objects=True):
         self.lm.build_surfaces()
+##        self.lm.build_surfaces_fast()
         self.lm.blit_objects(sort=sort_objects)
         for lay in self.lm.layers:
             lay.build_surfaces()
@@ -415,15 +416,18 @@ class MapEditor:
 
     def add_material(self, name, hmax, img_fullsize, dx_divider=0, dy_divider=0,
                      id_=None):
+        static = dx_divider == 0 and dy_divider == 0 or self.nframes == 1
         imgs = self.build_tiles(img_fullsize, dx_divider, dy_divider)
         if id_ is None:
             id_ = name
-        self.materials[id_] = tm.Material(name, hmax, imgs)
+        self.materials[id_] = tm.Material(name, hmax, imgs, static)
 
-    def build_materials(self, cell_radius_divider):
+    def build_materials(self, cell_radius_divider, fast=False):
+        """Fast is a bit faster but quality is lower."""
         materials = list(self.materials.values())
         self.material_couples = tm.get_material_couples(materials,
-                                                        cell_radius_divider)
+                                                        cell_radius_divider,
+                                                        fast)
 
     def build_hmap(self, chunk, n_octaves=None, persistance=2.):
         if n_octaves == "auto" or n_octaves == "max":

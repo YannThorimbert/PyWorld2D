@@ -96,7 +96,47 @@ def build_tilers(grasses, waters, radius_divider):
             tilers[z][n] = tiler
     return tilers
 
-def get_material_couples(materials, radius_divider):
+def build_static_tilers(grasses, waters, radius_divider):
+    nzoom = len(grasses)
+    assert nzoom == len(waters) #same number of zoom levels
+    nframes = len(grasses[0])
+    for z in range(nzoom):
+        assert nframes == len(waters[z]) #same number of frames
+    tilers = [[None for n in range(nframes)] for z in range(nzoom)]
+    for z in range(nzoom):
+        cell_size = grasses[z][0].get_width()
+        radius = cell_size//radius_divider
+        tiler = BeachTiler(grasses[z][0], waters[z][0])
+        tiler.make(size=(cell_size,)*2, radius=radius)
+        for n in range(nframes):
+            tilers[z][n] = tiler
+    return tilers
+
+def build_tilers_fast(grasses, waters, radius_divider):
+    nzoom = len(grasses)
+    assert nzoom == len(waters) #same number of zoom levels
+    nframes = len(grasses[0])
+    for z in range(nzoom):
+        assert nframes == len(waters[z]) #same number of frames
+    tilers = [[None for n in range(nframes)] for z in range(nzoom)]
+    cell_size = grasses[0][0].get_width()
+    radius = cell_size//radius_divider
+    for n in range(nframes):
+        tiler = BeachTiler(grasses[0][n], waters[0][n])
+        tiler.make(size=(cell_size,)*2, radius=radius)
+        tilers[0][n] = tiler
+    if nzoom > 1:
+        for z in range(1,nzoom):
+            for n in range(nframes):
+                tiler = BeachTiler(grasses[z][n], waters[z][n])
+                size = grasses[z][n].get_size()
+                ref = tilers[0][n]
+                for key in ref.imgs:
+                    tiler.imgs[key] = pygame.transform.scale(ref.imgs[key], size)
+                tilers[z][n] = tiler
+    return tilers
+
+def get_material_couples(materials, radius_divider, fast):
     materials.sort(key=lambda x:x.hmax)
     couples = []
     imgs_zoom0_mat0 = materials[0].imgs[0]
@@ -105,7 +145,8 @@ def get_material_couples(materials, radius_divider):
     for i in range(len(materials)-1):
         print("     Building tilers for couple",i)
         assert nframes == len(materials[i+1].imgs[0])
-        couple = MaterialCouple(materials[i],materials[i+1],radius_divider,max_cell_size)
+        couple = MaterialCouple(materials[i], materials[i+1], radius_divider,
+                                max_cell_size, fast)
         couples.append(couple)
     return couples
 
@@ -121,20 +162,28 @@ def get_couple(h, couples):
 
 class Material:
 
-    def __init__(self, name, hmax, imgs):
+    def __init__(self, name, hmax, imgs, static):
         self.name = name
         self.hmax = hmax
         self.imgs = imgs
+        self.static = static
 
 class MaterialCouple:
 
-    def __init__(self, material1, material2, radius_divider, max_cell_size):
+    def __init__(self, material1, material2, radius_divider, max_cell_size, fast):
         assert material1.hmax != material2.hmax
+        if fast:
+            build_tilers_dynamic = build_tilers_fast
+        else:
+            build_tilers_dynamic = build_tilers
         if material1.hmax > material2.hmax:
             self.grass, self.water = material1, material2
         else:
             self.grass, self.water = material2, material1
-        self.tilers = build_tilers(self.grass.imgs, self.water.imgs, radius_divider)
+        if material1.static and material2.static:
+            self.tilers = build_static_tilers(self.grass.imgs, self.water.imgs, radius_divider)
+        else:
+            self.tilers = build_tilers_dynamic(self.grass.imgs, self.water.imgs, radius_divider)
         self.transition = self.water.hmax
         self.max_cell_size = max_cell_size
 

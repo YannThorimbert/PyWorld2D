@@ -91,8 +91,8 @@ class LogicalMap(BaseGrid):
         self.layers = []
         #
         self.nframes = len(material_couples[0].get_tilers(0))
-        self.t = 0
-        self.tot_time = 0
+        self.t = 0 #in unit of materials frame
+        self.tot_time = 0 #in unit of pygame frame
         self.frame_slowness = 20
         #
         self.refresh_cell_heights(hmap)
@@ -228,8 +228,16 @@ class LogicalMap(BaseGrid):
     def build_surfaces(self):
         for gm in self.graphical_maps:
             gm.generate_submaps_parameters(factor=200)
-            print("building gm", gm.cell_size)
             gm.build_surfaces(self.colorkey)
+
+    def build_surfaces_fast(self):
+        """Not that fast..."""
+        ref = self.graphical_maps[0]
+        ref.generate_submaps_parameters(factor=200)
+        ref.build_surfaces(self.colorkey)
+        if len(self.graphical_maps) > 1:
+            for gm in self.graphical_maps[1:]:
+                gm.build_surfaces_from(self.colorkey, ref)
 
     def blit_object(self, obj): #this is permanent
         """Permanently blit obj onto self's surfaces."""
@@ -338,7 +346,7 @@ class GraphicalMap(PygameGrid):
         """blit images <obj_img> on self's surface"""
         relpos = obj.relpos
         xobj, yobj = obj.cell.coord
-        obj_rect = obj.imgs_imgs[self.level][0].get_rect()
+        obj_rect = obj.imgs_z_t[self.level][0].get_rect()
         obj_rect.center = (self.cell_size//2,)*2
         dx, dy = int(relpos[0]*self.cell_size), int(relpos[1]*self.cell_size)
         obj_rect.move_ip(dx,dy)
@@ -354,7 +362,7 @@ class GraphicalMap(PygameGrid):
                     x = xpix - dx*self.submap_size[0]
                     y = ypix - dy*self.submap_size[1]
                     for t in range(self.nframes):
-                        img = obj.imgs_imgs[self.level][t%obj.nframes]
+                        img = obj.imgs_z_t[self.level][t%obj.nframes]
                         self.surfaces[cx][cy][t].blit(img, (x,y))
 
     def draw(self, screen, topleft, x0, y0, xpix, ypix, t):

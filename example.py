@@ -17,13 +17,7 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#ne pas recalculer les frames de materiaux statiques!!!!!!!!!!!
-
 #options de load/ecrire les tiles ! ==> comme ca pas besoin de numpy du tout
-
-#ranger les trucs calcules des gm dans Gm ==> remettre dans init
-
-
 
 #riviere qui bouge
 
@@ -82,8 +76,8 @@ me = MapEditor()
 ##me.from_file("saved_map.dat")
 
 ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
-##me.zoom_cell_sizes = [64, 32, 12, 8]
-me.zoom_cell_sizes = [20,8]
+me.zoom_cell_sizes = [64, 32, 12, 8]
+##me.zoom_cell_sizes = [20,8]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 150 #width of the right menu in pixels
@@ -142,7 +136,8 @@ outside = me.add_material("outside", -1, black_img)
 
 #this is the heavier computing part, especially if the maximum zoom is large:
 print("Building material couples")
-me.build_materials(cell_radius_divider)
+#fast to false to have better quality!
+me.build_materials(cell_radius_divider, fast=True)
 
 
 
@@ -192,6 +187,7 @@ magic = MapObject(me,
                  "magic",1.)
 
 gru = objs.put_static_obj(magic, me.lm, (12,12), layer2)
+gru.frame_slowness = 12
 
 for v in[village1,village2,village3,village4]:
     v.max_relpos = [0., 0.]

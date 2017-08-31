@@ -206,7 +206,7 @@ class MapObject:
         self.nframes = len(self.original_imgs)
         self.factor = factor
         self.relpos = [0,0]
-        self.imgs_imgs = None
+        self.imgs_z_t = None
         self.cell = None
         self.name = name
         self.ncopies = 0
@@ -239,7 +239,7 @@ class MapObject:
                         list(self.relpos), new_type=False)
         obj.original_imgs = self.original_imgs
         obj.nframes = self.nframes
-        obj.imgs_imgs = self.imgs_imgs
+        obj.imgs_z_t = self.imgs_z_t
         obj.min_relpos = list(self.min_relpos)
         obj.max_relpos = list(self.max_relpos)
         obj.object_type = self.object_type
@@ -250,13 +250,13 @@ class MapObject:
                         list(self.relpos), new_type=False)
         obj.original_imgs = [i.copy() for i in self.original_imgs]
         obj.nframes = len(obj.original_imgs)
-        obj.imgs_imgs = []
-        for frame in range(len(self.imgs_imgs)):
-            obj.imgs_imgs.append([])
-            for scale in range(len(self.imgs_imgs[frame])):
-                obj.imgs_imgs[frame].append(self.imgs_imgs[frame][scale].copy())
-##        for imgs in self.imgs_imgs:
-##            obj.imgs_imgs = [i.copy() for i in imgs]
+        obj.imgs_z_t = []
+        for frame in range(len(self.imgs_z_t)):
+            obj.imgs_z_t.append([])
+            for scale in range(len(self.imgs_z_t[frame])):
+                obj.imgs_z_t[frame].append(self.imgs_z_t[frame][scale].copy())
+##        for imgs in self.imgs_z_t:
+##            obj.imgs_z_t = [i.copy() for i in imgs]
         obj.min_relpos = list(self.min_relpos)
         obj.max_relpos = list(self.max_relpos)
         obj.object_type = self.object_type
@@ -266,9 +266,9 @@ class MapObject:
     def flip(self, x=True, y=False):
         obj = self.deep_copy()
         obj.original_imgs = [pygame.transform.flip(i, x, y) for i in obj.original_imgs]
-        for frame in range(len(obj.imgs_imgs)):
-            for scale in range(len(obj.imgs_imgs[frame])):
-                obj.imgs_imgs[frame][scale] = pygame.transform.flip(obj.imgs_imgs[frame][scale], x, y)
+        for frame in range(len(obj.imgs_z_t)):
+            for scale in range(len(obj.imgs_z_t[frame])):
+                obj.imgs_z_t[frame][scale] = pygame.transform.flip(obj.imgs_z_t[frame][scale], x, y)
         return obj
 
     def add_copy_on_cell(self, cell):
@@ -285,7 +285,7 @@ class MapObject:
         return copy
 
 ##    def build_imgs(self):
-##        self.imgs_imgs = [] #list of list of images - idx0:scale, idx1:frame
+##        self.imgs_z_t = [] #list of list of images - idx0:scale, idx1:frame
 ##        for img in self.original_imgs: #loop over frames
 ##            W,H = img.get_size()
 ##            w0 = float(self.editor.zoom_cell_sizes[0])
@@ -295,10 +295,10 @@ class MapObject:
 ##                zoom_size = (int(factor*W), int(factor*H))
 ##                img = pygame.transform.scale(img, zoom_size)
 ##                imgs.append(img)
-##            self.imgs_imgs.append(imgs)
+##            self.imgs_z_t.append(imgs)
 
     def build_imgs(self):
-        self.imgs_imgs = [] #list of list of images - idx0:scale, idx1:frame
+        self.imgs_z_t = [] #list of list of images - idx0:scale, idx1:frame
         for w in self.editor.zoom_cell_sizes: #loop over sizes
             imgs = []
             for img in self.original_imgs: #loop over frames
@@ -308,11 +308,11 @@ class MapObject:
                 zoom_size = (int(factor*W), int(factor*H))
                 img = pygame.transform.scale(img, zoom_size)
                 imgs.append(img)
-            self.imgs_imgs.append(imgs)
+            self.imgs_z_t.append(imgs)
 
 
     def get_current_img(self):
-        return self.imgs_imgs[self.editor.zoom_level][self.cell.map.t%self.nframes]
+        return self.imgs_z_t[self.editor.zoom_level][self.cell.map.t%self.nframes]
 
     def set_same_type(self, objs):
         for o in objs:
