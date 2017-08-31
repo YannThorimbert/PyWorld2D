@@ -295,7 +295,7 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
         changed = False
         if unit:
             name = unit.name + " (" + str(unit.quantity) + ")"
-            new_img = unit.imgs[0] #frame...
+            new_img = unit.get_current_img()
             changed = True
         elif self.unit is not None:
             name = ""

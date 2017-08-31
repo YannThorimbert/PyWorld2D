@@ -83,7 +83,7 @@ class LogicalMap(BaseGrid):
         self.cell_sizes = []
         for z in self.zoom_levels:
             cell_size = material_couples[0].get_cell_size(z)
-            gm = GraphicalMap(nx, ny, cell_size, actual_frames[z], outsides[z])
+            gm = GraphicalMap(nx, ny, cell_size, z, actual_frames[z], outsides[z])
             self.graphical_maps.append(gm)
             self.cell_sizes.append(cell_size)
         self.current_gm = self.graphical_maps[0]
@@ -226,24 +226,15 @@ class LogicalMap(BaseGrid):
         self.current_gm.draw(screen, topleft, x0, y0, dx_pix, dy_pix, self.t)
 
     def build_surfaces(self):
-        #1. build surfaces at minimum zoom
-        self.graphical_maps[0].generate_submaps_parameters(factor=200)
-        self.graphical_maps[0].build_surfaces(self.colorkey) #list of maps, index = zoom level
-        #2. get the others from a scaling of the latters
-        if len(self.graphical_maps) > 1:
-            for gm in self.graphical_maps[1:]:
-                gm.build_surfaces_from(self.colorkey, self.graphical_maps[0])
-##                gm.build_surfaces(self.colorkey)
+        for gm in self.graphical_maps:
+            gm.generate_submaps_parameters(factor=200)
+            print("building gm", gm.cell_size)
+            gm.build_surfaces(self.colorkey)
 
-    def blit_img(self, imgs, coord, relpos): #this is permanent
-        """Permanently blit images <imgs> corresponding to different zoom levels
-        onto self's surfaces.
-        <imgs> is a matrix on the form:
-            index 0: zoom level
-            index 1: frame
-        """
+    def blit_object(self, obj): #this is permanent
+        """Permanently blit obj onto self's surfaces."""
         for level, gm in enumerate(self.graphical_maps):
-            gm.blit_img(imgs[level], coord, relpos)
+            gm.blit_object(obj)
 
     def save_pure_surfaces(self):
         for gm in self.graphical_maps:
@@ -260,21 +251,20 @@ class LogicalMap(BaseGrid):
         if sort:
             objects.sort(key=lambda x: x.ypos())
         for obj in objects:
-            imgs = obj.imgs
-            self.blit_img(imgs, obj.cell.coord, obj.relpos)
-
+            self.blit_object(obj)
 ##    def show(self):
 ##        monitor.show()
 
 
 class GraphicalMap(PygameGrid):
 
-    def __init__(self, nx, ny, cell_size, actual_frame, outside_imgs):
+    def __init__(self, nx, ny, cell_size, level, actual_frame, outside_imgs):
 ##        cell_size = material_couples[0].get_cell_size(zoom_level)
         self.actual_frame = actual_frame
         PygameGrid.__init__(self, int(nx), int(ny),
                             cell_size=(cell_size,)*2,
                             topleft=actual_frame.topleft)
+        self.level = level
         self.outside_imgs = outside_imgs
         self.cell_size = cell_size
         for coord in self:
@@ -326,7 +316,7 @@ class GraphicalMap(PygameGrid):
             for y in range(gm.n_submaps[1]):
                 for frame in range(gm.nframes):
                     resized = gm.surfaces[x][y][frame]
-                    resized = pygame.transform.smoothscale(resized, scaled_size)
+                    resized = pygame.transform.scale(resized, scaled_size)
                     surfaces[x][y][frame] = resized
         self.surfaces = surfaces
         self.submap_size = scaled_size
@@ -344,10 +334,11 @@ class GraphicalMap(PygameGrid):
                     self.pure_surfaces[x][y][t] = self.surfaces[x][y][t].copy()
 
 
-    def blit_img(self, obj_img, obj_coord, relpos):
-        """blit image <obj_img> on self's surface"""
-        xobj, yobj = obj_coord
-        obj_rect = obj_img.get_rect()
+    def blit_object(self, obj):
+        """blit images <obj_img> on self's surface"""
+        relpos = obj.relpos
+        xobj, yobj = obj.cell.coord
+        obj_rect = obj.imgs_imgs[self.level][0].get_rect()
         obj_rect.center = (self.cell_size//2,)*2
         dx, dy = int(relpos[0]*self.cell_size), int(relpos[1]*self.cell_size)
         obj_rect.move_ip(dx,dy)
@@ -356,14 +347,15 @@ class GraphicalMap(PygameGrid):
         surfy = yobj*self.cell_size//self.submap_size[1]
         xpix = xobj*self.cell_size - surfx*self.submap_size[0] + obj_rect.x
         ypix = yobj*self.cell_size - surfy*self.submap_size[1] + obj_rect.y
-        for t in range(self.nframes):
-            for dx in range(-1,2):
-                for dy in range(-1,2):
-                    cx,cy = surfx+dx, surfy+dy
-                    if 0 <= cx < self.n_submaps[0] and 0 <= cy < self.n_submaps[1]:
-                        x = xpix - dx*self.submap_size[0]
-                        y = ypix - dy*self.submap_size[1]
-                        self.surfaces[cx][cy][t].blit(obj_img, (x,y))
+        for dx in range(-1,2):
+            for dy in range(-1,2):
+                cx,cy = surfx+dx, surfy+dy
+                if 0 <= cx < self.n_submaps[0] and 0 <= cy < self.n_submaps[1]:
+                    x = xpix - dx*self.submap_size[0]
+                    y = ypix - dy*self.submap_size[1]
+                    for t in range(self.nframes):
+                        img = obj.imgs_imgs[self.level][t%obj.nframes]
+                        self.surfaces[cx][cy][t].blit(img, (x,y))
 
     def draw(self, screen, topleft, x0, y0, xpix, ypix, t):
         delta_x = topleft[0] - xpix - x0*self.cell_size
@@ -414,7 +406,7 @@ class WhiteLogicalMap(LogicalMap):
         self.white_value = white_value
         for z in self.zoom_levels:
             cell_size = self.cell_sizes[z]
-            gm = GraphicalMap(nx, ny, cell_size, actual_frames[z], outsides[z])
+            gm = GraphicalMap(nx, ny, cell_size, z, actual_frames[z], outsides[z])
             self.graphical_maps.append(gm)
             white = pygame.Surface((cell_size,)*2)
             white.fill(self.white_value)
