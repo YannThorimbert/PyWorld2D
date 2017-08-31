@@ -14,11 +14,13 @@ from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
 
 
+thorpy.application.SHOW_FPS = True
+
 #options de load/ecrire les tiles ! ==> comme ca pas besoin de numpy du tout
 
 #ranger les trucs calcules des gm dans Gm
 
-##thorpy.application.SHOW_FPS = True
+
 
 #riviere qui bouge
 
@@ -77,7 +79,7 @@ me = MapEditor()
 ##me.from_file("saved_map.dat")
 
 ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
-me.zoom_cell_sizes = [20, 12]
+me.zoom_cell_sizes = [64, 32, 12, 8]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 150 #width of the right menu in pixels
@@ -121,7 +123,7 @@ thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 200)
 #water movement is obtained by using a delta-x (dx_divider) and delta-y shifts,
 # here dx_divider = 10 and dy_divider = 8
 #hmax=0.1 means one will find deepwater only below height = 0.1
-##deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
+deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
 me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
 me.add_material("Water", 0.55, water_img, 10, 8)
 me.add_material("Shallow water", 0.6, shore_img, 10, 8)

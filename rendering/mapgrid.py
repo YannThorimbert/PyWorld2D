@@ -227,11 +227,13 @@ class LogicalMap(BaseGrid):
 
     def build_surfaces(self):
         #1. build surfaces at minimum zoom
+        self.graphical_maps[0].generate_submaps_parameters(factor=200)
         self.graphical_maps[0].build_surfaces(self.colorkey) #list of maps, index = zoom level
         #2. get the others from a scaling of the latters
         if len(self.graphical_maps) > 1:
             for gm in self.graphical_maps[1:]:
                 gm.build_surfaces_from(self.colorkey, self.graphical_maps[0])
+##                gm.build_surfaces(self.colorkey)
 
     def blit_img(self, imgs, coord, relpos): #this is permanent
         """Permanently blit images <imgs> corresponding to different zoom levels
@@ -279,9 +281,13 @@ class GraphicalMap(PygameGrid):
             self[coord] = GraphicalCell()
         self.surfaces = None
         self.pure_surfaces = None #surfaces with no objects
+        self.nframes = len(self.outside_imgs)
         #
-        nsx, nsy = int(200/self.cell_size), int(200/self.cell_size)
-        self.nframes = len(outside_imgs)
+        self.submap_size = None
+        self.n_submaps = None
+
+    def generate_submaps_parameters(self, factor):
+        nsx, nsy = int(factor/self.cell_size), int(factor/self.cell_size)
         self.submap_size = (nsx*self.cell_size, nsy*self.cell_size)
         self.n_submaps = (math.ceil(self.frame.w/self.submap_size[0]),
                           math.ceil(self.frame.h/self.submap_size[1]))
@@ -305,31 +311,27 @@ class GraphicalMap(PygameGrid):
         #
         self.surfaces = surfaces
 
+
     def build_surfaces_from(self, colorkey, gm):
         factor = self.cell_size / gm.cell_size
         #we assume that ratio does not change bewteen submaps sizes of different zoom levels!
         scaled_size = (int(factor * gm.submap_size[0]),
                         int(factor * gm.submap_size[1]))
         #create table of surfaces
-        surfaces = [[[None for frame in range(self.nframes)]
-                        for y in range(self.n_submaps[0])]
-                          for x in range(self.n_submaps[1])]
+        surfaces = [[[None for frame in range(gm.nframes)]
+                        for y in range(gm.n_submaps[0])]
+                          for x in range(gm.n_submaps[1])]
         #fill table of surfaces
-        for x in range(self.n_submaps[0]):
-            for y in range(self.n_submaps[1]):
-                xpix = x*self.submap_size[0]
-                ref_surfx = int(xpix/self.frame.w*gm.n_submaps[0])
-                ypix = y*self.submap_size[1]
-                ref_surfy = int(ypix/self.frame.h*gm.n_submaps[1])
-                assert xpix/self.frame.w <= 1.
-                assert ypix/self.frame.h <= 1.
-                assert len(gm.surfaces[0][0]) == self.nframes
-                for frame in range(self.nframes):
-                    resized = gm.surfaces[ref_surfx][ref_surfy][frame]
-                    resized = pygame.transform.scale(resized, scaled_size)
-                    pygame.draw.rect(resized, (255,255,0), resized.get_rect())
+        for x in range(gm.n_submaps[0]):
+            for y in range(gm.n_submaps[1]):
+                for frame in range(gm.nframes):
+                    resized = gm.surfaces[x][y][frame]
+                    resized = pygame.transform.smoothscale(resized, scaled_size)
                     surfaces[x][y][frame] = resized
         self.surfaces = surfaces
+        self.submap_size = scaled_size
+        self.n_submaps = gm.n_submaps
+        self.nframes = gm.nframes
 
     def save_pure_surfaces(self):
         self.pure_surfaces = []
