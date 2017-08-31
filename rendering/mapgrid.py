@@ -30,7 +30,7 @@ class LogicalCell:
         self.name = ""
         self.objects = []
         self.unit = None
-        self.imgs = None
+##        self.imgs = None
 
     def get_altitude(self):
         return (self.h-0.6)*2e4
@@ -79,7 +79,7 @@ class LogicalMap(BaseGrid):
         BaseGrid.__init__(self, int(nx), int(ny))
         self.current_x = 0
         self.current_y = 0
-        self.graphical_maps = []
+        self.graphical_maps = [] #list of maps, index = zoom level
         self.cell_sizes = []
         for z in self.zoom_levels:
             cell_size = material_couples[0].get_cell_size(z)
@@ -226,8 +226,12 @@ class LogicalMap(BaseGrid):
         self.current_gm.draw(screen, topleft, x0, y0, dx_pix, dy_pix, self.t)
 
     def build_surfaces(self):
-        for gm in self.graphical_maps:
-            gm.build_surfaces(self.colorkey)
+        #1. build surfaces at minimum zoom
+        self.graphical_maps[0].build_surfaces(self.colorkey) #list of maps, index = zoom level
+        #2. get the others from a scaling of the latters
+        if len(self.graphical_maps) > 1:
+            for gm in self.graphical_maps[1:]:
+                gm.build_surfaces_from(self.colorkey, self.graphical_maps[0])
 
     def blit_img(self, imgs, coord, relpos): #this is permanent
         """Permanently blit images <imgs> corresponding to different zoom levels
@@ -254,11 +258,7 @@ class LogicalMap(BaseGrid):
         if sort:
             objects.sort(key=lambda x: x.ypos())
         for obj in objects:
-            imgs = []
-            for level in self.zoom_levels:
-                imgs.append(obj.imgs_imgs[])
-            imgs = obj.get_current_imgs()
-            formated =
+            imgs = obj.imgs
             self.blit_img(imgs, obj.cell.coord, obj.relpos)
 
 ##    def show(self):
@@ -279,41 +279,57 @@ class GraphicalMap(PygameGrid):
             self[coord] = GraphicalCell()
         self.surfaces = None
         self.pure_surfaces = None #surfaces with no objects
-        self.surf_size = None
-        self.nsurf_x = None
-        self.nsurf_y = None
+        #
+        nsx, nsy = int(200/self.cell_size), int(200/self.cell_size)
+        self.nframes = len(outside_imgs)
+        self.submap_size = (nsx*self.cell_size, nsy*self.cell_size)
+        self.n_submaps = (math.ceil(self.frame.w/self.submap_size[0]),
+                          math.ceil(self.frame.h/self.submap_size[1]))
 
     def build_surfaces(self, colorkey):
-        #heuristic
-        nx = int(200/self.cell_size)
-        ny = int(200/self.cell_size)
-        nframes = len(self[(0,0)].imgs)
-        size_x = nx*self.cell_size
-        size_y = ny*self.cell_size
-        surf_size = (size_x, size_y)
-        nsurf_x = self.frame.w//size_x + 1
-        nsurf_y = self.frame.h//size_y + 1
         #create table of surfaces
-        surfaces = [[[pygame.Surface(surf_size) for frame in range(nframes)]
-                        for y in range(nsurf_y)]
-                          for x in range(nsurf_x)]
+        surfaces = [[[pygame.Surface(self.submap_size) for frame in range(self.nframes)]
+                        for y in range(self.n_submaps[0])]
+                          for x in range(self.n_submaps[1])]
         #fill table of surfaces
         for x,y in self:
-            surfx = x*self.cell_size//surf_size[0]
-            surfy = y*self.cell_size//surf_size[1]
-            xpix = x*self.cell_size - surfx*surf_size[0]
-            ypix = y*self.cell_size - surfy*surf_size[1]
-##            print(x, size_x, nsurf_x, surfx)
-            for t in range(nframes):
+            surfx = x*self.cell_size//self.submap_size[0]
+            surfy = y*self.cell_size//self.submap_size[1]
+            xpix = x*self.cell_size - surfx*self.submap_size[0]
+            ypix = y*self.cell_size - surfy*self.submap_size[1]
+            for t in range(self.nframes):
                 img = self[(x,y)].imgs[t]
                 surfaces[surfx][surfy][t].blit(img, (xpix,ypix))
                 if colorkey is not None:
                     surfaces[surfx][surfy][t].set_colorkey(colorkey)
         #
         self.surfaces = surfaces
-        self.surf_size = surf_size
-        self.nsurf_x = nsurf_x
-        self.nsurf_y = nsurf_y
+
+    def build_surfaces_from(self, colorkey, gm):
+        factor = self.cell_size / gm.cell_size
+        #we assume that ratio does not change bewteen submaps sizes of different zoom levels!
+        scaled_size = (int(factor * gm.submap_size[0]),
+                        int(factor * gm.submap_size[1]))
+        #create table of surfaces
+        surfaces = [[[None for frame in range(self.nframes)]
+                        for y in range(self.n_submaps[0])]
+                          for x in range(self.n_submaps[1])]
+        #fill table of surfaces
+        for x in range(self.n_submaps[0]):
+            for y in range(self.n_submaps[1]):
+                xpix = x*self.submap_size[0]
+                ref_surfx = int(xpix/self.frame.w*gm.n_submaps[0])
+                ypix = y*self.submap_size[1]
+                ref_surfy = int(ypix/self.frame.h*gm.n_submaps[1])
+                assert xpix/self.frame.w <= 1.
+                assert ypix/self.frame.h <= 1.
+                assert len(gm.surfaces[0][0]) == self.nframes
+                for frame in range(self.nframes):
+                    resized = gm.surfaces[ref_surfx][ref_surfy][frame]
+                    resized = pygame.transform.scale(resized, scaled_size)
+                    pygame.draw.rect(resized, (255,255,0), resized.get_rect())
+                    surfaces[x][y][frame] = resized
+        self.surfaces = surfaces
 
     def save_pure_surfaces(self):
         self.pure_surfaces = []
@@ -333,37 +349,28 @@ class GraphicalMap(PygameGrid):
         obj_rect.center = (self.cell_size//2,)*2
         dx, dy = int(relpos[0]*self.cell_size), int(relpos[1]*self.cell_size)
         obj_rect.move_ip(dx,dy)
-        #heuristic
-        nx = int(200/self.cell_size)
-        ny = int(200/self.cell_size)
-        nframes = len(self[(0,0)].imgs)
-        size_x = nx*self.cell_size
-        size_y = ny*self.cell_size
-        surf_size = (size_x, size_y)
-        nsurf_x = self.frame.w//size_x + 1
-        nsurf_y = self.frame.h//size_y + 1
         #fill table of surfaces
-        surfx = xobj*self.cell_size//surf_size[0]
-        surfy = yobj*self.cell_size//surf_size[1]
-        xpix = xobj*self.cell_size - surfx*surf_size[0] + obj_rect.x
-        ypix = yobj*self.cell_size - surfy*surf_size[1] + obj_rect.y
-        for t in range(nframes):
+        surfx = xobj*self.cell_size//self.submap_size[0]
+        surfy = yobj*self.cell_size//self.submap_size[1]
+        xpix = xobj*self.cell_size - surfx*self.submap_size[0] + obj_rect.x
+        ypix = yobj*self.cell_size - surfy*self.submap_size[1] + obj_rect.y
+        for t in range(self.nframes):
             for dx in range(-1,2):
                 for dy in range(-1,2):
                     cx,cy = surfx+dx, surfy+dy
-                    if 0 <= cx < nsurf_x and 0 <= cy <nsurf_y:
-                        x = xpix - dx*surf_size[0]
-                        y = ypix - dy*surf_size[1]
+                    if 0 <= cx < self.n_submaps[0] and 0 <= cy < self.n_submaps[1]:
+                        x = xpix - dx*self.submap_size[0]
+                        y = ypix - dy*self.submap_size[1]
                         self.surfaces[cx][cy][t].blit(obj_img, (x,y))
 
     def draw(self, screen, topleft, x0, y0, xpix, ypix, t):
         delta_x = topleft[0] - xpix - x0*self.cell_size
         delta_y = topleft[1] - ypix - y0*self.cell_size
         oldposx = delta_x
-        for x in range(self.nsurf_x):
-            posx = round(x*self.surf_size[0] + delta_x)
-            for y in range(self.nsurf_y):
-                posy = round(y*self.surf_size[1] + delta_y)
+        for x in range(self.n_submaps[0]):
+            posx = round(x*self.submap_size[0] + delta_x)
+            for y in range(self.n_submaps[1]):
+                posy = round(y*self.submap_size[1] + delta_y)
                 screen.blit(self.surfaces[x][y][t], (posx,posy))
 
     def extract_img(self, coord, frame, img):
