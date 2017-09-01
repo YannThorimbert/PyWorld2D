@@ -1,4 +1,4 @@
-import math, random
+import math, random, os
 import pygame
 from pygame.math import Vector2 as V2
 import thorpy
@@ -422,12 +422,18 @@ class MapEditor:
             id_ = name
         self.materials[id_] = tm.Material(name, hmax, imgs, static)
 
-    def build_materials(self, cell_radius_divider, fast=False):
-        """Fast is a bit faster but quality is lower."""
+    def build_materials(self, cell_radius_divider, fast=False,
+                        use_beach_tiler=True, load_tilers=True):
+        try:
+            from pygame import surfarray
+            use_beach_tiler = use_beach_tiler
+        except:
+            use_beach_tiler = False
         materials = list(self.materials.values())
         self.material_couples = tm.get_material_couples(materials,
                                                         cell_radius_divider,
-                                                        fast)
+                                                        fast,
+                                                        use_beach_tiler)
 
     def build_hmap(self, chunk, n_octaves=None, persistance=2.):
         if n_octaves == "auto" or n_octaves == "max":
@@ -448,4 +454,11 @@ class MapEditor:
         io.from_file(self, fn)
         self.refresh_derived_parameters()
 
-
+    def save_tilers(self, base_fn):
+        for i,couple in enumerate(self.material_couples):
+            for z in range(len(self.zoom_cell_sizes)):
+                for n in range(self.nframes):
+                    for type_ in couple.tilers[0][0].imgs:
+                        name = str(i)+str(z)+str(n)+str(type_)
+                        pygame.image.save(couple.tilers[z][n].imgs[type_],
+                                            os.path.join(base_fn,name))

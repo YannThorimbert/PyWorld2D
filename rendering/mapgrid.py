@@ -227,6 +227,7 @@ class LogicalMap(BaseGrid):
 
     def build_surfaces(self):
         for gm in self.graphical_maps:
+            print("     Building graphical map for cell size ", gm.cell_size)
             gm.generate_submaps_parameters(factor=200)
             gm.build_surfaces(self.colorkey)
 

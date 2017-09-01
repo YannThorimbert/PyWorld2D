@@ -14,6 +14,7 @@ import saveload.io as io
 from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
 
+#save des gros tiles puis fast (pour mode sans numpy)
 
 ##thorpy.application.SHOW_FPS = True
 
@@ -136,10 +137,12 @@ outside = me.add_material("outside", -1, black_img)
 
 #this is the heavier computing part, especially if the maximum zoom is large:
 print("Building material couples")
-#fast to false to have better quality!
-me.build_materials(cell_radius_divider, fast=True)
+#fast option: quality a bit lower, loading time a bit faster
+#use_beach_tiler option: quality much better, loading time much slower. Need numpy.
+#load_tilers option: use precomputed textures from disk
+me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=False, load_tilers=False)
 
-
+##me.save_tilers("./")
 
 print("Building map surfaces")
 lm = me.build_map(hmap, me.world_size)
