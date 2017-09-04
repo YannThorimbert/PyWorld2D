@@ -1,10 +1,15 @@
-import math
+import math, os
 import pygame
 import thorpy
 
-from rendering.tilers.beachtiler import BeachTiler
-from rendering.tilers.basetiler import BaseTiler
-from rendering.tilers.roundtiler import RoundTiler
+has_surfarray = False
+try:
+    from rendering.tilers.beachtiler import BeachTiler
+    from rendering.tilers.basetiler import BaseTiler
+    from rendering.tilers.roundtiler import RoundTiler
+    has_surfarray = True
+except:
+    from rendering.tilers.loadtiler import LoadTiler
 
 def get_mixed_tiles(img1, img2, alpha_img_2):
     i1 = img1.copy()
@@ -151,9 +156,38 @@ def build_tilers_fast(grasses, waters, radius_divider, use_beach_tiler):
                 tilers[z][n] = tiler
     return tilers
 
+def load_tilers_dynamic(i, grasses, waters, folder): #pour static, nframes=1
+    nzoom = len(grasses)
+    assert nzoom == len(waters) #same number of zoom levels
+    nframes = len(grasses[0])
+    for z in range(nzoom):
+        assert nframes == len(waters[z]) #same number of frames
+    tilers = [[None for n in range(nframes)] for z in range(nzoom)]
+    for z in range(nzoom): #PEUT ETRE LARGEMENT OPTIMIZE VU QUE ON POURRAIT LOADER UNE SEULE FOIS CHAQUE IMAGE, A LA PLACE DE z FOIS
+        cell_size = grasses[z][0].get_width()
+        for n in range(nframes):
+            basename = os.path.join(folder,str(i)+"_"+str(n)+"_")
+            tilers[z][n] = LoadTiler(basename, (cell_size,)*2)
+    return tilers
+
+def load_tilers_static(i, grasses, waters, folder): #pour static, nframes=1
+    nzoom = len(grasses)
+    assert nzoom == len(waters) #same number of zoom levels
+    nframes = len(grasses[0])
+    for z in range(nzoom):
+        assert nframes == len(waters[z]) #same number of frames
+    tilers = [[None for n in range(nframes)] for z in range(nzoom)]
+    for z in range(nzoom): #PEUT ETRE LARGEMENT OPTIMIZE VU QUE ON POURRAIT LOADER UNE SEULE FOIS CHAQUE IMAGE, A LA PLACE DE z FOIS
+        cell_size = grasses[z][0].get_width()
+        basename = os.path.join(folder,str(i)+"_"+str(0)+"_")
+        tiler = LoadTiler(basename, (cell_size,)*2)
+        for n in range(nframes):
+            tilers[z][n] = tiler
+    return tilers
 
 
-def get_material_couples(materials, radius_divider, fast, use_beach_tiler):
+def get_material_couples(materials, radius_divider, fast, use_beach_tiler,
+                            load_tilers):
     materials.sort(key=lambda x:x.hmax)
     couples = []
     imgs_zoom0_mat0 = materials[0].imgs[0]
@@ -162,8 +196,8 @@ def get_material_couples(materials, radius_divider, fast, use_beach_tiler):
     for i in range(len(materials)-1):
         print("     Building tilers for couple", i)
         assert nframes == len(materials[i+1].imgs[0])
-        couple = MaterialCouple(materials[i], materials[i+1], radius_divider,
-                                max_cell_size, fast, use_beach_tiler)
+        couple = MaterialCouple(i, materials[i], materials[i+1], radius_divider,
+                                max_cell_size, fast, use_beach_tiler, load_tilers)
         couples.append(couple)
     return couples
 
@@ -187,23 +221,37 @@ class Material:
 
 class MaterialCouple:
 
-    def __init__(self, material1, material2, radius_divider, max_cell_size,
-                 fast, use_beach_tiler):
+    def __init__(self, i, material1, material2, radius_divider, max_cell_size,
+                 fast, use_beach_tiler, load_tilers):
+        if not has_surfarray and not load_tilers:
+            raise Exception("Numpy was not found, and tilers are not loaded")
         assert material1.hmax != material2.hmax
-        if fast:
-            build_tilers_dynamic = build_tilers_fast
-        else:
-            build_tilers_dynamic = build_tilers
         if material1.hmax > material2.hmax:
             self.grass, self.water = material1, material2
         else:
             self.grass, self.water = material2, material1
-        if material1.static and material2.static:
-            self.tilers = build_static_tilers(self.grass.imgs, self.water.imgs,
-                                                radius_divider, use_beach_tiler)
+        #
+        if load_tilers:
+            if material1.static and material2.static:
+                self.static = True
+                self.tilers = load_tilers_static(i, self.grass.imgs, self.water.imgs, load_tilers)
+            else:
+                self.static = False
+                self.tilers = load_tilers_dynamic(i, self.grass.imgs, self.water.imgs, load_tilers)
         else:
-            self.tilers = build_tilers_dynamic(self.grass.imgs, self.water.imgs,
-                                                radius_divider, use_beach_tiler)
+            build_tilers_static = build_static_tilers
+            if fast:
+                build_tilers_dynamic = build_tilers_fast
+            else:
+                build_tilers_dynamic = build_tilers
+            if material1.static and material2.static:
+                self.static = True
+                self.tilers = build_tilers_static(self.grass.imgs, self.water.imgs,
+                                                    radius_divider, use_beach_tiler)
+            else:
+                self.static = False
+                self.tilers = build_tilers_dynamic(self.grass.imgs, self.water.imgs,
+                                                    radius_divider, use_beach_tiler)
         self.transition = self.water.hmax
         self.max_cell_size = max_cell_size
 

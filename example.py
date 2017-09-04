@@ -14,6 +14,8 @@ import saveload.io as io
 from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
 
+#quand meme tester sans numpy, parce que bcp de modules l'import (surfarray)
+
 #save des gros tiles puis fast (pour mode sans numpy)
 
 ##thorpy.application.SHOW_FPS = True
@@ -140,9 +142,12 @@ print("Building material couples")
 #fast option: quality a bit lower, loading time a bit faster
 #use_beach_tiler option: quality much better, loading time much slower. Need numpy.
 #load_tilers option: use precomputed textures from disk
-me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=False, load_tilers=False)
+me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=True,
+##                    load_tilers=False)
+                    load_tilers="./rendering/tiles/precomputed/")
 
-##me.save_tilers("./")
+##me.save_tilers("./rendering/tiles/precomputed/")
+##import sys;app.quit();pygame.quit();sys.exit();exit()
 
 print("Building map surfaces")
 lm = me.build_map(hmap, me.world_size)
