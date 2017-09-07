@@ -62,12 +62,21 @@ class BranchAndBoundForMap:
                     obj_type = cell.objects[0].object_type
                     if obj_type in self.possible_objects:
                         possible = True #e.g, bridge is on material water!
-                elif cell.material.name in self.possible_materials:
-                    time = self.costs_materials.get(cell.material.name,0.)
+                else:
+                    possible = True
+                if possible:
+                    really_possible = False
+                    time = 0.
                     if cell.objects:
                         time += self.costs_objects.get(obj_type,0.)
-                    child = State(cell, state, state.time_so_far + time)
-                    children.append(child)
+                    if cell.material.name in self.possible_materials:
+                        time += self.costs_materials.get(cell.material.name,0.)
+                        really_possible = True
+                    elif cell.objects:
+                        really_possible = True
+                    if really_possible:
+                        child = State(cell, state, state.time_so_far + time)
+                        children.append(child)
         return children
 
     def solve(self):

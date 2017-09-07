@@ -3,6 +3,7 @@ import pygame
 from thorpy.gamestools.basegrid import BaseGrid
 from thorpy.gamestools.grid import PygameGrid
 from rendering.tilers.tilemanager import get_couple
+from mapobjects.objects import VON_NEUMAN
 
 #pour eviter de tj faire des tuples, ne pas heriter de PygameGrid et faire moi meme
 
@@ -31,6 +32,10 @@ class LogicalCell:
         self.objects = []
         self.unit = None
 ##        self.imgs = None
+
+    def get_neighbors_von_neuman(self):
+        for dx,dy in VON_NEUMAN:
+            yield self.map.get_cell_at(self.coord[0]+dx, self.coord[1]+dy)
 
     def get_altitude(self):
         return (self.h-0.6)*2e4

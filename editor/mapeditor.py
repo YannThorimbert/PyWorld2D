@@ -316,7 +316,8 @@ class MapEditor:
         self.update_cell_info()
         #blit right pane and draw rect on minimap
         self.e_box.blit()
-        pygame.draw.rect(self.screen, (255,255,255), self.cam.rmouse, 1)
+        self.cam.draw_rmouse(self.screen, self.box_hmap.get_rect())
+##        pygame.draw.rect(self.screen, (255,255,255), self.cam.rmouse, 1)
 
     def draw_no_update(self):
         #blit map frame
@@ -327,7 +328,8 @@ class MapEditor:
         self.cam.draw_objects(self.screen, self.dynamic_objects)
         #blit right pane and draw rect on minimap
         self.e_box.blit()
-        pygame.draw.rect(self.screen, (255,255,255), self.cam.rmouse, 1)
+##        pygame.draw.rect(self.screen, (255,255,255), self.cam.rmouse, 1)
+        self.cam.draw_rmouse(self.screen, self.box_hmap.get_rect())
 
     def func_reac_time(self):
         self.process_mouse_navigation()

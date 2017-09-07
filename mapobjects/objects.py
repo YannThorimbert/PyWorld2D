@@ -3,6 +3,7 @@ import pygame
 import thorpy
 
 from ia.path import BranchAndBoundForMap
+import rendering.tilers.tilemanager as tm
 
 
 
@@ -192,12 +193,12 @@ class MapObject:
         self.original_imgs = []
         if isinstance(fns, str):
             fns = [fns]
-        for fn in fns:
-            if fn:
-                if isinstance(fn,str):
-                    img = thorpy.load_image(fn, colorkey=(255,255,255))
+        for thing in fns:
+            if thing:
+                if isinstance(thing,str):
+                    img = thorpy.load_image(thing, colorkey=(255,255,255))
                 else:
-                    img = fn
+                    img = thing
                 img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
             else:
                 img = None
@@ -213,7 +214,7 @@ class MapObject:
         self.min_relpos = [-0.4, -0.4]
         self.max_relpos = [0.4,   0.4]
         self.quantity = 1 #not necessarily 1 for units
-        if build and fn:
+        if build and thing:
             self.build_imgs()
         if new_type:
             self.object_type = MapObject.current_id
@@ -357,21 +358,20 @@ def add_random_road(lm, layer,
             path = sp.solve()
             draw_road(path, cobbles, woods, lm)
 
-def add_random_river(lm,
+def add_random_river(me, layer,
                     img_fullsize,
                     costs_materials, costs_objects,
                     possible_materials, possible_objects):
-    """Computes and draw a random road between two random villages."""
+    """Computes and draw a random river."""
+    lm = me.lm
     #0)build tiles
-##    delta = img_fullsize.get_width() // lm.nframes
-    to_left = tm.build_tiles(img_fullsize, lm.cell_sizes, lm.nframes,
-                             lm.nframes, 0, sin=False)
-    to_right = tm.build_tiles(img_fullsize, lm.cell_sizes, lm.nframes,
-                              -lm.nframes, 0, sin=False)
-    to_top = tm.build_tiles(img_fullsize, lm.cell_sizes, lm.nframes,
-                              0, lm.nframes, sin=False)
-    to_bottom = tm.build_tiles(img_fullsize, lm.cell_sizes, lm.nframes,
-                              0, -lm.nframes, sin=False)
+    imgs = {}
+    for dx in [-1,0,1]:
+        for dy in[-1,0,1]:
+            imgs[(dx,dy)] = tm.build_tiles(img_fullsize, lm.cell_sizes,
+                                            lm.nframes,
+                                            dx*lm.nframes, dy*lm.nframes, #dx, dy
+                                            sin=False)
     #1) pick one random source and one random end in water:
     for i in range(1000):
         x,y = random.randint(0,lm.nx-1), random.randint(0,lm.ny-1)
@@ -391,17 +391,51 @@ def add_random_river(lm,
                             costs_materials, costs_objects,
                             possible_materials, possible_objects)
     path = sp.solve()
+    #2) change the end to first shallow cell
     actual_path = []
     for cell in path: #mettre riviere qui bouge (mais besoin d'objets frames)
-        if "shallow" in cell.material.name.lower():
-            actual_path.append(cell)
+        actual_path.append(cell)
+        if "water" in cell.material.name.lower():
             break
         else:
+            next_to_water = False
+            for neigh in cell.get_neighbors_von_neuman():
+                if neigh:
+                    if "water" in neigh.material.name.lower():
+                        next_to_water = True
+                        break
+            if next_to_water:
+                break
             actual_path.append(cell)
-##    for cell in path:
-##        c = choisir bon object
-##        c = c.add_copy_on_cell(cell)
-##        layer.static_objects.append(c)
+    #
+    objs = {}
+    for key in imgs:
+        objs[key] = MapObject(me, imgs[key][0], "River", 1.)
+    #3) add river cells to map and layer
+    for i,cell in enumerate(actual_path):
+        dx, dy = 0, 0
+        if i > 0:
+            dx += cell.coord[0] - actual_path[i-1].coord[0]
+            dy += cell.coord[1] - actual_path[i-1].coord[1]
+            print("a",cell.coord[0] - actual_path[i-1].coord[0])
+        if i + 1 < len(actual_path):
+            dx += actual_path[i+1].coord[0] - cell.coord[0]
+            dy += actual_path[i+1].coord[1] - cell.coord[1]
+            print("b",actual_path[i+1].coord[0] - cell.coord[0])
+        if dx > 0:
+            dx = 1
+        elif dx < 0:
+            dx = -1
+        if dy > 0:
+            dy = 1
+        elif dy < 0:
+            dy = -1
+        print("river        ", dx)
+        c = objs.get((dx,dy))
+        if not c:
+            raise Exception("No river object for delta", dx, dy)
+        c = c.add_copy_on_cell(cell)
+        layer.static_objects.append(c)
 
 
 

@@ -1,5 +1,6 @@
 import pygame
 from pygame.math import Vector2 as V2
+from gui.parameters import RMOUSE_COLOR
 
 
 class Camera:
@@ -41,6 +42,12 @@ class Camera:
         self.e_hmap = e_hmap
         self.box_hmap = box_hmap
         self.reinit_pos()
+
+    def draw_rmouse(self, screen, clipping):
+        rect = self.rmouse.clip(clipping)
+        screen.set_clip(rect)
+        pygame.draw.rect(screen, RMOUSE_COLOR, self.rmouse, 1)
+        screen.set_clip()
 
     def set_map_data(self, lm):
         self.lm = lm

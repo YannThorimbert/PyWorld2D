@@ -14,53 +14,39 @@ import saveload.io as io
 from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
 
-#quand meme tester sans numpy, parce que bcp de modules l'import (surfarray)
-
-#save des gros tiles puis fast (pour mode sans numpy)
 
 ##thorpy.application.SHOW_FPS = True
 
-#options de load/ecrire les tiles ! ==> comme ca pas besoin de numpy du tout
-
 #riviere qui bouge
 
-#vraiment scaler les surfaces plutot que reblitter
-#version sans numpy ==> sans roundtiler
+#voir si je peux utiliser smoothscale
 
-#nb: pour path des vrais units, les chemins ont un cost < 1, et mettre interdiction d'aller
-#comment gerer brulage d'arbres ? Si ca doit changer l'architecture, y penser maintenant...
-
-#meilleur wood : taper wood texture pixel art sur google
-
-#bug de w,h > max pix
+#meilleur wood : taper wood texture pixel art sur google. Wooden planks?
 
 #update_cell_info montre qu'il y a un village en dynamique...
 
 #objets de base: montagnes, collines, rivieres.
-#couples additionnels (ex: shallow_water with all the others...) ajoute au moment de la creation de riviere
-#objects avec des frames(rivieres)
-#meilleur herbe
-#harmoniser les ombres
-#ombres des objets en mode pil
 
 #rename unit
 
-#peut etre que marche pas sans numpy a cause du beach tiler.
-#Dans ce cas, favoriser la hmap issue de version numpy
-#==> a tester sur une machine vierge
-
 #finalement: editeur, load/save/quit
-
-#alerts pour autres trucs
-
-#v2:
-#quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
-
-#ridged noise
-
-#effets: fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
+#nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
 
 #ne pas oublier d'ajouter thorpy
+
+#quand meme tester sans numpy, parce que bcp de modules l'import (surfarray)
+
+
+#*********************************v2:
+#herbe animee
+#ombres des objets en mode pil
+#ridged noise
+#effets: fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
+#
+#couples additionnels (ex: shallow_water with all the others...) ajoute au moment de la creation de riviere ?
+#comment gerer brulage d'arbres ? Si ca doit changer l'architecture, y penser maintenant...
+### ==> reconstruire localement le layer concerne
+#quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
 
 
 
@@ -79,12 +65,12 @@ me = MapEditor()
 ##me.from_file("saved_map.dat")
 
 ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
-me.zoom_cell_sizes = [64, 32, 12, 8]
-##me.zoom_cell_sizes = [20,8]
+##me.zoom_cell_sizes = [64, 32, 12, 8]
+me.zoom_cell_sizes = [32,16]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 150 #width of the right menu in pixels
-me.max_wanted_minimap_size = 64 #in pixels.
+me.max_wanted_minimap_size = 64 #in pixels
 me.world_size = (64,64) #in number of cells. Put a power of 2 for tilable maps
 me.refresh_derived_parameters()
 
@@ -119,6 +105,8 @@ deepwater_img = tm.get_mixed_tiles(water_img, black_img, 127)
 mediumwater_img = tm.get_mixed_tiles(water_img, black_img, 50)
 shore_img = tm.get_mixed_tiles(sand_img, water_img, 127) # alpha of water is 127
 thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 200)
+##river_img = tm.get_mixed_tiles(rock_img, water_img, 200)
+river_img = shore_img
 
 
 #water movement is obtained by using a delta-x (dx_divider) and delta-y shifts,
@@ -142,9 +130,9 @@ print("Building material couples")
 #fast option: quality a bit lower, loading time a bit faster
 #use_beach_tiler option: quality much better, loading time much slower. Need numpy.
 #load_tilers option: use precomputed textures from disk
-me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=True,
-##                    load_tilers=False)
-                    load_tilers="./rendering/tiles/precomputed/")
+me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=False,
+                    load_tilers=False)
+##                    load_tilers="./rendering/tiles/precomputed/")
 
 ##me.save_tilers("./rendering/tiles/precomputed/")
 ##import sys;app.quit();pygame.quit();sys.exit();exit()
@@ -254,9 +242,9 @@ for name in me.materials:
         costs_materials[name] = 1.1
 costs_objects = {bush.object_type: 2., #unit is 2 times slower in bushes
                  cobble.object_type: 0.9}
-#Materials allowing unit to walk on (here we allow water because we add bridges)
+#Materials allowed (here we allow water because we add bridges)
 possible_materials=list(me.materials)
-#Objects allowing unit to walk on
+#Objects allowed
 possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
 
 for i in range(5):
@@ -265,18 +253,17 @@ for i in range(5):
 
 
 costs_materials = {name:1. for name in me.materials}
-costs_materials["Snow"] = 10. #unit is 10 times slower in snow
-costs_materials["Thin snow"] = 2.
-costs_materials["Sand"] = 2.
-costs_objects = {bush.object_type: 2.}
-#Materials allowing unit to walk on (here we allow water because we add bridges)
+##costs_materials["Snow"] = 10. #unit is 10 times slower in snow
+##costs_materials["Thin snow"] = 2.
+##costs_materials["Sand"] = 2.
+##costs_objects = {bush.object_type: 2.}
+#Materials allowed (here we allow water because we add bridges)
 possible_materials=list(me.materials)
-#Objects allowing unit to walk on
-possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
+#Objects allowed
+possible_objects=[]
 
-##shallow_obj = MapObject(me, shore_img, "river", 1.)
-##random.seed()
-##add_random_river(lm, [shallow_obj], costs_materials, costs_objects, possible_materials, possible_objects)
+for i in range(5):
+    objs.add_random_river(me, lm, river_img, costs_materials, costs_objects, possible_materials, possible_objects)
 
 # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
 #                         costs_materials, costs_objects,

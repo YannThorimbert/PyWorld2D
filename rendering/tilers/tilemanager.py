@@ -18,14 +18,32 @@ def get_mixed_tiles(img1, img2, alpha_img_2):
     i1.blit(i2,(0,0))
     return i1
 
+##def get_shifted_tiles(img, nframes, dx=0, dy=0, reverse=False, sin=True):
+##    w, h = img.get_size()
+##    s = pygame.Surface((2*w,2*h))
+##    s.blit(img, (0,0))
+##    s.blit(img, (w,0))
+##    s.blit(img, (0,h))
+##    s.blit(img, (w,h))
+##    #now we just have to take slices
+##    images = []
+##    for i in range(nframes):
+##        if sin:
+##            delta_x = dx*math.sin(2.*math.pi*i/float(nframes))
+##            delta_y = dy*math.sin(2.*math.pi*i/float(nframes))
+##        else:
+##            delta_x = i*dx
+##            delta_y = i*dy
+##        result = pygame.Surface((w,h))
+##        result.blit(s,(delta_x-w//2,delta_y-h//2))
+##        images.append(result)
+##    if reverse:
+##        images += images[::-1][1:-1]
+##    return images
+
 def get_shifted_tiles(img, nframes, dx=0, dy=0, reverse=False, sin=True):
-    w, h = img.get_size()
-    s = pygame.Surface((2*w,2*h))
-    s.blit(img, (0,0))
-    s.blit(img, (w,0))
-    s.blit(img, (0,h))
-    s.blit(img, (w,h))
-    #now we just have to take slices
+    r = img.get_rect()
+    w,h = r.size
     images = []
     for i in range(nframes):
         if sin:
@@ -34,8 +52,18 @@ def get_shifted_tiles(img, nframes, dx=0, dy=0, reverse=False, sin=True):
         else:
             delta_x = i*dx
             delta_y = i*dy
-        result = pygame.Surface((w,h))
-        result.blit(s,(delta_x-w//2,delta_y-h//2))
+##        assert abs(delta_x) <= w
+##        assert abs(delta_y) <= h
+        result = pygame.Surface(r.size)
+        xsgn, ysgn = 1, 1
+        if delta_x>0:
+            xsgn = -1
+        if delta_y>0:
+            ysgn = -1
+        result.blit(img,r.move(delta_x,delta_y))
+        result.blit(img,r.move(delta_x,delta_y+ysgn*h))
+        result.blit(img,r.move(delta_x+xsgn*w,delta_y))
+        result.blit(img,r.move(delta_x+xsgn*w,delta_y+ysgn*h))
         images.append(result)
     if reverse:
         images += images[::-1][1:-1]
