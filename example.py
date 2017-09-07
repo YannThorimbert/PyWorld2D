@@ -130,7 +130,7 @@ print("Building material couples")
 #fast option: quality a bit lower, loading time a bit faster
 #use_beach_tiler option: quality much better, loading time much slower. Need numpy.
 #load_tilers option: use precomputed textures from disk
-me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=False,
+me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=True,
                     load_tilers=False)
 ##                    load_tilers="./rendering/tiles/precomputed/")
 
@@ -263,7 +263,8 @@ possible_materials=list(me.materials)
 possible_objects=[]
 
 for i in range(5):
-    objs.add_random_river(me, lm, river_img, costs_materials, costs_objects, possible_materials, possible_objects)
+    objs.add_random_river(me, lm, river_img, costs_materials, costs_objects,
+                            possible_materials, possible_objects)
 
 # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
 #                         costs_materials, costs_objects,

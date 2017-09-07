@@ -406,7 +406,7 @@ def add_random_river(me, layer,
                         break
             if next_to_water:
                 break
-            actual_path.append(cell)
+
     #
     objs = {}
     for key in imgs:
@@ -417,11 +417,9 @@ def add_random_river(me, layer,
         if i > 0:
             dx += cell.coord[0] - actual_path[i-1].coord[0]
             dy += cell.coord[1] - actual_path[i-1].coord[1]
-            print("a",cell.coord[0] - actual_path[i-1].coord[0])
         if i + 1 < len(actual_path):
             dx += actual_path[i+1].coord[0] - cell.coord[0]
             dy += actual_path[i+1].coord[1] - cell.coord[1]
-            print("b",actual_path[i+1].coord[0] - cell.coord[0])
         if dx > 0:
             dx = 1
         elif dx < 0:
@@ -430,12 +428,12 @@ def add_random_river(me, layer,
             dy = 1
         elif dy < 0:
             dy = -1
-        print("river        ", dx)
         c = objs.get((dx,dy))
         if not c:
             raise Exception("No river object for delta", dx, dy)
         c = c.add_copy_on_cell(cell)
         layer.static_objects.append(c)
+    return path
 
 
 
