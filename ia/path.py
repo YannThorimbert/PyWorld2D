@@ -98,11 +98,9 @@ class BranchAndBoundForMap:
                 return self.enode
             else:
                 if i > 1e5:
-                    print("Fail")
-                    return None
+                    return
                 self.lnl += self.get_children(self.enode)
                 if not self.lnl:
-                    print("Fail")
                     return
                 else:
                     #sort the lnl and reverse so that default pop function can be called

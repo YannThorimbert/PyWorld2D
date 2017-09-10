@@ -5,6 +5,8 @@ import thorpy
 from ia.path import BranchAndBoundForMap
 import rendering.tilers.tilemanager as tm
 
+VON_NEUMAN = [(-1,0), (1,0), (0,-1), (0,1)]
+
 
 
 def get_distributor(me, objects, forest_map, material_names,
@@ -311,7 +313,6 @@ class MapObject:
                 imgs.append(img)
             self.imgs_z_t.append(imgs)
 
-
     def get_current_img(self):
         return self.imgs_z_t[self.editor.zoom_level][self.cell.map.t%self.nframes]
 
@@ -325,7 +326,7 @@ def distance(coord1, coord2):
     return abs(coord1[0]-coord2[0]) + abs(coord1[1]-coord2[1])
 
 
-VON_NEUMAN = [(-1,0), (1,0), (0,-1), (0,1)]
+
 
 def find_free_next_to(lm, coord):
     ok = []
@@ -432,6 +433,7 @@ def add_random_river(me, layer,
         if not c:
             raise Exception("No river object for delta", dx, dy)
         c = c.add_copy_on_cell(cell)
+        cell.name = "River"
         layer.static_objects.append(c)
     return path
 

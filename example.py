@@ -17,17 +17,10 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#riviere qui bouge
-
-#voir si je peux utiliser smoothscale
-
 #meilleur wood : taper wood texture pixel art sur google. Wooden planks?
 
-#update_cell_info montre qu'il y a un village en dynamique...
-
-#objets de base: montagnes, collines, rivieres.
-
-#rename unit
+#menu unit en + de menu cell, rename unit.
+#+ beau void pour game infos et unit infos
 
 #finalement: editeur, load/save/quit
 #nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
@@ -66,7 +59,7 @@ me = MapEditor()
 
 ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
 ##me.zoom_cell_sizes = [64, 32, 12, 8]
-me.zoom_cell_sizes = [32,16]
+me.zoom_cell_sizes = [32,12]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
 me.menu_width = 150 #width of the right menu in pixels
@@ -130,7 +123,7 @@ print("Building material couples")
 #fast option: quality a bit lower, loading time a bit faster
 #use_beach_tiler option: quality much better, loading time much slower. Need numpy.
 #load_tilers option: use precomputed textures from disk
-me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=True,
+me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=False,
                     load_tilers=False)
 ##                    load_tilers="./rendering/tiles/precomputed/")
 

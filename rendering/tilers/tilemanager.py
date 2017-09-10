@@ -73,6 +73,7 @@ def build_tiles(img_fullsize, sizes, nframes, dx_divider=0, dy_divider=0,
                 reverse=False, sin=True, colorkey=None):
     imgs = []
     for size in sizes:
+        #smoothscale is important here, otherwise FAST should be always True
         img = pygame.transform.smoothscale(img_fullsize, (size,)*2)
         dx = 0
         if dx_divider:
