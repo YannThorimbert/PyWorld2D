@@ -17,17 +17,18 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#meilleur wood : taper wood texture pixel art sur google. Wooden planks?
-
-#menu unit en + de menu cell, rename unit.
+#click droit/ctrl+click/enlever click droit pour zoom!: menu unit, rename unit
 #+ beau void pour game infos et unit infos
+#game infos possede un generateur d'alertes
+
+#meilleur wood : taper wood texture pixel art sur google. Wooden planks?
 
 #finalement: editeur, load/save/quit
 #nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
 
 #ne pas oublier d'ajouter thorpy
 
-#quand meme tester sans numpy, parce que bcp de modules l'import (surfarray)
+#quand meme tester sans numpy, parce que bcp de modules l'importent (surfarray)
 
 
 #*********************************v2:
@@ -183,87 +184,87 @@ for v in[village1,village2,village3,village4]:
     v.min_relpos = [0., 0.]
 
 
-#4) we add the objects via distributors
-distributor = objs.get_distributor(me, [fir1, fir2, tree], forest_map, ["Grass","Rock"])
-distributor.distribute_objects(layer2)
-
-distributor = objs.get_distributor(me, [tree], forest_map, ["Grass"])
-distributor.max_density = 1
-distributor.homogeneity = 0.1
-distributor.zones_spread = [(0.5,0.2)]
-distributor.distribute_objects(layer2)
-
-distributor = objs.get_distributor(me, [fir3, fir3.flip()],
-                                forest_map, ["Thin snow","Snow"])
-distributor.homogeneity = 0.5
-distributor.distribute_objects(layer2)
-
-
-distributor = objs.get_distributor(me, [palm, palm.flip()], forest_map, ["Sand"])
-distributor.max_density = 1
-distributor.homogeneity = 0.5
-distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
-distributor.distribute_objects(layer2)
-
-distributor = objs.get_distributor(me, [bush], forest_map, ["Grass"])
-distributor.max_density = 2
-distributor.homogeneity = 0.2
-distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
-distributor.distribute_objects(layer2)
-
-distributor = objs.get_distributor(me,
-                        [village1, village1.flip(), village2, village2.flip(),
-                         village3, village3.flip(), village4, village4.flip()],
-                        forest_map, ["Grass"], limit_relpos_y=False)
-distributor.max_density = 1
-distributor.homogeneity = 0.05
-distributor.zones_spread = [(0.1, 0.05), (0.2,0.05), (0.4,0.05)]
-distributor.distribute_objects(layer2, exclusive=True)
-
-
-cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip(True,True)]
-
-################################################################################
-#Here we show how to use the path finder for a given unit of the game
-
-costs_materials = {name:1. for name in me.materials}
-costs_materials["Snow"] = 10. #unit is 10 times slower in snow
-costs_materials["Thin snow"] = 2.
-costs_materials["Sand"] = 2.
-for name in me.materials:
-    if "water" in name.lower():
-        costs_materials[name] = 1.1
-costs_objects = {bush.object_type: 2., #unit is 2 times slower in bushes
-                 cobble.object_type: 0.9}
-#Materials allowed (here we allow water because we add bridges)
-possible_materials=list(me.materials)
-#Objects allowed
-possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
-
-for i in range(5):
-    objs.add_random_road(lm, layer2, cobbles, [wood], costs_materials,
-                     costs_objects, possible_materials, possible_objects)
-
-
-costs_materials = {name:1. for name in me.materials}
+###4) we add the objects via distributors
+##distributor = objs.get_distributor(me, [fir1, fir2, tree], forest_map, ["Grass","Rock"])
+##distributor.distribute_objects(layer2)
+##
+##distributor = objs.get_distributor(me, [tree], forest_map, ["Grass"])
+##distributor.max_density = 1
+##distributor.homogeneity = 0.1
+##distributor.zones_spread = [(0.5,0.2)]
+##distributor.distribute_objects(layer2)
+##
+##distributor = objs.get_distributor(me, [fir3, fir3.flip()],
+##                                forest_map, ["Thin snow","Snow"])
+##distributor.homogeneity = 0.5
+##distributor.distribute_objects(layer2)
+##
+##
+##distributor = objs.get_distributor(me, [palm, palm.flip()], forest_map, ["Sand"])
+##distributor.max_density = 1
+##distributor.homogeneity = 0.5
+##distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
+##distributor.distribute_objects(layer2)
+##
+##distributor = objs.get_distributor(me, [bush], forest_map, ["Grass"])
+##distributor.max_density = 2
+##distributor.homogeneity = 0.2
+##distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
+##distributor.distribute_objects(layer2)
+##
+##distributor = objs.get_distributor(me,
+##                        [village1, village1.flip(), village2, village2.flip(),
+##                         village3, village3.flip(), village4, village4.flip()],
+##                        forest_map, ["Grass"], limit_relpos_y=False)
+##distributor.max_density = 1
+##distributor.homogeneity = 0.05
+##distributor.zones_spread = [(0.1, 0.05), (0.2,0.05), (0.4,0.05)]
+##distributor.distribute_objects(layer2, exclusive=True)
+##
+##
+##cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip(True,True)]
+##
+##################################################################################
+###Here we show how to use the path finder for a given unit of the game
+##
+##costs_materials = {name:1. for name in me.materials}
 ##costs_materials["Snow"] = 10. #unit is 10 times slower in snow
 ##costs_materials["Thin snow"] = 2.
 ##costs_materials["Sand"] = 2.
-##costs_objects = {bush.object_type: 2.}
-#Materials allowed (here we allow water because we add bridges)
-possible_materials=list(me.materials)
-#Objects allowed
-possible_objects=[]
-
-for i in range(5):
-    objs.add_random_river(me, lm, river_img, costs_materials, costs_objects,
-                            possible_materials, possible_objects)
-
-# sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
-#                         costs_materials, costs_objects,
-#                         possible_materials, possible_objects)
-# path = sp.solve()
-# draw_path(path, objects=cobbles, layer=lm)
+##for name in me.materials:
+##    if "water" in name.lower():
+##        costs_materials[name] = 1.1
+##costs_objects = {bush.object_type: 2., #unit is 2 times slower in bushes
+##                 cobble.object_type: 0.9}
+###Materials allowed (here we allow water because we add bridges)
+##possible_materials=list(me.materials)
+###Objects allowed
+##possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
+##
+##for i in range(5):
+##    objs.add_random_road(lm, layer2, cobbles, [wood], costs_materials,
+##                     costs_objects, possible_materials, possible_objects)
+##
+##
+##costs_materials = {name:1. for name in me.materials}
+####costs_materials["Snow"] = 10. #unit is 10 times slower in snow
+####costs_materials["Thin snow"] = 2.
+####costs_materials["Sand"] = 2.
+####costs_objects = {bush.object_type: 2.}
+###Materials allowed (here we allow water because we add bridges)
+##possible_materials=list(me.materials)
+###Objects allowed
+##possible_objects=[]
+##
+##for i in range(5):
+##    objs.add_random_river(me, lm, river_img, costs_materials, costs_objects,
+##                            possible_materials, possible_objects)
+##
+### sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
+###                         costs_materials, costs_objects,
+###                         possible_materials, possible_objects)
+### path = sp.solve()
+### draw_path(path, objects=cobbles, layer=lm)
 
 
 

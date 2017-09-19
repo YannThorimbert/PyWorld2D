@@ -57,6 +57,8 @@ def get_cursor(rect, color, thick, thick2):
     surface.set_colorkey((255,255,255))
     return surface
 
+##def launch():
+
 class CellInfo:
     def __init__(self, size, cell_size, redraw, external_e):
         self.e_coordalt = guip.get_text("")
@@ -141,8 +143,8 @@ class CellInfo:
             self.em.clamp(rect)
             self.em.blit()
             self.em.update()
-        else:
-            print("Already launched!")
+##        else:
+##            print("Already launched!")
 
     def rename_current_cell(self):
         varset = thorpy.VarSet()
@@ -265,8 +267,8 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
             self.em.clamp(rect)
             self.em.blit()
             self.em.update()
-        else:
-            print("Already launched!")
+##        else:
+##            print("Already launched!")
 
     def rename_current_cell(self):
         varset = thorpy.VarSet()

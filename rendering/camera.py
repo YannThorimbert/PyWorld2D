@@ -172,8 +172,6 @@ class Camera:
         return self.get_coord_at_pix(self.map_rect.center)
 
 
-
-
 def get_world_and_minimap_sizes(img_hmap, max_minimap_size):
     world_size = img_hmap.get_size() #can differ from hmap size!
     w,h = world_size

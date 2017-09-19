@@ -347,12 +347,22 @@ class MapEditor:
         if e.button == 1: #left click
             if self.box_hmap.get_rect().collidepoint(e.pos):
                 self.cam.center_on(e.pos)
+            pygame.event.get
         elif e.button == 3: #right click
-            self.increment_zoom(1)
+            pass
+
 
     def func_reac_unclick(self, e):
+        cell = self.cam.get_cell(e.pos)
         if e.button == 1:
-            cell = self.cam.get_cell(e.pos)
+            if cell:
+                if cell is not self.last_cell_clicked:
+                    if not self.cell_info.launched:
+                        self.last_cell_clicked = cell
+                        self.cell_info.launch_em(cell, e.pos, self.cam.map_rect)
+            self.last_cell_clicked = None
+        #
+        elif e.button == 3: #right click
             if cell:
                 if cell is not self.last_cell_clicked:
                     if not self.cell_info.launched:
