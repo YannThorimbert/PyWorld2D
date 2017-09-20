@@ -210,7 +210,7 @@ class LogicalMap(BaseGrid):
         """Fusion all the images extracted from all the layers of self."""
         if self.is_inside(coord):
             img = pygame.Surface((self.cell_sizes[zoom],)*2)
-            img.blit(self.get_img_at_zoom(coord, zoom), (0,0)) #I dont know why I have to do that to avoir bug of spurious static objects...
+            img.blit(self.get_img_at_zoom(coord, zoom), (0,0)) #I dont know why I have to do that to avoid bug of spurious static objects...
             for lay in [self]+self.layers:
                 lay.extract_img_at_zoom(coord, zoom, img)
             return img

@@ -17,7 +17,8 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#click droit/ctrl+click/enlever click droit pour zoom!: menu unit, rename unit
+#cell a un lien vers unit, et vice versa?
+
 #+ beau void pour game infos et unit infos
 #game infos possede un generateur d'alertes
 
@@ -25,6 +26,8 @@ from editor.mapeditor import MapEditor
 
 #finalement: editeur, load/save/quit
 #nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
+
+#info sur material/unit quand on click dessus dans cell/unit_info.em
 
 #ne pas oublier d'ajouter thorpy
 

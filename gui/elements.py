@@ -99,6 +99,7 @@ class CellInfo:
         reac = thorpy.Reaction(thorpy.THORPY_EVENT, self.set_unlaunched,
                                 {"id":thorpy.constants.EVENT_UNLAUNCH})
         external_e.add_reaction(reac)
+        self.last_cell_clicked = None
 
     def set_unlaunched(self, e):
         if e.launcher.launched == self.em:
@@ -190,6 +191,7 @@ class CellInfo:
 class UnitInfo: #name, image, nombre(=vie dans FS!)
     def __init__(self, size, cell_size, redraw, external_e):
         self.unit = None
+##        self.cell = None probleme
         self.e_img = thorpy.Image.make(pygame.Surface(cell_size))
         self.blank_img = pygame.Surface(cell_size)
         self.e_name = guip.get_text("")
@@ -200,52 +202,46 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
         for e in self.e.get_elements():
             e.recenter()
 ##        #emap : to be displayed when a cell is clicked
-##        self.em_title = guip.get_title("Cell informations")
+        self.em_title = guip.get_title("Unit informations")
 ##        self.em_coord = guip.get_text("")
 ##        self.em_altitude = guip.get_text("")
-##        self.em_name = guip.get_small_text("")
-##        self.em_rename = guip.get_small_button("Rename", self.rename_current_cell)
-##        self.em_name_rename = thorpy.make_group([self.em_name, self.em_rename])
+        self.em_name = guip.get_small_text("")
+        self.em_rename = guip.get_small_button("Rename", self.rename_current_unit)
+        self.em_name_rename = thorpy.make_group([self.em_name, self.em_rename])
 ####        self.em_name_rename = thorpy.Clickable.make(elements=[self.em_name, self.em_rename])
 ####        thorpy.store(self.em_name_rename)
-##        self.em_name_rename.fit_children()
-##        self.em_mat_img_img = thorpy.Image.make(pygame.Surface(cell_size))
-##        self.em_mat_img = thorpy.Clickable.make(elements=[self.em_mat_img_img])
-##        self.em_mat_img.fit_children()
-##        self.em_mat_name = guip.get_text("")
-##        self.em_mat = thorpy.make_group([self.em_mat_img, self.em_mat_name])
-##        self.em_elements = [self.em_title, thorpy.Line.make(100), self.em_mat, self.em_coord, self.em_altitude, self.em_name_rename]
-##        self.em = thorpy.Box.make(self.em_elements)
-##        self.em.set_main_color((200,200,200,150))
-##        self.launched = False
-##        self.redraw = redraw
-##        self.external_e = external_e
-##        reac = thorpy.Reaction(thorpy.THORPY_EVENT, self.set_unlaunched,
-##                                {"id":thorpy.constants.EVENT_UNLAUNCH})
-##        external_e.add_reaction(reac)
+        self.em_name_rename.fit_children()
+        self.em_unit_img_img = thorpy.Image.make(pygame.Surface(cell_size))
+        self.em_unit_img = thorpy.Clickable.make(elements=[self.em_unit_img_img])
+        self.em_unit_img.fit_children()
+        self.em_unit_name = guip.get_text("")
+        self.em_unit = thorpy.make_group([self.em_unit_img, self.em_unit_name])
+        self.em_elements = [self.em_title, thorpy.Line.make(100), self.em_unit, self.em_name_rename]
+        self.em = thorpy.Box.make(self.em_elements)
+        self.em.set_main_color((200,200,200,150))
+        self.launched = False
+        self.redraw = redraw
+        self.external_e = external_e
+        reac = thorpy.Reaction(thorpy.THORPY_EVENT, self.set_unlaunched,
+                                {"id":thorpy.constants.EVENT_UNLAUNCH})
+        external_e.add_reaction(reac)
+        self.last_cell_clicked = None
 
     def set_unlaunched(self, e):
         if e.launcher.launched == self.em:
             self.launched = False
 
     def update_em(self, cell):
-        new_img = cell.extract_all_layers_img_at_zoom(0)
-        self.em_mat_img_img.set_image(new_img)
-        text = cell.material.name
-        objs = set([])
-        for obj in cell.objects:
-            objs.add(obj.name.split(" ")[0]) #split to not take the id
-        for name in objs:
-            text += " ("+name+")"
-        self.em_mat_name.set_text(text)
-        thorpy.store(self.em_mat, mode="h")
-        self.em_coord.set_text("Coordinates: "+str(cell.coord))
-        self.em_altitude.set_text("Altitude: "+str(round(cell.get_altitude()))+"m")
-        if not cell.name:
-            cellname = "This location has no name"
+        new_img = cell.unit.get_current_img()
+        self.em_unit_img_img.set_image(new_img)
+        text = cell.unit.name
+        self.em_unit_name.set_text(text)
+        thorpy.store(self.em_unit, mode="h")
+        if not cell.unit.name:
+            unitname = "This unit has no name"
         else:
-            cellname = cell.name
-        self.em_name.set_text(cellname)
+            unitname = cell.unit.name
+        self.em_name.set_text(unitname)
         thorpy.store(self.em_name_rename, mode="h")
         self.em.store()
         self.em.fit_children()
@@ -270,7 +266,7 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
 ##        else:
 ##            print("Already launched!")
 
-    def rename_current_cell(self):
+    def rename_current_unit(self):
         varset = thorpy.VarSet()
         varset.add("newname", "", "New name")
 ##        ps = thorpy.ParamSetterLauncher.make(varset)
@@ -283,8 +279,8 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
         thorpy.launch_blocking(ps)
         newname = ins.get_value()
         if newname:
-            self.cell.name = newname
-        self.update_em(self.cell)
+            self.unit.name = newname
+        self.update_em(self.unit.cell)
         self.redraw()
         self.em.blit()
         pygame.display.flip()

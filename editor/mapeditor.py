@@ -42,7 +42,7 @@ class MapEditor:
         self.materials = {}
         self.material_couples = None
         self.dynamic_objects = []
-        self.last_cell_clicked = None
+##        self.last_cell_clicked = None
         #
         self.cursor_color = 0 #0 = normal, 1 = select
         self.cursors = None
@@ -347,28 +347,33 @@ class MapEditor:
         if e.button == 1: #left click
             if self.box_hmap.get_rect().collidepoint(e.pos):
                 self.cam.center_on(e.pos)
-            pygame.event.get
+##            elif pygame.key.get_mods() & pygame.KMOD_LCTRL:
+##                self.increment_zoom(1)
         elif e.button == 3: #right click
             pass
 
 
     def func_reac_unclick(self, e):
         cell = self.cam.get_cell(e.pos)
-        if e.button == 1:
+        if e.button == 1: #left click
             if cell:
-                if cell is not self.last_cell_clicked:
+                if cell is not self.cell_info.last_cell_clicked:
                     if not self.cell_info.launched:
-                        self.last_cell_clicked = cell
+                        self.cell_info.last_cell_clicked = cell
                         self.cell_info.launch_em(cell, e.pos, self.cam.map_rect)
-            self.last_cell_clicked = None
+            self.cell_info.last_cell_clicked = None
         #
         elif e.button == 3: #right click
             if cell:
-                if cell is not self.last_cell_clicked:
-                    if not self.cell_info.launched:
-                        self.last_cell_clicked = cell
-                        self.cell_info.launch_em(cell, e.pos, self.cam.map_rect)
-            self.last_cell_clicked = None
+                if cell is not self.unit_info.last_cell_clicked:
+                    if not self.unit_info.launched:
+                        if cell.unit:
+                            self.unit_info.last_cell_clicked = cell
+                            self.unit_info.launch_em(cell, e.pos, self.cam.map_rect)
+                        else:
+                            #ajouter alerte disant que pas d'unit ici
+                            pass
+            self.unit_info.last_cell_clicked = None
 
     def func_reac_mousemotion(self, e):
     ##    if pygame.key.get_mods() & pygame.KMOD_CTRL:
@@ -378,7 +383,7 @@ class MapEditor:
             elif self.cam.map_rect.collidepoint(e.pos):
                 delta = -V2(e.rel)/self.cam.cell_rect.w #assuming square cells
                 self.move_cam_and_refresh(delta)
-                self.last_cell_clicked = self.cam.get_cell(e.pos)
+                self.cell_info.last_cell_clicked = self.cam.get_cell(e.pos)
                 self.ap.add_alert_countdown(self.e_ap_move, guip.DELAY_HELP * self.fps)
 
     def move_cam_and_refresh(self, delta):
