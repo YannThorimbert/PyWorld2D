@@ -17,9 +17,6 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#Faire misc infos
-#misc infos possede un generateur d'alertes
-
 #meilleur wood : taper wood texture pixel art sur google. Wooden planks?
 
 #finalement: editeur, load/save/quit

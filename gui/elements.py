@@ -322,7 +322,10 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
         if changed:
             self.e_name.set_text(name)
             self.e_img.set_image(new_img)
-            thorpy.store(self.e_group, mode="h")
+            if self.e_img.visible:
+                thorpy.store(self.e_group, mode="h")
+            else:
+                thorpy.store(self.e_group, [self.e_name], mode="h")
             self.unit = unit
 
 
