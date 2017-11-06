@@ -59,6 +59,12 @@ def get_cursor(rect, color, thick, thick2):
 
 ##def launch():
 
+class MiscInfo:
+    def __init__(self, size):
+        self.e_title = guip.get_title("Map infos")
+        self.e = thorpy.Box.make([self.e_title])
+        self.e.set_size((size[0],None))
+
 class CellInfo:
     def __init__(self, size, cell_size, redraw, external_e):
         self.e_coordalt = guip.get_text("")
@@ -193,9 +199,18 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
         self.unit = None
 ##        self.cell = None probleme
         self.e_img = thorpy.Image.make(pygame.Surface(cell_size))
+##        self.e_img = thorpy.Image.make(pygame.Surface((1,1)))
         self.blank_img = pygame.Surface(cell_size)
-        self.e_name = guip.get_text("")
-        self.e_group = thorpy.make_group([self.e_img, self.e_name])
+        self.e_name = guip.get_title("Unit infos")
+        #
+##        self.e_group = thorpy.make_group([self.e_img, self.e_name])
+        ghost = thorpy.Ghost([self.e_img, self.e_name])
+        ghost.finish()
+        self.e_img.set_center_pos(ghost.get_fus_center())
+        self.e_name.set_center_pos(self.e_img.get_fus_center())
+        ghost.fit_children()
+        self.e_group = ghost
+        #
         self.elements = [self.e_group]
         self.e = thorpy.Box.make(self.elements)
         self.e.set_size((size[0],None))
@@ -226,6 +241,8 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
                                 {"id":thorpy.constants.EVENT_UNLAUNCH})
         external_e.add_reaction(reac)
         self.last_cell_clicked = None
+        self.e_img.visible = False
+
 
     def set_unlaunched(self, e):
         if e.launcher.launched == self.em:
@@ -294,10 +311,12 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
         if unit:
             name = unit.name + " (" + str(unit.quantity) + ")"
             new_img = unit.get_current_img()
+            self.e_img.visible = True
             changed = True
         elif self.unit is not None:
-            name = ""
+            name = "Unit infos"
             new_img = self.blank_img
+            self.e_img.visible = False
             changed = True
         #
         if changed:

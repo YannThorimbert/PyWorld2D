@@ -17,17 +17,13 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#cell a un lien vers unit, et vice versa?
-
-#+ beau void pour game infos et unit infos
-#game infos possede un generateur d'alertes
+#Faire misc infos
+#misc infos possede un generateur d'alertes
 
 #meilleur wood : taper wood texture pixel art sur google. Wooden planks?
 
 #finalement: editeur, load/save/quit
 #nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
-
-#info sur material/unit quand on click dessus dans cell/unit_info.em
 
 #ne pas oublier d'ajouter thorpy
 
@@ -44,6 +40,8 @@ from editor.mapeditor import MapEditor
 #comment gerer brulage d'arbres ? Si ca doit changer l'architecture, y penser maintenant...
 ### ==> reconstruire localement le layer concerne
 #quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
+
+#info sur material/unit quand on click dessus dans cell/unit_info.em
 
 
 
@@ -66,7 +64,7 @@ me = MapEditor()
 me.zoom_cell_sizes = [32,12]
 me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
 me.fps = 60 #frame per second
-me.menu_width = 150 #width of the right menu in pixels
+me.menu_width = 200 #width of the right menu in pixels
 me.max_wanted_minimap_size = 64 #in pixels
 me.world_size = (64,64) #in number of cells. Put a power of 2 for tilable maps
 me.refresh_derived_parameters()

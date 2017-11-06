@@ -53,7 +53,7 @@ class MapEditor:
         self.e_box = None
         self.cell_info = None
         self.unit_info = None
-        self.misc_info = None
+##        self.misc_info = None
         self.e_hmap = None
         self.box_hmap = None
         #
@@ -98,13 +98,12 @@ class MapEditor:
                          self.cell_rect.size, self.draw_no_update, e_hmap)
         self.unit_info = gui.UnitInfo(self.menu_rect.inflate((-10,0)).size,
                          self.cell_rect.size, self.draw_no_update, e_hmap)
-        self.misc_info = gui.CellInfo(self.menu_rect.inflate((-10,0)).size,
-                         self.cell_rect.size, self.draw_no_update, e_hmap)
+##        self.misc_info = gui.MiscInfo(self.menu_rect.inflate((-10,0)).size)
         self.menu_button = thorpy.make_menu_button()
         ########################################################################
         elements =[
                     self.topbox,
-                    self.misc_info.e,
+##                    self.misc_info.e,
                     self.cell_info.e,
                     self.unit_info.e,
                     self.menu_button]
