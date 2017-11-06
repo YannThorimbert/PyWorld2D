@@ -50,26 +50,31 @@ app = thorpy.Application((W,H))
 #cell_radius = cell_size//radius_divider
 # change how "round" look cell transitions
 cell_radius_divider = 8
-chunk =(1310,14) #to give when saving. Neighboring chunk give tilable maps.
+
 
 me = MapEditor()
-#here we can use me.from_file() to load parameters instead of what follow:
-##me.from_file("saved_map.dat")
+FROM_FILE = False
+if not FROM_FILE:
+    ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
+    ##me.zoom_cell_sizes = [64, 32, 12, 8]
+    me.zoom_cell_sizes = [32,12]
+    me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
+    me.fps = 60 #frame per second
+    me.menu_width = 200 #width of the right menu in pixels
+    me.max_wanted_minimap_size = 64 #in pixels
+    me.world_size = (64,64) #in number of cells. Put a power of 2 for tilable maps
+    me.chunk = (1310,14) #to give when saving. Neighboring chunk give tilable maps.
+    me.persistance = 2.
+    me.n_octaves = "max"
+    me.refresh_derived_parameters()
+else:
+    loaded=me.from_file("coucou.dat")
 
-##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
-##me.zoom_cell_sizes = [64, 32, 12, 8]
-me.zoom_cell_sizes = [32,12]
-me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
-me.fps = 60 #frame per second
-me.menu_width = 200 #width of the right menu in pixels
-me.max_wanted_minimap_size = 64 #in pixels
-me.world_size = (64,64) #in number of cells. Put a power of 2 for tilable maps
-me.refresh_derived_parameters()
 
 
 ################################################################################
 print("Building hmap")
-hmap = me.build_hmap(chunk=chunk, n_octaves="max", persistance=2.)
+hmap = me.build_hmap()
 S = len(hmap)
 ##hmap[2][1] = 0.7 #this is how you manually change the height of a given cell
 
@@ -317,8 +322,11 @@ me.menu_button.user_params = {"element":launched_menu}
 
 
 me.set_zoom(level=0)
+me.to_file("coucou.dat")
 m = thorpy.Menu(me.e_box,fps=me.fps)
 m.play()
+
+
 
 app.quit()
 

@@ -35,6 +35,10 @@ class MapEditor:
         self.max_wanted_minimap_size = 128 #in pixels.
         self.show_grid_lines = False
         #
+        self.chunk = None
+        self.n_octaves = None
+        self.persistance = None
+        #
         self.lm = None
         self.cam = None #camera, to be built later
         self.map_rects = None
@@ -63,7 +67,8 @@ class MapEditor:
         self.ap.add_alert_countdown(self.e_ap_move, guip.DELAY_HELP * self.fps)
         #
         self.saved_attrs = ["zoom_cell_sizes", "nframes", "fps", "menu_width",
-                            "max_wanted_minimap_size", "world_size"]
+                            "max_wanted_minimap_size", "world_size", "chunk",
+                            "persistance", "n_octaves"]
         self.primitive_types = {}
 
     def build_gui_elements(self): #worst function ever
@@ -454,24 +459,28 @@ class MapEditor:
                                                         use_beach_tiler,
                                                         load_tilers)
 
-    def build_hmap(self, chunk, n_octaves=None, persistance=2.):
-        if n_octaves == "auto" or n_octaves == "max":
-            n_octaves = None
+    def build_hmap(self):
+        if self.n_octaves == "auto" or self.n_octaves == "max":
+            self.n_octaves = None
         M = max(self.world_size)
         power = int(math.log2(M))
         if 2**power < M:
             power += 1
         S = int(2**power)
-        hmap = ng.generate_terrain(S, n_octaves, chunk, persistance)
+        hmap = ng.generate_terrain(S, self.n_octaves, self.chunk, self.persistance)
         ng.normalize(hmap)
         return hmap
 
     def to_file(self, fn):
+        print("Saving map to",fn)
+##        objects = [self, self.lm]
         io.to_file(self, fn)
 
     def from_file(self, fn):
-        io.from_file(self, fn)
+        print("Loading map from",fn)
+        loaded = io.from_file(self, fn)
         self.refresh_derived_parameters()
+        return loaded
 
     def save_tilers(self, base_fn):
         for i,couple in enumerate(self.material_couples):

@@ -1,3 +1,4 @@
+import pickle
 
 def ask_save(editor):
     pass
@@ -27,32 +28,66 @@ load = {list:load_list,
 ################################################################################
 save = {}
 
+##def to_file(obj, fn):
+##    f = open(fn, "w")
+##    for attr in obj.saved_attrs:
+##        value = getattr(obj, attr)
+##        type_ = type(value)
+##        conversion = save.get(type_, str)
+##        str_value = conversion(value)
+##        f.write(str_value+"\n")
+##    f.close()
+##
+##def from_file(obj, fn):
+##    f = open(fn, "r")
+##    lines = f.readlines()
+##    f.close()
+##    for i,attr in enumerate(obj.saved_attrs):
+##        value = getattr(obj, attr)
+##        str_value = lines[i][:-1] #remove last '\n'
+##        type_ = type(value)
+##        conversion = load.get(type_)
+##        if conversion:
+##            primitive_type = obj.primitive_types.get(attr, int)
+##            value = conversion(str_value, primitive_type)
+##        else:
+##            value = type_(str_value)
+##        setattr(obj, attr, value)
+
 def to_file(obj, fn):
-    f = open(fn, "w")
+    f = open(fn, "wb")
     for attr in obj.saved_attrs:
-        value = getattr(obj, attr)
-        type_ = type(value)
-        conversion = save.get(type_, str)
-        str_value = conversion(value)
-        f.write(str_value+"\n")
+        attribute = getattr(obj, attr)
+        pickle.dump(attribute, f)
     f.close()
 
 def from_file(obj, fn):
-    f = open(fn, "r")
-    lines = f.readlines()
-    f.close()
-    for i,attr in enumerate(obj.saved_attrs):
-        value = getattr(obj, attr)
-        str_value = lines[i][:-1] #remove last '\n'
-        type_ = type(value)
-        conversion = load.get(type_)
-        if conversion:
-            primitive_type = obj.primitive_types.get(attr, int)
-            value = conversion(str_value, primitive_type)
-        else:
-            value = type_(str_value)
-        setattr(obj, attr, value)
+    loaded = {}
+    with open(fn, "rb") as f: #this is how we load it
+        for attr in obj.saved_attrs:
+            value = pickle.load(f)
+            setattr(obj, attr, value)
+            loaded[attr] = value
+    return loaded
 
+def save_all(objs, fn):
+    f = open(fn, "wb")
+    for obj in objs:
+        for attr in obj.saved_attrs:
+            attribute = getattr(obj, attr)
+            pickle.dump(attribute, f)
+    f.close()
+
+def load_all(objs, fn):
+    loaded = {}
+    f = open(fn, "rb")
+    for obj in objs:
+        for attr in obj.saved_attrs:
+            value = pickle.load(f)
+            setattr(obj, attr, value)
+            loaded[attr] = value
+    f.close()
+    return loaded
 
 #sauver:
 ##attributs non-proceduraux des cells (e.g noms non-proceduraux)
