@@ -17,6 +17,8 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
+#alert pour click droit sur units
+
 #meilleur wood : taper wood texture pixel art sur google. Wooden planks?
 
 #finalement: editeur, load/save/quit
@@ -53,8 +55,10 @@ cell_radius_divider = 8
 
 
 me = MapEditor()
-FROM_FILE = False
-if not FROM_FILE:
+FROM_FILE = True
+if FROM_FILE:
+    loaded=me.from_file("coucou.dat")
+else:
     ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
     ##me.zoom_cell_sizes = [64, 32, 12, 8]
     me.zoom_cell_sizes = [32,12]
@@ -67,8 +71,6 @@ if not FROM_FILE:
     me.persistance = 2.
     me.n_octaves = "max"
     me.refresh_derived_parameters()
-else:
-    loaded=me.from_file("coucou.dat")
 
 
 

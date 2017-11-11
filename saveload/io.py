@@ -91,7 +91,6 @@ def load_all(objs, fn):
 
 #sauver:
 ##attributs non-proceduraux des cells (e.g noms non-proceduraux)
-##chunks et persistance et octaves
 ##units
 
 ##class Gru:

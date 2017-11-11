@@ -223,6 +223,10 @@ class MapObject:
             MapObject.current_id += 1
         else:
             self.object_type = None
+        self.saved_attrs = []
+
+    def get_cell_coord(self):
+        return self.cell.coord
 
     def ypos(self):
         h = self.original_imgs[0].get_size()[1]
@@ -284,7 +288,8 @@ class MapObject:
         assert cell.unit is None
         copy = self.copy()
         copy.cell = cell
-        cell.unit = copy
+        cell.objects.append(copy)
+        cell.unit = self
         return copy
 
 ##    def build_imgs(self):
