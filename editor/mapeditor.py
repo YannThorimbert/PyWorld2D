@@ -20,6 +20,9 @@ def sgn(x):
     return 0.
 
 class MapEditor:
+    saved_attrs = ["zoom_cell_sizes", "nframes", "fps", "menu_width",
+                            "max_wanted_minimap_size", "world_size", "chunk",
+                            "persistance", "n_octaves"]
 
     def __init__(self):
         self.screen = thorpy.get_screen()
@@ -66,9 +69,6 @@ class MapEditor:
                                         "or hold", "<left shift>", "while moving mouse")
         self.ap.add_alert_countdown(self.e_ap_move, guip.DELAY_HELP * self.fps)
         #
-        self.saved_attrs = ["zoom_cell_sizes", "nframes", "fps", "menu_width",
-                            "max_wanted_minimap_size", "world_size", "chunk",
-                            "persistance", "n_octaves"]
         self.primitive_types = {}
 
     def build_gui_elements(self): #worst function ever
@@ -394,6 +394,14 @@ class MapEditor:
         self.cam.move(delta)
         self.cam.set_mg_pos_from_rcam()
 
+    def add_unit(self, coord, obj, quantity=None):
+        cell = self.lm.cells[coord[0]][coord[1]]
+        obj_added = obj.add_unit_on_cell(cell)
+        if quantity is not None:
+            obj_added.quantity = quantity
+        self.dynamic_objects.append(obj_added)
+        return obj_added
+
     def process_mouse_navigation(self): #cam can move even with no mousemotion!
         if pygame.key.get_mods() & pygame.KMOD_LSHIFT:
             pos = pygame.mouse.get_pos()
@@ -471,18 +479,23 @@ class MapEditor:
         ng.normalize(hmap)
         return hmap
 
-    def to_file(self, fn):
-        print("Saving map to",fn)
-##        objects = [self, self.lm]
-        io.to_file(self, fn)
+##    def to_file(self, fn):
+##        print("Saving map to",fn)
+##        f = open(fn, "wb")
+##        io.to_file(self, f)
+##        for obj in self.dynamic_objects:
+##            io.to_file(obj, f)
+##        f.close()
+##
+##    def from_file(self, fn):
+##        print("Loading map from",fn)
+##        loaded = io.from_file(self, fn)
+##        self.refresh_derived_parameters()
+##        return loaded
 
-    def from_file(self, fn):
-        print("Loading map from",fn)
-        loaded = io.from_file(self, fn)
-        self.refresh_derived_parameters()
-        return loaded
 
     def save_tilers(self, base_fn):
+        """Save builded tilers as png"""
         for i,couple in enumerate(self.material_couples):
             print("Writing to disk couple", i)
             if couple.static:

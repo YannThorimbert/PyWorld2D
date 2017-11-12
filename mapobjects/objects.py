@@ -185,16 +185,19 @@ def remove_objects(cell, layer):
 
 class MapObject:
     current_id = 1
+    saved_attrs = ["name", "quantity", "fns", "factor", "new_type", "relpos", "build"]
 
     def __init__(self, editor, fns, name="", factor=1., relpos=(0,0), build=True,
                  new_type=True):
-        """Object that looks the same at each frame"""
+        """<factor> : size factor.
+        Object that looks the same at each frame"""
         self.editor = editor
         ref_size = editor.zoom_cell_sizes[0]
         self.frame_imgs = []
         self.original_imgs = []
         if isinstance(fns, str):
             fns = [fns]
+        self.fns = fns
         for thing in fns:
             if thing:
                 if isinstance(thing,str):
@@ -216,14 +219,15 @@ class MapObject:
         self.min_relpos = [-0.4, -0.4]
         self.max_relpos = [0.4,   0.4]
         self.quantity = 1 #not necessarily 1 for units
+        self.build = build
         if build and thing:
             self.build_imgs()
+        self.new_type = new_type
         if new_type:
             self.object_type = MapObject.current_id
             MapObject.current_id += 1
         else:
             self.object_type = None
-        self.saved_attrs = []
 
     def get_cell_coord(self):
         return self.cell.coord

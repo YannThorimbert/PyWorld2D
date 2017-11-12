@@ -55,7 +55,7 @@ cell_radius_divider = 8
 
 
 me = MapEditor()
-FROM_FILE = True
+FROM_FILE = False
 if FROM_FILE:
     loaded=me.from_file("coucou.dat")
 else:
@@ -324,7 +324,7 @@ me.menu_button.user_params = {"element":launched_menu}
 
 
 me.set_zoom(level=0)
-me.to_file("coucou.dat")
+##me.to_file("coucou.dat")
 m = thorpy.Menu(me.e_box,fps=me.fps)
 m.play()
 
