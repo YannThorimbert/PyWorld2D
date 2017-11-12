@@ -81,12 +81,13 @@ def obj_to_file(obj, f):
 def file_to_obj(f, obj):
     for attr in obj.saved_attrs:
         value = pickle.load(f)
-        setattr(me, attr, value)
+        setattr(obj, attr, value)
 
 def to_file(me, fn):
     print("Saving map to",fn)
-    with open(fn, "rb") as f:
+    with open(fn, "wb") as f:
         obj_to_file(me, f) #me
+        print("dumping", len(me.dynamic_objects))
         pickle.dump(len(me.dynamic_objects), f) #len(dynamic_objects)
         for obj in me.dynamic_objects:
             pickle.dump(obj.get_cell_coord(), f) #coord
@@ -94,17 +95,37 @@ def to_file(me, fn):
 
 
 
-def from_file(fn, me):
+def from_file_base(fn, me):
     print("Loading map from",fn)
     with open(fn, "rb") as f: #this is how we load it
         file_to_obj(f, me) #me
         me.refresh_derived_parameters()
         n = pickle.load(f) #len(dynamic_objects)
+        print("n",n)
         for i in range(n):
             coord = pickle.load(f) #coord
             a = {}
             for attr_name in MapObject.saved_attrs:
                 a[attr_name] = pickle.load(f)
+            print("a",a)
+            #
+            obj = MapObject(me, fns=a["fns"], name=a["name"], factor=a["factor"],
+                            relpos=a["relpos"], build=a["build"], new_type=a["new_type"])
+            obj_added = me.add_unit(coord, obj, a["quantity"])
+
+def from_file_units(fn, me):
+    print("Loading map from",fn)
+    with open(fn, "rb") as f: #this is how we load it
+        file_to_obj(f, me) #me
+        me.refresh_derived_parameters()
+        n = pickle.load(f) #len(dynamic_objects)
+        print("n",n)
+        for i in range(n):
+            coord = pickle.load(f) #coord
+            a = {}
+            for attr_name in MapObject.saved_attrs:
+                a[attr_name] = pickle.load(f)
+            print("a",a)
             #
             obj = MapObject(me, fns=a["fns"], name=a["name"], factor=a["factor"],
                             relpos=a["relpos"], build=a["build"], new_type=a["new_type"])

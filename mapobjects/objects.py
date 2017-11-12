@@ -293,7 +293,7 @@ class MapObject:
         copy = self.copy()
         copy.cell = cell
         cell.objects.append(copy)
-        cell.unit = self
+        cell.unit = copy
         return copy
 
 ##    def build_imgs(self):

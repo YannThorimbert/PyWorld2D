@@ -17,16 +17,20 @@ from editor.mapeditor import MapEditor
 
 ##thorpy.application.SHOW_FPS = True
 
-#alert pour click droit sur units
-
-#meilleur wood : taper wood texture pixel art sur google. Wooden planks?
+#toute la partie du building qui est dans example.py (ici) devrait migrer ailleurs dans un fichier world_building!
+#ou alors faire le laad en plusieurs partie separees par bcp de lignes
 
 #finalement: editeur, load/save/quit
 #nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
 
+#alert pour click droit sur units
+
+#meilleur wood : taper wood texture pixel art sur google. Wooden planks?
+
 #ne pas oublier d'ajouter thorpy
 
 #quand meme tester sans numpy, parce que bcp de modules l'importent (surfarray)
+#tester python2
 
 
 #*********************************v2:
@@ -55,9 +59,9 @@ cell_radius_divider = 8
 
 
 me = MapEditor()
-FROM_FILE = False
+FROM_FILE = True
 if FROM_FILE:
-    loaded=me.from_file("coucou.dat")
+    loaded=io.from_file("coucou.dat", me)
 else:
     ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
     ##me.zoom_cell_sizes = [64, 32, 12, 8]
@@ -279,10 +283,8 @@ me.build_surfaces()
 
 ################################################################################
 #Here we add a dynamic object
-char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
-obj = char1.add_unit_on_cell(lm.cells[15][15])
-obj.quantity = 12 #logical (not graphical) quantity
-me.dynamic_objects.append(obj)
+##char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
+##obj = me.add_unit(coord=(15,15), obj=char1, quantity=12)
 
 
 
@@ -324,11 +326,9 @@ me.menu_button.user_params = {"element":launched_menu}
 
 
 me.set_zoom(level=0)
-##me.to_file("coucou.dat")
+io.to_file(me, "coucou.dat")
 m = thorpy.Menu(me.e_box,fps=me.fps)
 m.play()
-
-
 
 app.quit()
 
