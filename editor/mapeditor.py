@@ -360,23 +360,18 @@ class MapEditor:
     def func_reac_unclick(self, e):
         cell = self.cam.get_cell(e.pos)
         if e.button == 1: #left click
-            if cell:
-                if cell is not self.cell_info.last_cell_clicked:
-                    if not self.cell_info.launched:
-                        self.cell_info.last_cell_clicked = cell
-                        self.cell_info.launch_em(cell, e.pos, self.cam.map_rect)
+            if self.cell_info.can_be_launched(cell, self):
+                self.cell_info.last_cell_clicked = cell
+                self.cell_info.launch_em(cell, e.pos, self.cam.map_rect)
             self.cell_info.last_cell_clicked = None
         #
         elif e.button == 3: #right click
-            if cell:
-                if cell is not self.unit_info.last_cell_clicked:
-                    if not self.unit_info.launched:
-                        if cell.unit:
-                            self.unit_info.last_cell_clicked = cell
-                            self.unit_info.launch_em(cell, e.pos, self.cam.map_rect)
-                        else:
-                            #ajouter alerte disant que pas d'unit ici
-                            pass
+            if self.unit_info.can_be_launched(cell, self):
+                self.unit_info.last_cell_clicked = cell
+                self.unit_info.launch_em(cell, e.pos, self.cam.map_rect)
+            elif cell:
+                #ajouter alerte disant que pas d'unit ici
+                pass
             self.unit_info.last_cell_clicked = None
 
     def func_reac_mousemotion(self, e):

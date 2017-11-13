@@ -193,6 +193,14 @@ class CellInfo:
         self.e_coordalt.set_text(coord_text+alt_text)
         self.e_coordalt.recenter()
 
+    def can_be_launched(self, cell, me):
+        if cell:
+            if not me.unit_info.launched and not self.launched:
+                if cell is not self.last_cell_clicked:
+                    return True
+        return False
+
+
 
 class UnitInfo: #name, image, nombre(=vie dans FS!)
     def __init__(self, size, cell_size, redraw, external_e):
@@ -243,6 +251,13 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
         self.last_cell_clicked = None
         self.e_img.visible = False
 
+    def can_be_launched(self, cell, me):
+        if cell:
+            if not me.cell_info.launched and not self.launched:
+                if cell is not self.last_cell_clicked:
+                    if cell.unit:
+                        return True
+        return False
 
     def set_unlaunched(self, e):
         if e.launcher.launched == self.em:
@@ -282,6 +297,7 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
             self.em.update()
 ##        else:
 ##            print("Already launched!")
+
 
     def rename_current_unit(self):
         varset = thorpy.VarSet()

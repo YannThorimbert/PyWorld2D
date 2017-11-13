@@ -19,6 +19,7 @@ from editor.mapeditor import MapEditor
 
 #toute la partie du building qui est dans example.py (ici) devrait migrer ailleurs dans un fichier world_building!
 #ou alors faire le laad en plusieurs partie separees par bcp de lignes
+#==> ou alors vraiment faire un fichier de description du monde, ce serait + propre
 
 #finalement: editeur, load/save/quit
 #nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
@@ -61,7 +62,8 @@ cell_radius_divider = 8
 me = MapEditor()
 FROM_FILE = True
 if FROM_FILE:
-    loaded=io.from_file("coucou.dat", me)
+    savefile = open("coucou.dat", "rb")
+    io.from_file_base(savefile, me)
 else:
     ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
     ##me.zoom_cell_sizes = [64, 32, 12, 8]
@@ -149,48 +151,48 @@ me.set_map(lm) #we attach the map to the editor
 ################################################################################
 print("Adding static objects")
 
-#1) We use another hmap to decide where we want trees
-forest_map = ng.generate_terrain(S, n_octaves=None, persistance=1.7, chunk=(12,23))
-ng.normalize(forest_map)
-
-#2) We build a static object representing a Fir
-#we can use as many layers as we want.
-#layer2 is a superimposed map on which we decide to blit some static objects:
-layer2 = me.add_layer()
-
-#3) We build the objects that we want.
-# its up to you to decide what should be the size of the object...
-# the size is set through the imgs_dict argument of get_distributor
-fir1 = MapObject(me,"./mapobjects/images/yar_fir1.png","forest",1.5)
-fir2 = MapObject(me,"./mapobjects/images/yar_fir2.png","forest",1.5)
-fir3 = MapObject(me,"./mapobjects/images/firsnow2.png","forest",1.5)
-fir1.set_same_type([fir2, fir3])
-tree = MapObject(me,"./mapobjects/images/tree.png","forest",1.5)
-palm = MapObject(me,"./mapobjects/images/skeddles.png","forest",1.7)
-palm.max_relpos[0] = 0.1 #restrict because they are near to water
-palm.min_relpos[0] = -0.1
-bush = MapObject(me,"./mapobjects/images/yar_bush.png","bush",1.)
-village1 = MapObject(me,"./mapobjects/images/pepperRacoon.png","village",1.3)
-village2 = MapObject(me,"./mapobjects/images/rgbfumes1.png","village",2.2)
-village3 = MapObject(me,"./mapobjects/images/rgbfumes2.png","village",2.6)
-village4 = MapObject(me,"./mapobjects/images/rgbfumes3.png","village",2.6)
-##village5 = MapObject(me,"./mapobjects/images/rgbfumes4.png","village",2.2)
-village1.set_same_type([village2, village3, village4])
-
-cobble = MapObject(me,"./mapobjects/images/cobblestone2.png","cobblestone",1.)
-wood = MapObject(me,"./mapobjects/images/wood1.png","wooden bridge",1.)
-
-magic = MapObject(me,
-                 [  "./mapobjects/images/wood1.png",
-                    "./mapobjects/images/yar_bush.png"],
-                 "magic",1.)
-
-gru = objs.put_static_obj(magic, me.lm, (12,12), layer2)
-gru.frame_slowness = 12
-
-for v in[village1,village2,village3,village4]:
-    v.max_relpos = [0., 0.]
-    v.min_relpos = [0., 0.]
+###1) We use another hmap to decide where we want trees
+##forest_map = ng.generate_terrain(S, n_octaves=None, persistance=1.7, chunk=(12,23))
+##ng.normalize(forest_map)
+##
+###2) We build a static object representing a Fir
+###we can use as many layers as we want.
+###layer2 is a superimposed map on which we decide to blit some static objects:
+##layer2 = me.add_layer()
+##
+###3) We build the objects that we want.
+### its up to you to decide what should be the size of the object...
+### the size is set through the imgs_dict argument of get_distributor
+##fir1 = MapObject(me,"./mapobjects/images/yar_fir1.png","forest",1.5)
+##fir2 = MapObject(me,"./mapobjects/images/yar_fir2.png","forest",1.5)
+##fir3 = MapObject(me,"./mapobjects/images/firsnow2.png","forest",1.5)
+##fir1.set_same_type([fir2, fir3])
+##tree = MapObject(me,"./mapobjects/images/tree.png","forest",1.5)
+##palm = MapObject(me,"./mapobjects/images/skeddles.png","forest",1.7)
+##palm.max_relpos[0] = 0.1 #restrict because they are near to water
+##palm.min_relpos[0] = -0.1
+##bush = MapObject(me,"./mapobjects/images/yar_bush.png","bush",1.)
+##village1 = MapObject(me,"./mapobjects/images/pepperRacoon.png","village",1.3)
+##village2 = MapObject(me,"./mapobjects/images/rgbfumes1.png","village",2.2)
+##village3 = MapObject(me,"./mapobjects/images/rgbfumes2.png","village",2.6)
+##village4 = MapObject(me,"./mapobjects/images/rgbfumes3.png","village",2.6)
+####village5 = MapObject(me,"./mapobjects/images/rgbfumes4.png","village",2.2)
+##village1.set_same_type([village2, village3, village4])
+##
+##cobble = MapObject(me,"./mapobjects/images/cobblestone2.png","cobblestone",1.)
+##wood = MapObject(me,"./mapobjects/images/wood1.png","wooden bridge",1.)
+##
+##magic = MapObject(me,
+##                 [  "./mapobjects/images/wood1.png",
+##                    "./mapobjects/images/yar_bush.png"],
+##                 "magic",1.)
+##
+##gru = objs.put_static_obj(magic, me.lm, (12,12), layer2)
+##gru.frame_slowness = 12
+##
+##for v in[village1,village2,village3,village4]:
+##    v.max_relpos = [0., 0.]
+##    v.min_relpos = [0., 0.]
 
 
 ###4) we add the objects via distributors
@@ -283,8 +285,11 @@ me.build_surfaces()
 
 ################################################################################
 #Here we add a dynamic object
-##char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
-##obj = me.add_unit(coord=(15,15), obj=char1, quantity=12)
+if FROM_FILE:
+    io.from_file_units(savefile, me)
+else: #to remove
+    char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
+    obj = me.add_unit(coord=(15,15), obj=char1, quantity=12)
 
 
 
@@ -324,6 +329,8 @@ me.menu_button.user_params = {"element":launched_menu}
 ##me.e_box.remove_reaction("k <sign>")
 #remember to modify/deactivate the help text corresponding to the removed reac
 
+if FROM_FILE:
+    savefile.close()
 
 me.set_zoom(level=0)
 io.to_file(me, "coucou.dat")

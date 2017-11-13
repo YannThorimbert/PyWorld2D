@@ -221,6 +221,7 @@ class MapObject:
         self.quantity = 1 #not necessarily 1 for units
         self.build = build
         if build and thing:
+            print("BUILDING", self.name, self.fns)
             self.build_imgs()
         self.new_type = new_type
         if new_type:
@@ -254,11 +255,15 @@ class MapObject:
         obj.min_relpos = list(self.min_relpos)
         obj.max_relpos = list(self.max_relpos)
         obj.object_type = self.object_type
+        obj.quantity = self.quantity
+        obj.fns = self.fns
         return obj
 
     def deep_copy(self):
         obj = MapObject(self.editor, [""], self.name, self.factor,
                         list(self.relpos), new_type=False)
+        obj.quantity = self.quantity
+        obj.fns = self.fns
         obj.original_imgs = [i.copy() for i in self.original_imgs]
         obj.nframes = len(obj.original_imgs)
         obj.imgs_z_t = []
