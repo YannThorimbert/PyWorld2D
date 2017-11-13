@@ -19,12 +19,12 @@ from editor.mapeditor import MapEditor
 
 #toute la partie du building qui est dans example.py (ici) devrait migrer ailleurs dans un fichier world_building!
 #ou alors faire le laad en plusieurs partie separees par bcp de lignes
-#==> ou alors vraiment faire un fichier de description du monde, ce serait + propre
+#==> ou alors vraiment faire un fichier de description du monde, ce serait + propre.
 
 #finalement: editeur, load/save/quit
 #nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
 
-#alert pour click droit sur units
+#alert pour click droit sur units quand click gauche sur units, et pour click gauche sur terrain quand click droit sur terrain
 
 #meilleur wood : taper wood texture pixel art sur google. Wooden planks?
 
