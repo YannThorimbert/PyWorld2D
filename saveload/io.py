@@ -22,17 +22,35 @@ def to_file(me, fn):
     print("Saving map to",fn)
     with open(fn, "wb") as f:
         obj_to_file(me, f) #me
-        print("dumping", len(me.dynamic_objects))
+        #
+        print("dumping", len(me.modified_cells), "cells")
+        pickle.dump(len(me.modified_cells), f) #len(modified cells)
+        for x,y in me.modified_cells:
+            cell = me.lm.cells[x][y]
+            pickle.dump((x,y),f)
+            pickle.dump(cell.name,f) #cell name
+        #
+        print("dumping", len(me.dynamic_objects), "dynamic objects")
         pickle.dump(len(me.dynamic_objects), f) #len(dynamic_objects)
         for obj in me.dynamic_objects:
             pickle.dump(obj.get_cell_coord(), f) #coord
             obj_to_file(obj, f) #dyn obj
 
 
+
 def from_file_base(f, me):
     print("Loading map")
     file_to_obj(f, me) #me
     me.refresh_derived_parameters()
+
+def from_file_cells(f, me):
+    print("Loading cells")
+    n = pickle.load(f) #len(modified cells)
+    for i in range(n):
+        x,y = pickle.load(f) #coord
+        name = pickle.load(f) #name
+        #
+        me.lm.cells[x][y].set_name(name)
 
 def from_file_units(f, me):
     print("Loading units")
@@ -53,3 +71,4 @@ def from_file_units(f, me):
 #sauver:
 ##attributs non-proceduraux des cells (e.g noms non-proceduraux)
 #==> me maintient une liste au format [(coord, nom), ...] des cellules renommees
+#idem avec tous les terrains dont le hmap ou material a ete modifie

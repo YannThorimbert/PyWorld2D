@@ -33,6 +33,10 @@ class LogicalCell:
         self.unit = None
 ##        self.imgs = None
 
+    def set_name(self,name):
+        self.name = name
+        self.map.me.modified_cells.append(self.coord)
+
     def get_neighbors_von_neuman(self):
         for dx,dy in VON_NEUMAN:
             yield self.map.get_cell_at(self.coord[0]+dx, self.coord[1]+dy)
@@ -104,6 +108,7 @@ class LogicalMap(BaseGrid):
         self.refresh_cell_types()
         self.colorkey = None #used at build_surface()
         self.static_objects = []
+        self.me = None
 
     def add_layer(self, lay):
         lay.frame_slowness = self.frame_slowness

@@ -2,7 +2,6 @@ import random, math
 import pygame
 from pygame.math import Vector2 as V2
 import thorpy
-import thornoise.purepython.noisegen as ng
 import rendering.tilers.tilemanager as tm
 from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
@@ -13,6 +12,7 @@ from mapobjects.objects import MapObject
 import saveload.io as io
 from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
+import mapdescription as description
 
 
 ##thorpy.application.SHOW_FPS = True
@@ -60,6 +60,7 @@ cell_radius_divider = 8
 
 
 me = MapEditor()
+TO_FILE = True
 FROM_FILE = True
 if FROM_FILE:
     savefile = open("coucou.dat", "rb")
@@ -79,19 +80,9 @@ else:
     me.refresh_derived_parameters()
 
 
-
 ################################################################################
 print("Building hmap")
-hmap = me.build_hmap()
-S = len(hmap)
-##hmap[2][1] = 0.7 #this is how you manually change the height of a given cell
-
-#Here we build the miniature map image
-img_hmap = ng.build_surface(hmap)
-new_img_hmap = pygame.Surface(me.world_size)
-new_img_hmap.blit(img_hmap, (0,0))
-img_hmap = new_img_hmap
-me.build_camera(img_hmap)
+description.build_hmap(me)
 
 ################################################################################
 print("Building tilers")
@@ -286,10 +277,14 @@ me.build_surfaces()
 ################################################################################
 #Here we add a dynamic object
 if FROM_FILE:
+    io.from_file_cells(savefile, me)
     io.from_file_units(savefile, me)
 else: #to remove
     char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
     obj = me.add_unit(coord=(15,15), obj=char1, quantity=12)
+    obj = me.add_unit((10,0), char1, 1)
+    me.lm.cells[14][15].set_name("frujt")
+    me.lm.cells[15][14].set_name("pat")
 
 
 
@@ -332,10 +327,13 @@ me.menu_button.user_params = {"element":launched_menu}
 if FROM_FILE:
     savefile.close()
 
+def at_exit():
+    io.to_file(me, "coucou.dat")
+if not TO_FILE:
+    at_exit = None
 me.set_zoom(level=0)
-io.to_file(me, "coucou.dat")
 m = thorpy.Menu(me.e_box,fps=me.fps)
-m.play()
+m.play(at_exit=at_exit)
 
 app.quit()
 

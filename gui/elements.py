@@ -166,7 +166,7 @@ class CellInfo:
         thorpy.launch_blocking(ps)
         newname = ins.get_value()
         if newname:
-            self.cell.name = newname
+            self.cell.set_name(newname)
         self.update_em(self.cell)
         self.redraw()
         self.em.blit()

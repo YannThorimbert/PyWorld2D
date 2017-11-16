@@ -49,6 +49,7 @@ class MapEditor:
         self.materials = {}
         self.material_couples = None
         self.dynamic_objects = []
+        self.modified_cells = []
 ##        self.last_cell_clicked = None
         #
         self.cursor_color = 0 #0 = normal, 1 = select
@@ -190,6 +191,7 @@ class MapEditor:
         outsides = self.materials["outside"].imgs
         self.lm = LogicalMap(hmap, self.material_couples, self.map_rects,
                              outsides, desired_world_size)
+        self.lm.me = self
         return self.lm
 
     def set_map(self, logical_map):
