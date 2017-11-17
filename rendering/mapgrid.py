@@ -304,8 +304,8 @@ class GraphicalMap(PygameGrid):
     def build_surfaces(self, colorkey):
         #create table of surfaces
         surfaces = [[[pygame.Surface(self.submap_size) for frame in range(self.nframes)]
-                        for y in range(self.n_submaps[0])]
-                          for x in range(self.n_submaps[1])]
+                        for y in range(self.n_submaps[1])]
+                          for x in range(self.n_submaps[0])]
         #fill table of surfaces
         for x,y in self:
             surfx = x*self.cell_size//self.submap_size[0]
@@ -328,8 +328,8 @@ class GraphicalMap(PygameGrid):
                         int(factor * gm.submap_size[1]))
         #create table of surfaces
         surfaces = [[[None for frame in range(gm.nframes)]
-                        for y in range(gm.n_submaps[0])]
-                          for x in range(gm.n_submaps[1])]
+                        for y in range(gm.n_submaps[1])]
+                          for x in range(gm.n_submaps[0])]
         #fill table of surfaces
         for x in range(gm.n_submaps[0]):
             for y in range(gm.n_submaps[1]):

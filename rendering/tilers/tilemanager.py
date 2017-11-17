@@ -7,6 +7,7 @@ try:
     from rendering.tilers.beachtiler import BeachTiler
     from rendering.tilers.basetiler import BaseTiler
     from rendering.tilers.roundtiler import RoundTiler
+    from rendering.tilers.loadtiler import LoadTiler
     has_surfarray = True
 except:
     from rendering.tilers.loadtiler import LoadTiler

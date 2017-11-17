@@ -1,5 +1,6 @@
 import os
 from thorpy._utils.images import load_image
+import pygame
 
 class LoadTiler: #emulate a tiler.
 

@@ -187,10 +187,11 @@ class MapEditor:
     def toggle_show_grid_lines(self):
             self.show_grid_lines = not(self.show_grid_lines)
 
-    def build_map(self, hmap, desired_world_size):
+
+    def build_map(self):
         outsides = self.materials["outside"].imgs
-        self.lm = LogicalMap(hmap, self.material_couples, self.map_rects,
-                             outsides, desired_world_size)
+        self.lm = LogicalMap(self.hmap, self.material_couples, self.map_rects,
+                             outsides, self.world_size)
         self.lm.me = self
         return self.lm
 
@@ -474,6 +475,7 @@ class MapEditor:
         S = int(2**power)
         hmap = ng.generate_terrain(S, self.n_octaves, self.chunk, self.persistance)
         ng.normalize(hmap)
+        self.hmap = hmap
         return hmap
 
 ##    def to_file(self, fn):
