@@ -6,7 +6,6 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-import mapobjects.objects as objs
 from mapobjects.objects import MapObject
 import saveload.io as io
 from ia.path import BranchAndBoundForMap
@@ -16,12 +15,12 @@ import mapdescription as description
 
 ##thorpy.application.SHOW_FPS = True
 
-
 #toute la partie du building qui est dans example.py (ici) devrait migrer ailleurs dans un fichier world_building!
 #ou alors faire le laad en plusieurs partie separees par bcp de lignes
 #==> ou alors vraiment faire un fichier de description du monde, ce serait + propre.
 
-#finalement: editeur, load/save/quit
+#finalement: editeur, load/save/quit marche avec tout (dyn objs, stat objs... ? beaucoup tester)
+##NB static objects : tout est regenerable a partir de seed, donc deja fait!
 #nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
 
 #alert pour click droit sur units quand click gauche sur units, et pour click gauche sur terrain quand click droit sur terrain
@@ -48,51 +47,39 @@ import mapdescription as description
 
 W,H = 800, 600 #screen size you want
 app = thorpy.Application((W,H))
-me = MapEditor() #me stands for "Map Editor" everywhere in PyWorld2D package.
+me = MapEditor("map123") #me stands for "Map Editor" everywhere in PyWorld2D package.
 
 TO_FILE = True
 FROM_FILE = False
 if FROM_FILE:
-    savefile = open("coucou.dat", "rb")
+    savefile = open(me.get_fn(), "rb")
     io.from_file_base(savefile, me)
 else:
     description.configure_map_editor(me)
 
-################################################################################
 print("Building hmap")
 description.build_hmap(me)
-
-################################################################################
 print("Building tilers")
-description.build_materials(me)
-
+description.build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False)
 print("Building map surfaces")
-lm = me.build_map()
-lm.frame_slowness = 0.1*me.fps #frame will change every k*FPS [s]
-me.set_map(lm) #we attach the map to the editor
-
-################################################################################
-print("Adding static objects")
-##description.add_static_objects(me)
-
+description.build_lm(me)
+print("Adding static objects") #seeded ??????????????????????????????????????????????
+description.add_static_objects(me)
+print("Adding dynamic objects")
+description.add_dynamic_objects(me)
 #Now that we finished to add static objects, we generate the surface
 print("Building surfaces") #this is also a long process
 me.build_surfaces()
 
+
+#ou sont definis les deux units ?
 ################################################################################
-#Here we add a dynamic object
-if FROM_FILE:
+if FROM_FILE: #load things that cannot be regenerated from seed
     io.from_file_cells(savefile, me)
     io.from_file_units(savefile, me)
-else: #to remove
-    char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
-    obj = me.add_unit(coord=(15,15), obj=char1, quantity=12)
-    obj = me.add_unit((13,13), char1, 1)
-    me.lm.cells[14][15].set_name("frujt") #this is how we set the name of a cell
-    me.lm.cells[15][14].set_name("pat")
 
-
-
+me.lm.cells[14][15].set_name("My left cell") #this is how we set the name of a cell
+me.lm.cells[15][14].set_name("My top cell")
 
 ################################################################################
 print("Building GUI")
@@ -106,7 +93,10 @@ thorpy.add_time_reaction(me.e_box, func_reac_time)
 
 
 #here you can add/remove buttons to the menu ###################################
-e_quit = thorpy.make_button("Quit game", thorpy.functions.quit_func)
+def quit_func():
+    io.ask_save(me)
+    thorpy.functions.quit_func()
+e_quit = thorpy.make_button("Quit game", quit_func)
 e_save = thorpy.make_button("Save", io.ask_save, {"editor":me})
 e_load = thorpy.make_button("Load", io.ask_load)
 
@@ -132,13 +122,11 @@ me.menu_button.user_params = {"element":launched_menu}
 if FROM_FILE:
     savefile.close()
 
-def at_exit():
-    io.to_file(me, "coucou.dat")
 if not TO_FILE:
     at_exit = None
 me.set_zoom(level=0)
 m = thorpy.Menu(me.e_box,fps=me.fps)
-m.play(at_exit=at_exit)
+m.play()
 
 app.quit()
 

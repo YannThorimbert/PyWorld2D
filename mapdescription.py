@@ -1,8 +1,11 @@
 import pygame
 import thornoise.purepython.noisegen as ng
 import rendering.tilers.tilemanager as tm
+from mapobjects.objects import MapObject
+import mapobjects.objects as objs
 
 def configure_map_editor(me):
+    """Set the properties of the map editor"""
     ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
     ##me.zoom_cell_sizes = [64, 32, 12, 8]
     me.zoom_cell_sizes = [32,12]
@@ -17,6 +20,7 @@ def configure_map_editor(me):
     me.refresh_derived_parameters()
 
 def build_hmap(me):
+    """Build the pure height map"""
     hmap = me.build_hmap()
     ##hmap[2][1] = 0.7 #this is how you manually change the height of a given cell
 
@@ -28,7 +32,13 @@ def build_hmap(me):
     me.build_camera(img_hmap)
     return hmap
 
-def build_materials(me):
+def build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False):
+    """
+    <fast> : quality a bit lower if true, loading time a bit faster.
+    <use_beach_tiler>: quality much better if true, loading buch slower.
+    Requires Numpy !
+    <load_tilers> : use precomputed textures from disk.
+    """
     #might be chosen by user:
     #cell_radius = cell_size//radius_divider
     # change how "round" look cell transitions
@@ -68,11 +78,19 @@ def build_materials(me):
     #fast option: quality a bit lower, loading time a bit faster
     #use_beach_tiler option: quality much better, loading time much slower. Need numpy.
     #load_tilers option: use precomputed textures from disk
-    me.build_materials(cell_radius_divider, fast=True, use_beach_tiler=False,
-                        load_tilers=False)
+    me.build_materials(cell_radius_divider, fast=fast,
+                        use_beach_tiler=use_beach_tiler,
+                        load_tilers=load_tilers)
 ##                        load_tilers="./rendering/tiles/precomputed/")
     ##me.save_tilers("./rendering/tiles/precomputed/")
     ##import sys;app.quit();pygame.quit();sys.exit();exit()
+
+
+def build_lm(me):
+    """Build the logical map corresponding to me's properties"""
+    lm = me.build_map() #build a logical map with me's properties
+    lm.frame_slowness = 0.1*me.fps #frame will change every k*FPS [s]
+    me.set_map(lm) #we attach the map to the editor
 
 
 def add_static_objects(me):
@@ -174,7 +192,7 @@ def add_static_objects(me):
     possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
 
     for i in range(5):
-        objs.add_random_road(lm, layer2, cobbles, [wood], costs_materials,
+        objs.add_random_road(me.lm, layer2, cobbles, [wood], costs_materials,
                          costs_objects, possible_materials, possible_objects)
 
 
@@ -187,9 +205,9 @@ def add_static_objects(me):
     possible_materials=list(me.materials)
     #Objects allowed
     possible_objects=[]
-
+    river_img = me.get_material_image("Shallow water")
     for i in range(5):
-        objs.add_random_river(me, lm, river_img, costs_materials, costs_objects,
+        objs.add_random_river(me, me.lm, river_img, costs_materials, costs_objects,
                                 possible_materials, possible_objects)
 
     # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
@@ -197,3 +215,11 @@ def add_static_objects(me):
     #                         possible_materials, possible_objects)
     # path = sp.solve()
     # draw_path(path, objects=cobbles, layer=lm)
+
+
+def add_dynamic_objects(me): #here we add two units for instance
+    char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
+    obj = me.add_unit(coord=(15,15), obj=char1, quantity=12)
+    obj.name = "My first unit"
+    obj = me.add_unit((13,13), char1, 1)
+    obj.name = "My second unit"

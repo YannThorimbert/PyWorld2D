@@ -1,8 +1,12 @@
 import pickle
+import thorpy
 from mapobjects.objects import MapObject
 
 def ask_save(editor):
-    pass
+    choice = thorpy.launch_binary_choice("Do you want to save this map ?")
+    if choice:
+        to_file(editor, editor.get_fn())
+    thorpy.functions.quit_menu_func()
 
 def ask_load():
     pass
@@ -44,6 +48,7 @@ def from_file_base(f, me):
     me.refresh_derived_parameters()
 
 def from_file_cells(f, me):
+    """Load cells and their logical content (names, properties, etc.)"""
     print("Loading cells")
     n = pickle.load(f) #len(modified cells)
     for i in range(n):
@@ -53,6 +58,7 @@ def from_file_cells(f, me):
         me.lm.cells[x][y].set_name(name)
 
 def from_file_units(f, me):
+    """Load units and their logical content (names, properties, etc.)"""
     print("Loading units")
     n = pickle.load(f) #len(dynamic_objects)
     for i in range(n):

@@ -24,7 +24,8 @@ class MapEditor:
                             "max_wanted_minimap_size", "world_size", "chunk",
                             "persistance", "n_octaves"]
 
-    def __init__(self):
+    def __init__(self, name="Unnamed map"):
+        self.name = name
         self.screen = thorpy.get_screen()
         self.W, self.H = self.screen.get_size() #self.screen size, wont change
         #values below are default values; they can change and
@@ -71,6 +72,9 @@ class MapEditor:
         self.ap.add_alert_countdown(self.e_ap_move, guip.DELAY_HELP * self.fps)
         #
         self.primitive_types = {}
+
+    def get_fn(self):
+        return self.name+".map"
 
     def build_gui_elements(self): #worst function ever
         e_hmap = thorpy.Image.make(self.cam.img_hmap)
@@ -418,6 +422,9 @@ class MapEditor:
     def load_image(self, fn):
         img = thorpy.load_image(fn)
         return pygame.transform.smoothscale(img, (self.zoom_cell_sizes[0],)*2)
+
+    def get_material_image(self, material, scale=0, frame=0):
+        return self.materials[material].imgs[scale][frame]
 
     def get_color_image(self, color):
         surface = pygame.Surface((self.zoom_cell_sizes[0],)*2)
