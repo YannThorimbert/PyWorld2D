@@ -9,35 +9,76 @@ class MapInitializer:
 
     def __init__(self, name):
         self.name = name #name of the map
-        #terrain generation:
+        ############ terrain generation:
         self.world_size = (128,128) #in number of cells. Put a power of 2 for tilable maps
         self.chunk = (1310,14) #Used for random generation. To give when saving. Neighboring chunk give tilable maps.
         self.persistance = 2. #parameter of the random terrain generation.
         self.n_octaves = "max" #parameter of the random terrain generation.
-        #graphical options:
+        ############ graphical options:
         self.zoom_cell_sizes = [32, 16, 8] #size of one cell for the different zoom levels.
         self.nframes = 16 #number of frames per world cycle (impacts memory requirement!)
         self.fps = 60 #frame per second
         self.menu_width = 200 #width of the right menu in pixels
         self.max_wanted_minimap_size = 64 #size of the MINIMAP in pixels
-        #
+        ############ material options:
+        #cell_radius = cell_size//radius_divider
+        # change how "round" look cell transitions
+        self.cell_radius_divider = 8
+        #path or color of the image of the different materials
+        self.water = "./rendering/tiles/water1.png"
+        self.sand = "./rendering/tiles/sand1.jpg"
+        self.grass = "./rendering/tiles/grass1.png"
+        self.grass2 = "./rendering/tiles/grass8.png"
+        self.rock = "./rendering/tiles/rock1.png"
+        self.black = (0,0,0)
+        self.white = (255,255,255)
+        #mixed images - we superimpose different image to make a new one
+        #the value indicated correspond
+        self.deepwater= 127 #mix water with black : 127 is the alpha of black
+        self.mediumwater= 50 #mix water with black : 50 is the alpha of black
+        self.shore_img = 127 #mix sand with water : 127 is the alpha of water
+        self.thinsnow_img = 200 #mix rock with white : 200 is the alpha of white
+        #water movement is obtained by using shifts.
+        #x-shift is dx_divider and y-shift is dy_divider. Unit is pixel.
+        self.dx_divider = 10
+        self.dy_divider = 8
+        #here we specify at which altitude is each biome
+        self.hdeepwater = 0.4 #deep water only below 0.4
+        self.hwater = 0.55 #normal water between 0.4 and 0.55
+        self.hshore = 0.6 #shore water between 0.55 and 0.6
+        self.hsand = 0.62 #and so on...
+        self.hgrass = 0.8
+        self.hrock = 0.83
+        self.hthinsnow = 0.9
+        self.hsnow = float("inf")
+        #precomputed tiles are used only if load_tilers=True is passed to build_materials()
+        self.precomputed_tiles = "./rendering/tiles/precomputed/"
+        #NB : if you want to add your own materials, then you must write your
+        #   own version of build_materials function below, and modify the above
+        #   parameters accordingly in order to include the additional material
+        #   or remove the ones you don't want.
+
+    def get_image(self, me, name):
+        value = getattr(self, name)
+        if isinstance(value, str):
+            return me.load_image(value)
+        elif isinstance(value, tuple):
+            return me.get_color_image(value)
 
 
-FRAME_K = 0.1
-
-def configure_map_editor(me):
+def configure_map_editor(mi):
     """Set the properties of the map editor"""
     ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
     ##me.zoom_cell_sizes = [64, 32, 12, 8]
-    me.zoom_cell_sizes = [32,12]
-    me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
-    me.fps = 60 #frame per second
-    me.menu_width = 200 #width of the right menu in pixels
-    me.max_wanted_minimap_size = 64 #size of the MINIMAP in pixels
-    me.world_size = (128,128) #in number of cells. Put a power of 2 for tilable maps
-    me.chunk = (1310,14) #to give when saving. Neighboring chunk give tilable maps.
-    me.persistance = 2.
-    me.n_octaves = "max"
+    me.zoom_cell_sizes = mi.zoom_cell_sizes
+    me.nframes = mi.nframes
+    me.fps = mi.fps
+    me.menu_width = mi.menu_width
+    me.max_wanted_minimap_size = mi.max_wanted_minimap_size
+    me.world_size = mi.world_size
+    me.chunk = mi.chunk
+    me.persistance = mi.persistance
+    me.n_octaves = mi.n_octaves
     me.refresh_derived_parameters()
 
 def build_hmap(me):
@@ -65,42 +106,39 @@ def build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False):
     # change how "round" look cell transitions
     cell_radius_divider = 8
     #we load simple images - they can be of any size, they will be resized
-    water_img = me.load_image("./rendering/tiles/water1.png")
-    sand_img = me.load_image("./rendering/tiles/sand1.jpg")
-    grass_img = me.load_image("./rendering/tiles/grass1.png")
-    grass_img2 = me.load_image("./rendering/tiles/grass8.png")
-    rock_img = me.load_image("./rendering/tiles/rock1.png")
-    black_img = me.get_color_image((0,0,0))
-    white_img = me.get_color_image((255,255,255))
+    water_img = mi.get_image(me, "water")
+    sand_img = mi.get_image(me, "sand")
+    grass_img = mi.get_image(me, "grass")
+    grass_img2 = mi.get_image(me, "grass2")
+    rock_img = mi.get_image(me, "rock")
+    black_img = mi.get_image(me, "black")
+    white_img = mi.get_image(me, "white")
     #mixed images - we superimpose different image to make a new one
-    deepwater_img = tm.get_mixed_tiles(water_img, black_img, 127)
-    mediumwater_img = tm.get_mixed_tiles(water_img, black_img, 50)
-    shore_img = tm.get_mixed_tiles(sand_img, water_img, 127) # alpha of water is 127
-    thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, 200)
+    deepwater_img = tm.get_mixed_tiles(water_img, black_img, mi.deepwater)
+    mediumwater_img = tm.get_mixed_tiles(water_img, black_img, mi.mediumwater)
+    shore_img = tm.get_mixed_tiles(sand_img, water_img, mi.shore) # alpha of water is 127
+    thinsnow_img = tm.get_mixed_tiles(rock_img, white_img, mi.thinsnow)
     ##river_img = tm.get_mixed_tiles(rock_img, water_img, 200)
     river_img = shore_img
     #water movement is obtained by using a delta-x (dx_divider) and delta-y shifts,
     # here dx_divider = 10 and dy_divider = 8
     #hmax=0.1 means one will find deepwater only below height = 0.1
-    ##deepwater = me.add_material("Very deep water", 0.1, deepwater_img, 10, 8)
-    me.add_material("Deep water", 0.4, mediumwater_img, 10, 8)
-    me.add_material("Water", 0.55, water_img, 10, 8)
-    me.add_material("Shallow water", 0.6, shore_img, 10, 8)
-    me.add_material("Sand", 0.62, sand_img)
-    me.add_material("Grass", 0.8, grass_img)
+    ##deepwater = me.add_material("Very deep water", 0.1, deepwater_img, mi.dx_divider, mi.dy_divider)
+    me.add_material("Deep water", mi.hdeepwater, mediumwater_img, mi.dx_divider, mi.dy_divider)
+    me.add_material("Water", mi.hwater, water_img, mi.dx_divider, mi.dy_divider)
+    me.add_material("Shallow water", mi.hshore, shore_img, mi.dx_divider, mi.dy_divider)
+    me.add_material("Sand", mi.hsand, sand_img)
+    me.add_material("Grass", mi.hgrass, grass_img)
     ##me.add_material("Grass", 0.8, grass_img2, id_="Grass2")
-    me.add_material("Rock", 0.83, rock_img)
-    me.add_material("Thin snow", 0.9, thinsnow_img)
-    me.add_material("Snow", float("inf"), white_img)
+    me.add_material("Rock", mi.hrock, rock_img)
+    me.add_material("Thin snow", mi.hthinsnow, thinsnow_img)
+    me.add_material("Snow", mi.hsnow, white_img)
     #Outside material is mandatory. The only thing you can change is black_img
     outside = me.add_material("outside", -1, black_img)
     #this is the heavier computing part, especially if the maximum zoom is large:
     print("Building material couples")
-    #fast option: quality a bit lower, loading time a bit faster
-    #use_beach_tiler option: quality much better, loading time much slower. Need numpy.
-    #load_tilers option: use precomputed textures from disk
     if load_tilers:
-        load_tilers = "./rendering/tiles/precomputed/"
+        load_tilers = mi.precomputed_tiles
     me.build_materials(cell_radius_divider, fast=fast,
                         use_beach_tiler=use_beach_tiler,
                         load_tilers=load_tilers)
@@ -108,11 +146,10 @@ def build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False):
     ##me.save_tilers("./rendering/tiles/precomputed/")
     ##import sys;app.quit();pygame.quit();sys.exit();exit()
 
-
 def build_lm(me):
     """Build the logical map corresponding to me's properties"""
     lm = me.build_map() #build a logical map with me's properties
-    lm.frame_slowness = FRAME_K*me.fps #frame will change every k*FPS [s]
+    lm.frame_slowness = 0.1*me.fps #frame will change every k*FPS [s]
     me.set_map(lm) #we attach the map to the editor
 
 

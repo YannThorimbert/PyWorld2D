@@ -16,6 +16,9 @@ import mapdescription as description
 ##thorpy.application.SHOW_FPS = True
 
 ##mieux illustrer les exemples dans add_static_objects : SEPARER paths de distributors
+#mymap 1 : tout par defaut, meme pas les appels a description.functions(). juste parametres de mymap.
+#mymap 2 : custom
+
 ##Below is shown how to get a path, if you need it for an IA for instance:
     # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
     #                         costs_materials, costs_objects,
