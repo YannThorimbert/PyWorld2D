@@ -177,7 +177,7 @@ def add_static_objects(me):
 
     cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip(True,True)]
 
-    ############################################################################
+def add_roads_and_rivers(me):
     #Here we show how to use the path finder for a given unit of the game
     #Actually, we use it here in order to build cobblestone roads on the map
     costs_materials = {name:1. for name in me.materials}
@@ -197,8 +197,6 @@ def add_static_objects(me):
     for i in range(number_of_roads): #now we add 5 roads
         objs.add_random_road(me.lm, layer2, cobbles, [wood], costs_materials,
                             costs_objects, possible_materials, possible_objects)
-
-    ############################################################################
     #now we build a path for rivers, just like we did with roads.
     costs_materials = {name:1. for name in me.materials}
     ##costs_materials["Snow"] = 10. #unit is 10 times slower in snow

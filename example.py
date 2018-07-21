@@ -23,6 +23,7 @@ import mapdescription as description
     # path = sp.solve()
     # draw_path(path, objects=cobbles, layer=lm)
 
+##essayer en mode load
 
 #finalement: editeur, load/save/quit marche avec tout (dyn objs, stat objs... ? beaucoup tester)
 ##NB static objects : tout est regenerable a partir de seed, donc deja fait!
@@ -77,6 +78,7 @@ print("Building map surfaces")
 description.build_lm(me)
 print("Adding static objects") #seeded ??????????????????????????????????????????????
 description.add_static_objects(me)
+description.add_roads_and_rivers(me)
 print("Adding dynamic objects")
 description.add_dynamic_objects(me)
 #Now that we finished to add static objects, we generate the surface
