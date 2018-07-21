@@ -4,6 +4,8 @@ import rendering.tilers.tilemanager as tm
 from mapobjects.objects import MapObject
 import mapobjects.objects as objs
 
+FRAME_K = 0.1
+
 def configure_map_editor(me):
     """Set the properties of the map editor"""
     ##me.zoom_cell_sizes = [32, 20, 16, 12, 8] #side in pixels of the map's square cells
@@ -12,8 +14,8 @@ def configure_map_editor(me):
     me.nframes = 16 #number of frames per world cycle (impact the need in memory!)
     me.fps = 60 #frame per second
     me.menu_width = 200 #width of the right menu in pixels
-    me.max_wanted_minimap_size = 64 #in pixels
-    me.world_size = (64,16) #in number of cells. Put a power of 2 for tilable maps
+    me.max_wanted_minimap_size = 64 #size of the MINIMAP in pixels
+    me.world_size = (128,128) #in number of cells. Put a power of 2 for tilable maps
     me.chunk = (1310,14) #to give when saving. Neighboring chunk give tilable maps.
     me.persistance = 2.
     me.n_octaves = "max"
@@ -23,7 +25,6 @@ def build_hmap(me):
     """Build the pure height map"""
     hmap = me.build_hmap()
     ##hmap[2][1] = 0.7 #this is how you manually change the height of a given cell
-
     #Here we build the miniature map image
     img_hmap = ng.build_surface(hmap)
     new_img_hmap = pygame.Surface(me.world_size)
@@ -37,7 +38,8 @@ def build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False):
     <fast> : quality a bit lower if true, loading time a bit faster.
     <use_beach_tiler>: quality much better if true, loading buch slower.
     Requires Numpy !
-    <load_tilers> : use precomputed textures from disk.
+    <load_tilers> : use precomputed textures from disk. Very slow but needed if
+    you don't have Numpy but still want beach_tiler.
     """
     #might be chosen by user:
     #cell_radius = cell_size//radius_divider
@@ -78,6 +80,8 @@ def build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False):
     #fast option: quality a bit lower, loading time a bit faster
     #use_beach_tiler option: quality much better, loading time much slower. Need numpy.
     #load_tilers option: use precomputed textures from disk
+    if load_tilers:
+        load_tilers = "./rendering/tiles/precomputed/"
     me.build_materials(cell_radius_divider, fast=fast,
                         use_beach_tiler=use_beach_tiler,
                         load_tilers=load_tilers)
@@ -89,21 +93,21 @@ def build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False):
 def build_lm(me):
     """Build the logical map corresponding to me's properties"""
     lm = me.build_map() #build a logical map with me's properties
-    lm.frame_slowness = 0.1*me.fps #frame will change every k*FPS [s]
+    lm.frame_slowness = FRAME_K*me.fps #frame will change every k*FPS [s]
     me.set_map(lm) #we attach the map to the editor
 
 
 def add_static_objects(me):
-    #1) We use another hmap to decide where we want trees
-    S = len(me.lm)
+    #1) We use another hmap to decide where we want trees (or any other object)
+##    S = len(me.lm) lerreur est ici!!!!
+    S = len(me.hmap)
     forest_map = ng.generate_terrain(S, n_octaves=None, persistance=1.7, chunk=(12,23))
     ng.normalize(forest_map)
     #we can use as many layers as we want.
     #layer2 is a superimposed map on which we decide to blit some static objects:
     layer2 = me.add_layer()
     #3) We build the objects that we want.
-    # its up to you to decide what should be the size of the object...
-    # the size is set through the imgs_dict argument of get_distributor
+    # its up to you to decide what should be the size of the object (3rd arg)
     fir1 = MapObject(me,"./mapobjects/images/yar_fir1.png","forest",1.5)
     fir2 = MapObject(me,"./mapobjects/images/yar_fir2.png","forest",1.5)
     fir3 = MapObject(me,"./mapobjects/images/firsnow2.png","forest",1.5)
@@ -118,7 +122,7 @@ def add_static_objects(me):
     village3 = MapObject(me,"./mapobjects/images/rgbfumes2.png","village",2.6)
     village4 = MapObject(me,"./mapobjects/images/rgbfumes3.png","village",2.6)
     ##village5 = MapObject(me,"./mapobjects/images/rgbfumes4.png","village",2.2)
-    village1.set_same_type([village2, village3, village4])
+    village1.set_same_type([village2, village3, village4]) #3 images for 1 object
     #
     cobble = MapObject(me,"./mapobjects/images/cobblestone2.png","cobblestone",1.)
     wood = MapObject(me,"./mapobjects/images/wood1.png","wooden bridge",1.)
@@ -134,7 +138,7 @@ def add_static_objects(me):
     for v in[village1,village2,village3,village4]:
         v.max_relpos = [0., 0.]
         v.min_relpos = [0., 0.]
-    #4) we add the objects via distributors
+    #4) we add the objects via distributors, to add them randomly in a nice way
     distributor = objs.get_distributor(me, [fir1, fir2, tree], forest_map, ["Grass","Rock"])
     distributor.distribute_objects(layer2)
 
@@ -148,7 +152,6 @@ def add_static_objects(me):
                                     forest_map, ["Thin snow","Snow"])
     distributor.homogeneity = 0.5
     distributor.distribute_objects(layer2)
-
 
     distributor = objs.get_distributor(me, [palm, palm.flip()], forest_map, ["Sand"])
     distributor.max_density = 1
@@ -174,12 +177,12 @@ def add_static_objects(me):
 
     cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip(True,True)]
 
-    ################################################################################
+    ############################################################################
     #Here we show how to use the path finder for a given unit of the game
-
+    #Actually, we use it here in order to build cobblestone roads on the map
     costs_materials = {name:1. for name in me.materials}
     costs_materials["Snow"] = 10. #unit is 10 times slower in snow
-    costs_materials["Thin snow"] = 2.
+    costs_materials["Thin snow"] = 2. #twice slower on thin snow...
     costs_materials["Sand"] = 2.
     for name in me.materials:
         if "water" in name.lower():
@@ -190,12 +193,13 @@ def add_static_objects(me):
     possible_materials=list(me.materials)
     #Objects allowed
     possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
-
-    for i in range(5):
+    number_of_roads = 5
+    for i in range(number_of_roads): #now we add 5 roads
         objs.add_random_road(me.lm, layer2, cobbles, [wood], costs_materials,
-                         costs_objects, possible_materials, possible_objects)
+                            costs_objects, possible_materials, possible_objects)
 
-
+    ############################################################################
+    #now we build a path for rivers, just like we did with roads.
     costs_materials = {name:1. for name in me.materials}
     ##costs_materials["Snow"] = 10. #unit is 10 times slower in snow
     ##costs_materials["Thin snow"] = 2.
@@ -209,12 +213,6 @@ def add_static_objects(me):
     for i in range(5):
         objs.add_random_river(me, me.lm, river_img, costs_materials, costs_objects,
                                 possible_materials, possible_objects)
-
-    # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
-    #                         costs_materials, costs_objects,
-    #                         possible_materials, possible_objects)
-    # path = sp.solve()
-    # draw_path(path, objects=cobbles, layer=lm)
 
 
 def add_dynamic_objects(me): #here we add two units for instance

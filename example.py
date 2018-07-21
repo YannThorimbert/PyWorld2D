@@ -15,13 +15,22 @@ import mapdescription as description
 
 ##thorpy.application.SHOW_FPS = True
 
-#toute la partie du building qui est dans example.py (ici) devrait migrer ailleurs dans un fichier world_building!
-#ou alors faire le laad en plusieurs partie separees par bcp de lignes
-#==> ou alors vraiment faire un fichier de description du monde, ce serait + propre.
+##mieux illustrer les exemples dans add_static_objects : SEPARER paths de distributors
+##Below is shown how to get a path, if you need it for an IA for instance:
+    # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
+    #                         costs_materials, costs_objects,
+    #                         possible_materials, possible_objects)
+    # path = sp.solve()
+    # draw_path(path, objects=cobbles, layer=lm)
+
 
 #finalement: editeur, load/save/quit marche avec tout (dyn objs, stat objs... ? beaucoup tester)
 ##NB static objects : tout est regenerable a partir de seed, donc deja fait!
 #nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
+
+#proposer un ciel + nuages (cf perigeo) au lieu de mer ; le mettre par defaut dans le noir ?
+
+#quand curseur passe au dessus d'un village, ajouter (village) a cote du material dans la description de fenetre de droite
 
 #alert pour click droit sur units quand click gauche sur units, et pour click gauche sur terrain quand click droit sur terrain
 
@@ -45,17 +54,20 @@ import mapdescription as description
 #quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
 #info sur material/unit quand on click dessus dans cell/unit_info.em
 
-W,H = 800, 600 #screen size you want
+W,H = 800, 600 #screen size
 app = thorpy.Application((W,H))
 me = MapEditor("map123") #me stands for "Map Editor" everywhere in PyWorld2D package.
 
-TO_FILE = True
-FROM_FILE = False
+TO_FILE = False #save when leaving
+FROM_FILE = False #load at building
 if FROM_FILE:
     savefile = open(me.get_fn(), "rb")
     io.from_file_base(savefile, me)
 else:
     description.configure_map_editor(me)
+
+#in mapdescription.py you can modify all the properties of the map !
+#just check the different functions and play with the variables
 
 print("Building hmap")
 description.build_hmap(me)
@@ -134,5 +146,5 @@ app.quit()
 
 #pour fs: chateaux, murailles, units: (herite de objet dynamique)
 
-#pour fs : vu que statis prennet de la place, on considere qu'on est dans un village quand on est pres de lui ?
+#pour fs : vu que statics prennet de la place, on considere qu'on est dans un village quand on est pres de lui ?
 # ou sinon relpos tres petit...
