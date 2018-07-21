@@ -4,6 +4,25 @@ import rendering.tilers.tilemanager as tm
 from mapobjects.objects import MapObject
 import mapobjects.objects as objs
 
+
+class MapInitializer:
+
+    def __init__(self, name):
+        self.name = name #name of the map
+        #terrain generation:
+        self.world_size = (128,128) #in number of cells. Put a power of 2 for tilable maps
+        self.chunk = (1310,14) #Used for random generation. To give when saving. Neighboring chunk give tilable maps.
+        self.persistance = 2. #parameter of the random terrain generation.
+        self.n_octaves = "max" #parameter of the random terrain generation.
+        #graphical options:
+        self.zoom_cell_sizes = [32, 16, 8] #size of one cell for the different zoom levels.
+        self.nframes = 16 #number of frames per world cycle (impacts memory requirement!)
+        self.fps = 60 #frame per second
+        self.menu_width = 200 #width of the right menu in pixels
+        self.max_wanted_minimap_size = 64 #size of the MINIMAP in pixels
+        #
+
+
 FRAME_K = 0.1
 
 def configure_map_editor(me):
@@ -177,7 +196,7 @@ def add_static_objects(me):
 
     cobbles = [cobble, cobble.flip(True,False), cobble.flip(False,True), cobble.flip(True,True)]
 
-def add_roads_and_rivers(me):
+    ############################################################################
     #Here we show how to use the path finder for a given unit of the game
     #Actually, we use it here in order to build cobblestone roads on the map
     costs_materials = {name:1. for name in me.materials}
