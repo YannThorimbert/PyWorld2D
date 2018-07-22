@@ -74,7 +74,7 @@ class MapEditor:
         self.primitive_types = {}
 
     def get_fn(self):
-        return self.name+".map"
+        return self.name.replace(" ","_")+".map"
 
     def build_gui_elements(self): #worst function ever
         e_hmap = thorpy.Image.make(self.cam.img_hmap)

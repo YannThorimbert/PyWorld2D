@@ -10,10 +10,13 @@ from mapobjects.objects import MapObject
 import saveload.io as io
 from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
-import mapdescription as description
-
+import mapbuilding
+import mymaps
 
 ##thorpy.application.SHOW_FPS = True
+
+#animation : mettre en dehors d'une fonction
+#d'une facon generale, au moins mettre ici des textes menant vers les lignes des trucs caches dans des fonctions
 
 ##mieux illustrer les exemples dans add_static_objects : SEPARER paths de distributors
 #mymap 1 : tout par defaut, meme pas les appels a description.functions(). juste parametres de mymap.
@@ -27,6 +30,8 @@ import mapdescription as description
     # draw_path(path, objects=cobbles, layer=lm)
 
 ##essayer en mode load
+
+#harmoniser les mapbuilding VS map_initializer dans le code ci-dessous, par des wrappers
 
 #finalement: editeur, load/save/quit marche avec tout (dyn objs, stat objs... ? beaucoup tester)
 ##NB static objects : tout est regenerable a partir de seed, donc deja fait!
@@ -60,30 +65,34 @@ import mapdescription as description
 
 W,H = 800, 600 #screen size
 app = thorpy.Application((W,H))
-me = MapEditor("map123") #me stands for "Map Editor" everywhere in PyWorld2D package.
 
-TO_FILE = False #save when leaving
-FROM_FILE = False #load at building
-if FROM_FILE:
-    savefile = open(me.get_fn(), "rb")
-    io.from_file_base(savefile, me)
+TO_FILE = False #save last map when leaving
+FROM_FILE = False #load a previously saved map named "My saved world" for demo
+
+if not FROM_FILE: #use a map that I've set for you. Go and see how to tune it:
+    map_initializer = mymaps.demo_map1 #go in mymaps.py and PLAY with PARAMS !!!
+    me = map_initializer.configure_map_editor() #me = "Map Editor"
 else:
-    description.configure_map_editor(me)
+    me = MapEditor("My saved world") #me stands for "Map Editor" everywhere in PyWorld2D package.
+    savefile = open(me.get_fn(), "rb")
+    map_initializer = io.from_file_base(savefile, me, map_initializer)
+    todo
+
 
 #in mapdescription.py you can modify all the properties of the map !
 #just check the different functions and play with the variables
 
 print("Building hmap")
-description.build_hmap(me)
-print("Building tilers")
-description.build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False)
+mapbuilding.build_hmap(me)
+print("Building tilers") #see the docstring of the function
+map_initializer.build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False)
 print("Building map surfaces")
-description.build_lm(me)
-print("Adding static objects") #seeded ??????????????????????????????????????????????
-description.add_static_objects(me)
+mapbuilding.build_lm(me)
+print("Adding static objects")
+map_initializer.add_static_objects(me)
 print("Adding dynamic objects")
-description.add_dynamic_objects(me)
-#Now that we finished to add static objects, we generate the surface
+mapbuilding.add_dynamic_objects(me)
+#Now that we finished to add objects, we generate the pygame surface
 print("Building surfaces") #this is also a long process
 me.build_surfaces()
 
