@@ -1,3 +1,7 @@
+"""Yann Thorimbert - 2018
+yann.thorimbert@gmail.com
+"""
+from __future__ import print_function, division
 import random, math
 import pygame
 from pygame.math import Vector2 as V2
@@ -10,58 +14,33 @@ from mapobjects.objects import MapObject
 import saveload.io as io
 from ia.path import BranchAndBoundForMap
 from editor.mapeditor import MapEditor
-import mapbuilding
+from editor.mapbuilding import MapInitializer
 import mymaps
 
-##thorpy.application.SHOW_FPS = True
 
-#animation : mettre en dehors d'une fonction
-#d'une facon generale, au moins mettre ici des textes menant vers les lignes des trucs caches dans des fonctions
+##add dynamic objects
 
-##mieux illustrer les exemples dans add_static_objects : SEPARER paths de distributors
-#mymap 1 : tout par defaut, meme pas les appels a description.functions(). juste parametres de mymap.
-#mymap 2 : custom
+###mymap 1 : tout par defaut, meme pas les appels a description.functions(). juste parametres de mymap.
+###mymap 2 : custom
 
-##Below is shown how to get a path, if you need it for an IA for instance:
-    # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
-    #                         costs_materials, costs_objects,
-    #                         possible_materials, possible_objects)
-    # path = sp.solve()
-    # draw_path(path, objects=cobbles, layer=lm)
+##essayer en mode load : faire load et save du map_initializer...
 
-##essayer en mode load
+###finalement: editeur, load/save/quit marche avec tout (dyn objs, stat objs... ? beaucoup tester)
 
-#harmoniser les mapbuilding VS map_initializer dans le code ci-dessous, par des wrappers
+###ne pas oublier d'ajouter thorpy
 
-#finalement: editeur, load/save/quit marche avec tout (dyn objs, stat objs... ? beaucoup tester)
-##NB static objects : tout est regenerable a partir de seed, donc deja fait!
-#nb: l'editeur permet de faire terrain (hmap), materials, objects (dyn/statics)
+###petit ecran de chargement (mettre direct dans build_map() ???)
 
-#proposer un ciel + nuages (cf perigeo) au lieu de mer ; le mettre par defaut dans le noir ?
-
-#quand curseur passe au dessus d'un village, ajouter (village) a cote du material dans la description de fenetre de droite
-
-#alert pour click droit sur units quand click gauche sur units, et pour click gauche sur terrain quand click droit sur terrain
-
-#meilleur wood : taper wood texture pixel art sur google. Wooden planks?
-
-#ne pas oublier d'ajouter thorpy
-
-#quand meme tester sans numpy, parce que bcp de modules l'importent (surfarray)
-#tester python2
+###quand meme tester sans numpy, parce que bcp de modules l'importent (surfarray)
+###tester python2
 
 
-#*********************************v2:
-#herbe animee
-#ombres des objets en mode pil
-#ridged noise
-#effets: fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
-#
-#couples additionnels (ex: shallow_water with all the others...) ajoute au moment de la creation de riviere ?
-#comment gerer brulage d'arbres ? Si ca doit changer l'architecture, y penser maintenant...
-### ==> reconstruire localement le layer concerne
-#quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
-#info sur material/unit quand on click dessus dans cell/unit_info.em
+################################################################################
+#IMPORTANT : probably almost all you need is inside mymaps.py, which provide
+#examples about map configuration.
+
+#At the end of this file, I provide some ways to do things like use a path finding
+#algorithm, etc.
 
 W,H = 800, 600 #screen size
 app = thorpy.Application((W,H))
@@ -70,7 +49,8 @@ TO_FILE = False #save last map when leaving
 FROM_FILE = False #load a previously saved map named "My saved world" for demo
 
 if not FROM_FILE: #use a map that I've set for you. Go and see how to tune it:
-    map_initializer = mymaps.demo_map1 #go in mymaps.py and PLAY with PARAMS !!!
+##    map_initializer = mymaps.demo_map1 #go in mymaps.py and PLAY with PARAMS !!!
+    map_initializer = mymaps.demo_map2 #go in mymaps.py and PLAY with PARAMS !!!
     me = map_initializer.configure_map_editor() #me = "Map Editor"
 else:
     me = MapEditor("My saved world") #me stands for "Map Editor" everywhere in PyWorld2D package.
@@ -78,24 +58,12 @@ else:
     map_initializer = io.from_file_base(savefile, me, map_initializer)
     todo
 
-
-#in mapdescription.py you can modify all the properties of the map !
-#just check the different functions and play with the variables
-
-print("Building hmap")
-mapbuilding.build_hmap(me)
-print("Building tilers") #see the docstring of the function
-map_initializer.build_materials(me, fast=False, use_beach_tiler=True, load_tilers=False)
-print("Building map surfaces")
-mapbuilding.build_lm(me)
-print("Adding static objects")
-map_initializer.add_static_objects(me)
-print("Adding dynamic objects")
-mapbuilding.add_dynamic_objects(me)
-#Now that we finished to add objects, we generate the pygame surface
-print("Building surfaces") #this is also a long process
-me.build_surfaces()
-
+#<fast> : quality a bit lower if true, loading time a bit faster.
+#<use_beach_tiler>: quality much better if true, loading buch slower.
+#                   Requires Numpy !
+#<load_tilers> : use precomputed textures from disk. Very slow but needed if
+#               you don't have Numpy but still want beach_tiler.
+map_initializer.build_map(me, fast=False, use_beach_tiler=True, load_tilers=False)
 
 #ou sont definis les deux units ?
 ################################################################################
@@ -109,7 +77,6 @@ me.lm.cells[15][14].set_name("My top cell")
 ################################################################################
 print("Building GUI")
 me.build_gui_elements()
-
 
 def func_reac_time(): #here put wathever you want, in addition to me's reac
     me.func_reac_time()
@@ -134,6 +101,11 @@ me.menu_button.user_func = thorpy.launch_blocking
 me.menu_button.user_params = {"element":launched_menu}
 # ##############################################################################
 
+###demo of how to access things:
+##print("Demo for cell at 36;86:")
+##cell = me.lm.get_cell_at(36,86)
+##cell.set_name("My own cell")
+##print("Name:",cell.name,", Objects",[o.name for o in cell.objects]) #cell in x=36, y=86
 
 #me.e_box includes many default reactions. You can remove them as follow:
 #remove <g> key:
@@ -155,9 +127,42 @@ m.play()
 
 app.quit()
 
+##Below is shown how to get a path, if you need it for an IA for instance:
+    # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
+    #                         costs_materials, costs_objects,
+    #                         possible_materials, possible_objects)
+    # path = sp.solve()
+    # draw_path(path, objects=cobbles, layer=lm)
+
+
+
+###############################################################################
 #pour FS: ajouter un info box quand on click sur material name, quand on click sur une cellule
 
 #pour fs: chateaux, murailles, units: (herite de objet dynamique)
 
 #pour fs : vu que statics prennet de la place, on considere qu'on est dans un village quand on est pres de lui ?
 # ou sinon relpos tres petit...
+
+
+#
+
+#*********************************v2:
+#proposer un ciel + nuages (cf perigeo) au lieu de mer ; le mettre par defaut dans le noir ?
+
+#quand curseur passe au dessus d'un village, ajouter (village) a cote du material dans la description de fenetre de droite
+
+#alert pour click droit sur units quand click gauche sur units, et pour click gauche sur terrain quand click droit sur terrain
+
+#meilleur wood : taper wood texture pixel art sur google. Wooden planks?
+#nb: l'editeur permet de faire terrain (changer hauteur) (hmap), materials, objects (dyn/statics)
+#herbe animee
+#ombres des objets en mode pil
+#ridged noise
+#effets: fumee villages, ronds dans l'eau, herbe dans pieds, traces dans neige et sable, precipitations
+#
+#couples additionnels (ex: shallow_water with all the others...) ajoute au moment de la creation de riviere ?
+#comment gerer brulage d'arbres ? Si ca doit changer l'architecture, y penser maintenant...
+### ==> reconstruire localement le layer concerne
+#quand res + grande, nb de couples peut augmenter! ==> automatiser sur la base des materiaux existants
+#info sur material/unit quand on click dessus dans cell/unit_info.em

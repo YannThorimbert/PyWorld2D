@@ -131,7 +131,7 @@ class MapInitializer:
         me.refresh_derived_parameters()
         return me
 
-    def build_materials(self, me, fast=False, use_beach_tiler=True, load_tilers=False):
+    def build_materials(self, me, fast, use_beach_tiler, load_tilers):
         """
         <fast> : quality a bit lower if true, loading time a bit faster.
         <use_beach_tiler>: quality much better if true, loading buch slower.
@@ -217,18 +217,12 @@ class MapInitializer:
         cobble = MapObject(me,self.cobble,"cobblestone",self.cobble_size)
         wood = MapObject(me,self.wood,"wooden bridge",self.wood_size)
         #
-        magic = MapObject(me,
-                         [  "./mapobjects/images/wood1.png",
-                            "./mapobjects/images/yar_bush.png"],
-                         "magic",1.)
-        #
-        gru = objs.put_static_obj(magic, me.lm, (12,12), self.layer2)
-        gru.frame_slowness = 12
+##        anim_tree = MapObject(me, [self.fir1]*3+[self.fir2]*3, "My animated tree",1.)
+##        anim_tree = objs.put_static_obj(anim_tree, me.lm, (12,12), self.layer2)
         #
         for v in[village1,village2,village3,village4]:
             v.max_relpos = [0., 0.]
             v.min_relpos = [0., 0.]
-
         #4) we add the objects via distributors, to add them randomly in a nice way
         #normal forest
         distributor = objs.get_distributor(me, [fir1, fir2, tree],
@@ -305,6 +299,29 @@ class MapInitializer:
         for i in range(5):
             objs.add_random_river(me, me.lm, river_img, costs_materials, costs_objects,
                                     possible_materials, possible_objects)
+
+
+    def build_map(self, me, fast=False, use_beach_tiler=True, load_tilers=False):
+        """
+        <fast> : quality a bit lower if true, loading time a bit faster.
+        <use_beach_tiler>: quality much better if true, loading buch slower.
+        Requires Numpy !
+        <load_tilers> : use precomputed textures from disk. Very slow but needed if
+        you don't have Numpy but still want beach_tiler.
+        """
+        print("Building hmap")
+        build_hmap(me)
+        print("Building tilers") #see the docstring of the function
+        self.build_materials(me, fast, use_beach_tiler, load_tilers)
+        print("Building map surfaces")
+        build_lm(me)
+        print("Adding static objects")
+        self.add_static_objects(me)
+        print("Adding dynamic objects")
+        add_dynamic_objects(me)
+        #Now that we finished to add objects, we generate the pygame surface
+        print("Building surfaces") #this is also a long process
+        me.build_surfaces()
 
 def build_lm(me):
     """Build the logical map corresponding to me's properties"""
