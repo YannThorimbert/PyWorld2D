@@ -72,117 +72,6 @@ def remove_objects(cell, layer):
         cell.objects = []
 
 
-
-
-##class MapObject:
-##    current_id = 1
-##
-##    def __init__(self, editor, fn, name="", factor=1., relpos=(0,0), build=True,
-##                 new_type=True):
-##        """Object that looks the same at each frame"""
-##        self.editor = editor
-##        ref_size = editor.zoom_cell_sizes[0]
-##        if fn:
-##            if isinstance(fn,str):
-##                img = thorpy.load_image(fn, colorkey=(255,255,255))
-##            else:
-##                img = fn
-##            img = thorpy.get_resized_image(img, (factor*ref_size,)*2)
-##        else:
-##            img = None
-##        self.factor = factor
-##        self.original_img = img
-##        self.relpos = [0,0]
-##        self.imgs = None
-##        self.cell = None
-##        self.name = name
-##        self.ncopies = 0
-##        self.min_relpos = [-0.4, -0.4]
-##        self.max_relpos = [0.4,   0.4]
-####        self.min_relpos = [-0.1, -0.1]
-####        self.max_relpos = [0.1,   0.1]
-##        self.quantity = 1 #not necessarily 1 for units
-##        if build and fn:
-##            self.build_imgs()
-##        if new_type:
-##            self.object_type = MapObject.current_id
-##            MapObject.current_id += 1
-##        else:
-##            self.object_type = None
-##
-##    def ypos(self):
-##        h = self.original_img.get_size()[1]
-##        s = self.editor.zoom_cell_sizes[0]
-##        return self.cell.coord[1]  + 0.5*h/s + self.relpos[1]
-##
-##    def randomize_relpos(self):
-##        self.relpos[0] = self.min_relpos[0] +\
-##                         random.random()*(self.max_relpos[0]-self.min_relpos[0])
-##        self.relpos[1] = self.min_relpos[1] +\
-##                         random.random()*(self.max_relpos[1]-self.min_relpos[1])
-##
-##    def copy(self):
-##        """The copy references the same images as the original !"""
-##        self.ncopies += 1
-##        obj = MapObject(self.editor, "", self.name, self.factor,
-##                        list(self.relpos), new_type=False)
-##        obj.original_img = self.original_img
-##        obj.imgs = self.imgs
-##        obj.min_relpos = list(self.min_relpos)
-##        obj.max_relpos = list(self.max_relpos)
-##        obj.object_type = self.object_type
-##        return obj
-##
-##    def deep_copy(self):
-##        obj = MapObject(self.editor, "", self.name, self.factor,
-##                        list(self.relpos), new_type=False)
-##        obj.original_img = self.original_img.copy()
-##        obj.imgs = [i.copy() for i in self.imgs]
-##        obj.min_relpos = list(self.min_relpos)
-##        obj.max_relpos = list(self.max_relpos)
-##        obj.object_type = self.object_type
-##        return obj
-##
-##
-##    def flip(self, x=True, y=False):
-##        obj = self.deep_copy()
-##        obj.original_img = pygame.transform.flip(obj.original_img, x, y)
-##        for i in range(len(obj.imgs)):
-##            obj.imgs[i] = pygame.transform.flip(obj.imgs[i], x, y)
-##        return obj
-##
-##    def add_copy_on_cell(self, cell):
-##        copy = self.copy()
-##        copy.cell = cell
-##        cell.objects.append(copy)
-##        return copy
-##
-##    def add_unit_on_cell(self, cell):
-##        assert cell.unit is None
-##        copy = self.copy()
-##        copy.cell = cell
-##        cell.unit = copy
-##        return copy
-##
-##    def build_imgs(self):
-##        W,H = self.original_img.get_size()
-##        w0 = float(self.editor.zoom_cell_sizes[0])
-##        imgs = []
-##        for w in self.editor.zoom_cell_sizes:
-##            factor = w/w0
-##            zoom_size = (int(factor*W), int(factor*H))
-##            img = pygame.transform.scale(self.original_img, zoom_size)
-##            imgs.append(img)
-##        self.imgs = imgs
-##
-##    def get_current_img(self):
-##        return self.imgs[self.cell.map.current_zoom_level]
-##
-##    def set_same_type(self, objs):
-##        for o in objs:
-##            o.object_type = self.object_type
-
-
 class MapObject:
     current_id = 1
     saved_attrs = ["name", "quantity", "fns", "factor", "new_type", "relpos", "build"]
@@ -334,12 +223,8 @@ class MapObject:
         for o in objs:
             o.object_type = self.object_type
 
-
-
-def distance(coord1, coord2):
-    return abs(coord1[0]-coord2[0]) + abs(coord1[1]-coord2[1])
-
-
+    def distance_to(self, another_obj):
+        return self.cell.get_distance_to(another_obj.cell)
 
 
 def find_free_next_to(lm, coord):
@@ -357,8 +242,8 @@ def add_random_road(lm, layer,
                     cobbles, woods,
                     costs_materials, costs_objects,
                     possible_materials, possible_objects,
-                    min_length = 10,
-                    max_length = 30):
+                    min_length,
+                    max_length):
     """Computes and draw a random road between two random villages."""
     villages = [o for o in layer.static_objects if "village" in o.name]
     v1 = random.choice(villages)
@@ -368,9 +253,7 @@ def add_random_road(lm, layer,
         villages_at_right_distance = []
         for v2 in villages:
             if v2 is not v1:
-                x1,y1 = c1.coord
-                x2,y2 = v2.cell.coord
-                if min_length <= abs(x1-x2)+abs(y1-y2) <= max_length:
+                if min_length <= c1.distance_to(v2.cell) <= max_length:
                     villages_at_right_distance.append(v2)
         v2 = random.choice(villages_at_right_distance)
         c2 = find_free_next_to(lm, v2.cell.coord)
@@ -385,7 +268,8 @@ def add_random_road(lm, layer,
 def add_random_river(me, layer,
                     img_fullsize,
                     costs_materials, costs_objects,
-                    possible_materials, possible_objects):
+                    possible_materials, possible_objects,
+                    min_length, max_length):
     """Computes and draw a random river."""
     lm = me.lm
     #0)build tiles
@@ -396,7 +280,7 @@ def add_random_river(me, layer,
                                             lm.nframes,
                                             dx*lm.nframes, dy*lm.nframes, #dx, dy
                                             sin=False)
-    #1) pick one random source and one random end in water:
+    #1) pick one random source
     for i in range(1000):
         x,y = random.randint(0,lm.nx-1), random.randint(0,lm.ny-1)
         cell_water = lm.cells[x][y]
@@ -404,6 +288,7 @@ def add_random_river(me, layer,
             break
     else:
         return
+    #2) pick one random end
     for i in range(1000):
         x,y = random.randint(0,lm.nx-1), random.randint(0,lm.ny-1)
         cell_land = lm.cells[x][y]
@@ -411,13 +296,19 @@ def add_random_river(me, layer,
             break
     else:
         return
+    #3) verify distance
+    print("DISTANCE = ", cell_water.distance_to(cell_land))
+    if min_length <=  cell_water.distance_to(cell_land) <= max_length:
+        pass
+    else:
+        return
     sp = BranchAndBoundForMap(lm, cell_land, cell_water,
                             costs_materials, costs_objects,
                             possible_materials, possible_objects)
     path = sp.solve()
-    #2) change the end to first shallow cell
+    #4) change the end to first shallow shore cell
     actual_path = []
-    for cell in path: #mettre riviere qui bouge (mais besoin d'objets frames)
+    for cell in path:
         actual_path.append(cell)
         if "water" in cell.material.name.lower():
             break
@@ -430,12 +321,11 @@ def add_random_river(me, layer,
                         break
             if next_to_water:
                 break
-
     #
     objs = {}
     for key in imgs:
         objs[key] = MapObject(me, imgs[key][0], "River", 1.)
-    #3) add river cells to map and layer
+    #5) add river cells to map and layer
     for i,cell in enumerate(actual_path):
         dx, dy = 0, 0
         if i > 0:

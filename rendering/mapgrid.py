@@ -56,6 +56,9 @@ class LogicalCell:
                 return True
         return False
 
+    def distance_to(self, other):
+        return abs(self.coord[0]-other.coord[0]) + abs(self.coord[1]-other.coord[1])
+
 class WhiteLogicalCell:
 
     def __init__(self, logical_map):

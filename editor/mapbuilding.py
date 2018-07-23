@@ -1,4 +1,4 @@
-import pygame
+import pygame, thorpy
 import thornoise.purepython.noisegen as ng
 import rendering.tilers.tilemanager as tm
 from mapobjects.objects import MapObject
@@ -103,6 +103,12 @@ class MapInitializer:
         self.wood = "./mapobjects/images/wood1.png"
         self.wood_size = 1.
         #if you want to add objects by yourself, look at add_static_objects(self)
+        self.min_road_length = 10
+        self.max_road_length = 40
+        self.max_number_of_roads = 5
+        self.min_river_length = 10
+        self.max_river_length = 60
+        self.max_number_of_rivers = 5
         ############ End of user-defined parameters
         self.forest_map = None
         self.layer2 = None
@@ -281,27 +287,27 @@ class MapInitializer:
         possible_materials=list(me.materials)
         #Objects allowed
         possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
-        number_of_roads = 5
-        for i in range(number_of_roads): #now we add 5 roads
+        for i in range(self.max_number_of_roads): #now we add 5 roads
             objs.add_random_road(me.lm, self.layer2, cobbles, [wood], costs_materials,
-                                costs_objects, possible_materials, possible_objects)
+                                costs_objects, possible_materials, possible_objects,
+                                min_length=self.min_road_length,
+                                max_length=self.max_road_length)
         #now we build a path for rivers, just like we did with roads.
         costs_materials = {name:1. for name in me.materials}
-        ##costs_materials["Snow"] = 10. #unit is 10 times slower in snow
-        ##costs_materials["Thin snow"] = 2.
-        ##costs_materials["Sand"] = 2.
-        ##costs_objects = {bush.object_type: 2.}
         #Materials allowed (here we allow water because we add bridges)
         possible_materials=list(me.materials)
         #Objects allowed
         possible_objects=[]
         river_img = me.get_material_image("Shallow water")
-        for i in range(5):
+        for i in range(self.max_number_of_rivers): #try to add 5 rivers
             objs.add_random_river(me, me.lm, river_img, costs_materials, costs_objects,
-                                    possible_materials, possible_objects)
+                                    possible_materials, possible_objects,
+                                    min_length=self.min_river_length,
+                                    max_length=self.max_river_length)
 
 
-    def build_map(self, me, fast=False, use_beach_tiler=True, load_tilers=False):
+    def build_map(self, me, fast=False, use_beach_tiler=True, load_tilers=False,
+                    graphical_load=True):
         """
         <fast> : quality a bit lower if true, loading time a bit faster.
         <use_beach_tiler>: quality much better if true, loading buch slower.
@@ -309,18 +315,42 @@ class MapInitializer:
         <load_tilers> : use precomputed textures from disk. Very slow but needed if
         you don't have Numpy but still want beach_tiler.
         """
+        if graphical_load: #just ignore this- nothing to do with map configuration
+            screen = thorpy.get_screen()
+            screen.fill((255,255,255))
+            loading_bar = thorpy.LifeBar.make("Building height map...")
+            loading_bar.set_life(0.)
+            loading_bar.center(element="screen")
+            loading_bar.blit()
+            pygame.display.flip()
         print("Building hmap")
         build_hmap(me)
         print("Building tilers") #see the docstring of the function
+        if graphical_load:
+            screen.blit(thorpy.get_resized_image(me.cam.img_hmap, screen.get_size(), max), (0,0))
+            loading_bar.set_text("Building tilers...")
+            loading_bar.set_life(0.1)
+            loading_bar.blit()
+            pygame.display.flip()
         self.build_materials(me, fast, use_beach_tiler, load_tilers)
         print("Building map surfaces")
         build_lm(me)
         print("Adding static objects")
+        if graphical_load:
+            loading_bar.set_text("Adding static objects...")
+            loading_bar.set_life(0.4)
+            loading_bar.blit()
+            pygame.display.flip()
         self.add_static_objects(me)
         print("Adding dynamic objects")
         add_dynamic_objects(me)
         #Now that we finished to add objects, we generate the pygame surface
         print("Building surfaces") #this is also a long process
+        if graphical_load:
+            loading_bar.set_text("Building pygame surfaces...")
+            loading_bar.set_life(0.7)
+            loading_bar.blit()
+            pygame.display.flip()
         me.build_surfaces()
 
 def build_lm(me):

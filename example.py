@@ -25,15 +25,9 @@ import mymaps
 
 ##essayer en mode load : faire load et save du map_initializer...
 
-###finalement: editeur, load/save/quit marche avec tout (dyn objs, stat objs... ? beaucoup tester)
+###tester save/load
 
 ###ne pas oublier d'ajouter thorpy
-
-###petit ecran de chargement (mettre direct dans build_map() ???)
-
-###quand meme tester sans numpy, parce que bcp de modules l'importent (surfarray)
-###tester python2
-
 
 ################################################################################
 #IMPORTANT : probably almost all you need is inside mymaps.py, which provide
@@ -50,10 +44,11 @@ FROM_FILE = False #load a previously saved map named "My saved world" for demo
 
 if not FROM_FILE: #use a map that I've set for you. Go and see how to tune it:
 ##    map_initializer = mymaps.demo_map1 #go in mymaps.py and PLAY with PARAMS !!!
-    map_initializer = mymaps.demo_map2 #go in mymaps.py and PLAY with PARAMS !!!
+##    map_initializer = mymaps.demo_map2 #go in mymaps.py and PLAY with PARAMS !!!
+    map_initializer = mymaps.demo_map3 #go in mymaps.py and PLAY with PARAMS !!!
     me = map_initializer.configure_map_editor() #me = "Map Editor"
 else:
-    me = MapEditor("My saved world") #me stands for "Map Editor" everywhere in PyWorld2D package.
+    me = MapEditor("My saved world")
     savefile = open(me.get_fn(), "rb")
     map_initializer = io.from_file_base(savefile, me, map_initializer)
     todo
@@ -128,11 +123,17 @@ m.play()
 app.quit()
 
 ##Below is shown how to get a path, if you need it for an IA for instance:
-    # sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
-    #                         costs_materials, costs_objects,
-    #                         possible_materials, possible_objects)
-    # path = sp.solve()
-    # draw_path(path, objects=cobbles, layer=lm)
+##from ia.path import BranchAndBoundForMap
+##costs_materials = {name:1. for name in me.materials}
+##costs_materials["Snow"] = 10. #unit is 10 times slower in snow
+##costs_materials["Thin snow"] = 2.
+##costs_materials["Sand"] = 2.
+##costs_objects = {bush.object_type: 2.}
+##sp = BranchAndBoundForMap(lm, lm.cells[15][15], lm.cells[8][81],
+##                 costs_materials, costs_objects,
+##                 possible_materials, possible_objects)
+##path = sp.solve()
+##draw_path(path, objects=cobbles, layer=lm)
 
 
 
@@ -148,6 +149,8 @@ app.quit()
 #
 
 #*********************************v2:
+###quand meme tester sans numpy, parce que bcp de modules l'importent (surfarray)
+###tester python2
 #proposer un ciel + nuages (cf perigeo) au lieu de mer ; le mettre par defaut dans le noir ?
 
 #quand curseur passe au dessus d'un village, ajouter (village) a cote du material dans la description de fenetre de droite
