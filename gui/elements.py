@@ -209,7 +209,7 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
         self.e_img = thorpy.Image.make(pygame.Surface(cell_size))
 ##        self.e_img = thorpy.Image.make(pygame.Surface((1,1)))
         self.blank_img = pygame.Surface(cell_size)
-        self.e_name = guip.get_title("Unit infos")
+        self.e_name = guip.get_title("Unit infos (no unit)")
         #
 ##        self.e_group = thorpy.make_group([self.e_img, self.e_name])
         ghost = thorpy.Ghost([self.e_img, self.e_name])
@@ -330,7 +330,7 @@ class UnitInfo: #name, image, nombre(=vie dans FS!)
             self.e_img.visible = True
             changed = True
         elif self.unit is not None:
-            name = "Unit infos"
+            name = "Unit infos (no unit)"
             new_img = self.blank_img
             self.e_img.visible = False
             changed = True

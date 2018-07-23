@@ -321,40 +321,32 @@ class MapInitializer:
         if graphical_load: #just ignore this- nothing to do with map configuration
             screen = thorpy.get_screen()
             screen.fill((255,255,255))
-            loading_bar = thorpy.LifeBar.make("Building height map...")
-            loading_bar.set_life(0.)
+            loading_bar = thorpy.LifeBar.make(" ",
+                size=(thorpy.get_screen().get_width()//2,30))
             loading_bar.center(element="screen")
-            loading_bar.blit()
-            pygame.display.flip()
-        print("Building hmap")
+            update_loading_bar(loading_bar, "Building height map...", 0., graphical_load)
         build_hmap(me)
-        print("Building tilers") #see the docstring of the function
         if graphical_load:
-            screen.blit(thorpy.get_resized_image(me.original_img_hmap, screen.get_size(), max), (0,0))
-            loading_bar.set_text("Building tilers...")
-            loading_bar.set_life(0.1)
-            loading_bar.blit()
-            pygame.display.flip()
+            img = thorpy.get_resized_image(me.original_img_hmap, screen.get_size(), max)
+            screen.blit(img, (0,0))
+            update_loading_bar(loading_bar,"Building tilers...",0.1,graphical_load)
         self.build_materials(me, fast, use_beach_tiler, load_tilers)
-        print("Building map surfaces")
+        update_loading_bar(loading_bar,"Building map surfaces...",0.2,graphical_load)
         build_lm(me)
-        print("Adding static objects")
-        if graphical_load:
-            loading_bar.set_text("Adding static objects...")
-            loading_bar.set_life(0.4)
-            loading_bar.blit()
-            pygame.display.flip()
+        update_loading_bar(loading_bar,"Adding static objects...",0.3,graphical_load)
         self.add_static_objects(me)
-        print("Adding dynamic objects")
-##        add_dynamic_objects(me)
         #Now that we finished to add objects, we generate the pygame surface
-        print("Building surfaces") #this is also a long process
-        if graphical_load:
-            loading_bar.set_text("Building pygame surfaces...")
-            loading_bar.set_life(0.7)
-            loading_bar.blit()
-            pygame.display.flip()
+        update_loading_bar(loading_bar, "Building surfaces", 0.9, graphical_load)
         me.build_surfaces()
+
+def update_loading_bar(loading_bar, text, progress, on):
+    print(text)
+    if on:
+        loading_bar.set_text(text)
+        loading_bar.set_life(progress)
+        loading_bar.blit()
+        pygame.display.flip()
+
 
 def build_lm(me):
     """Build the logical map corresponding to me's properties"""

@@ -2,31 +2,18 @@
 yann.thorimbert@gmail.com
 """
 from __future__ import print_function, division
-import random, math
 import pygame
-from pygame.math import Vector2 as V2
 import thorpy
-from rendering.mapgrid import LogicalMap, WhiteLogicalMap
-import gui.parameters as guip
-import gui.elements as gui
-from rendering.camera import Camera
-from mapobjects.objects import MapObject
-import saveload.io as io
-from ia.path import BranchAndBoundForMap
-from editor.mapeditor import MapEditor
-from editor.mapbuilding import MapInitializer
-import mymaps
-
-
-##add dynamic objects
+from mapobjects.objects import MapObject #for adding objects to a map
+import saveload.io as io #handling save/load maps
+from editor.mapeditor import MapEditor #base structure for a map
+from editor.mapbuilding import MapInitializer #configuration structure of a map
+import mymaps #store some pre-defined maps so you can play with
 
 ##essayer en mode load : faire load et save du map_initializer...
-
 ###tester save/load
-
 ###ne pas oublier d'ajouter thorpy
 
-################################################################################
 #IMPORTANT : probably almost all you need is inside mymaps.py, which provide
 #examples about map configuration.
 
@@ -40,43 +27,43 @@ TO_FILE = False #save last map when leaving
 FROM_FILE = False #load a previously saved map named "My saved world" for demo
 
 if not FROM_FILE: #use a map that I've set for you. Go and see how to tune it:
-##    map_initializer = mymaps.demo_map1 #go in mymaps.py and PLAY with PARAMS !!!
-##    map_initializer = mymaps.demo_map2 #go in mymaps.py and PLAY with PARAMS !!!
-    map_initializer = mymaps.demo_map3 #go in mymaps.py and PLAY with PARAMS !!!
+    map_initializer = mymaps.demo_map1 #go in mymaps.py and PLAY with PARAMS !!!
     me = map_initializer.configure_map_editor() #me = "Map Editor"
 else:
     me = MapEditor("My saved world")
     savefile = open(me.get_fn(), "rb")
-    map_initializer = io.from_file_base(savefile, me, map_initializer)
-    todo
+##    map_initializer = io.from_file_base(savefile, me, map_initializer) todo
 
 #<fast> : quality a bit lower if true, loading time a bit faster.
-#<use_beach_tiler>: quality much better if true, loading buch slower.
-#                   Requires Numpy !
+#<use_beach_tiler>: quality much better if true, loading buch slower. Req. Numpy!
 #<load_tilers> : use precomputed textures from disk. Very slow but needed if
 #               you don't have Numpy but still want beach_tiler.
 map_initializer.build_map(me, fast=False, use_beach_tiler=True, load_tilers=False)
 
-#ou sont definis les deux units ?
-################################################################################
-if FROM_FILE: #load things that cannot be regenerated from seed
+if FROM_FILE:
     io.from_file_cells(savefile, me)
     io.from_file_units(savefile, me)
 
-me.lm.cells[14][15].set_name("My left cell") #this is how we set the name of a cell
-me.lm.cells[15][14].set_name("My top cell")
+#dynamic objects (you cann add them whenever you want):
+character = MapObject(me, "./mapobjects/images/char1.png", "My Unit", factor=1.)
+obj = me.add_unit(coord=(15,15), obj=character, quantity=12)
+obj.name = "My first unit"
+obj = me.add_unit((13,13), obj=character, quantity=1)
+obj.name = "My second unit"
+#this is how we set the name of a cell
+me.lm.get_cell_at(14,15).set_name("My left cell")
+me.lm.get_cell_at(15,14).set_name("My top cell")
+#this is how we get the objets belonging to a cell:
+assert me.lm.get_cell_at(15,15).objects[1].name == "My first unit"
 
-################################################################################
-print("Building GUI")
 me.build_gui_elements()
 
-def func_reac_time(): #here put wathever you want, in addition to me's reac
+def func_reac_time(): #here put wathever you want, in addition to mapeditor reaction
     me.func_reac_time()
     pygame.display.flip()
 thorpy.add_time_reaction(me.e_box, func_reac_time)
 
-
-#here you can add/remove buttons to the menu ###################################
+#here you can add/remove buttons to the menu
 def quit_func():
     io.ask_save(me)
     thorpy.functions.quit_func()
@@ -93,18 +80,6 @@ me.menu_button.user_func = thorpy.launch_blocking
 me.menu_button.user_params = {"element":launched_menu}
 # ##############################################################################
 
-#dynamic objects (you cann add them whenever you want:
-char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
-obj = me.add_unit(coord=(15,15), obj=char1, quantity=12)
-obj.name = "My first unit"
-obj = me.add_unit((13,13), char1, 1)
-obj.name = "My second unit"
-
-###demo of how to access things:
-##print("Demo for cell at 36;86:")
-##cell = me.lm.get_cell_at(36,86)
-##cell.set_name("My own cell")
-##print("Name:",cell.name,", Objects",[o.name for o in cell.objects]) #cell in x=36, y=86
 
 #me.e_box includes many default reactions. You can remove them as follow:
 #remove <g> key:
