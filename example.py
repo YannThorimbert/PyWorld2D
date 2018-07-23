@@ -149,6 +149,7 @@ app.quit()
 #
 
 #*********************************v2:
+#riviere : si mer est trop loin, va a max length puis fait un lac
 ###quand meme tester sans numpy, parce que bcp de modules l'importent (surfarray)
 ###tester python2
 #proposer un ciel + nuages (cf perigeo) au lieu de mer ; le mettre par defaut dans le noir ?

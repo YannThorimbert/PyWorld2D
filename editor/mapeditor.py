@@ -59,6 +59,7 @@ class MapEditor:
         self.img_cursor = None
         self.cursor_slowness = None
         #gui
+        self.original_img_hmap = None
         self.e_box = None
         self.cell_info = None
         self.unit_info = None
@@ -213,6 +214,7 @@ class MapEditor:
 
 
     def build_camera(self, img_hmap):
+        self.original_img_hmap = img_hmap
         cam = Camera()
         map_rects = []
         for level in range(len(self.zoom_cell_sizes)):

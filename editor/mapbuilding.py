@@ -72,7 +72,7 @@ class MapInitializer:
         self.fir2_size = 1.5
         self.forest_max_density = 1 #integer : number of trees per world cell
         self.forest_homogeneity = 0.1
-        self.foret_zones_spread = [(0.5,0.2)]
+        self.forest_zones_spread = [(0.5,0.2)]
         #snow forest:
         self.firsnow = "./mapobjects/images/firsnow2.png"
         self.firsnow_size = 1.5
@@ -233,12 +233,15 @@ class MapInitializer:
         #normal forest
         distributor = objs.get_distributor(me, [fir1, fir2, tree],
                                             self.forest_map, ["Grass","Rock"])
+        distributor.max_density = self.forest_max_density
+        distributor.homogeneity = self.forest_homogeneity
+        distributor.zones_spread = self.forest_zones_spread
         distributor.distribute_objects(self.layer2)
         #more trees in plains
         distributor = objs.get_distributor(me, [tree], self.forest_map, ["Grass"])
         distributor.max_density = self.forest_max_density
         distributor.homogeneity = self.forest_homogeneity
-        distributor.zones_spread = self.foret_zones_spread
+        distributor.zones_spread = self.forest_zones_spread
         distributor.distribute_objects(self.layer2)
         #snow forest
         distributor = objs.get_distributor(me, [firsnow, firsnow.flip()],
@@ -327,7 +330,7 @@ class MapInitializer:
         build_hmap(me)
         print("Building tilers") #see the docstring of the function
         if graphical_load:
-            screen.blit(thorpy.get_resized_image(me.cam.img_hmap, screen.get_size(), max), (0,0))
+            screen.blit(thorpy.get_resized_image(me.original_img_hmap, screen.get_size(), max), (0,0))
             loading_bar.set_text("Building tilers...")
             loading_bar.set_life(0.1)
             loading_bar.blit()
