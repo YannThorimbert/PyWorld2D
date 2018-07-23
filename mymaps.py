@@ -20,7 +20,8 @@ demo_map3 = MapInitializer("Third demo map")
 demo_map3.chunk = (6666,6666)
 demo_map3.world_size = (128,128)
 demo_map3.persistance = 1.5
-demo_map3.zoom_cell_sizes = [20,8]
+#Note : it is better to start the cells sizes with a power of 2. Then it doesn't matter.
+demo_map3.zoom_cell_sizes = [32,20,8]
 demo_map3.max_number_of_roads = 20
 
 

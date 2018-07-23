@@ -73,16 +73,17 @@ def get_shifted_tiles(img, nframes, dx=0, dy=0, reverse=False, sin=True):
 
 def build_tiles(img_fullsize, sizes, nframes, dx_divider=0, dy_divider=0,
                 reverse=False, sin=True, colorkey=None):
+    """Returns a list of list of images on the form : imgs[size][frame]"""
     imgs = []
     for size in sizes:
         #smoothscale is important here, otherwise FAST should be always True
         img = pygame.transform.smoothscale(img_fullsize, (size,)*2)
         dx = 0
         if dx_divider:
-            dx = size//dx_divider
+            dx = int(size/dx_divider)
         dy = 0
         if dy_divider:
-            dy = size//dy_divider
+            dy = int(size/dy_divider)
         imgs.append(get_shifted_tiles(img, nframes, dx, dy, reverse, sin))
     if colorkey:
         for tiles in imgs:
