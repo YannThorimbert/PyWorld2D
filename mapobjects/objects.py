@@ -356,14 +356,23 @@ def find_free_next_to(lm, coord):
 def add_random_road(lm, layer,
                     cobbles, woods,
                     costs_materials, costs_objects,
-                    possible_materials, possible_objects):
+                    possible_materials, possible_objects,
+                    min_length = 10,
+                    max_length = 30):
     """Computes and draw a random road between two random villages."""
     villages = [o for o in layer.static_objects if "village" in o.name]
     v1 = random.choice(villages)
     c1 = find_free_next_to(lm, v1.cell.coord)
     # c1 = v1.cell
     if c1:
-        v2 = random.choice(villages)
+        villages_at_right_distance = []
+        for v2 in villages:
+            if v2 is not v1:
+                x1,y1 = c1.coord
+                x2,y2 = v2.cell.coord
+                if min_length <= abs(x1-x2)+abs(y1-y2) <= max_length:
+                    villages_at_right_distance.append(v2)
+        v2 = random.choice(villages_at_right_distance)
         c2 = find_free_next_to(lm, v2.cell.coord)
         # c2 = v2.cell
         if c2:
