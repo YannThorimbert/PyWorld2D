@@ -280,6 +280,9 @@ def add_random_river(me, layer,
                                             lm.nframes,
                                             dx*lm.nframes, dy*lm.nframes, #dx, dy
                                             sin=False)
+    screen = thorpy.get_screen()
+    for tx,ty in imgs:
+        tout blitter et voir
     #1) pick one random source
     for i in range(1000):
         x,y = random.randint(0,lm.nx-1), random.randint(0,lm.ny-1)

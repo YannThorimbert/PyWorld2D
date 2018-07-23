@@ -53,6 +53,7 @@ def get_shifted_tiles(img, nframes, dx=0, dy=0, reverse=False, sin=True):
         else:
             delta_x = i*dx
             delta_y = i*dy
+##        print(delta_x,w)
 ##        assert abs(delta_x) <= w
 ##        assert abs(delta_y) <= h
         result = pygame.Surface(r.size)
