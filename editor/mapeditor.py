@@ -8,7 +8,6 @@ from rendering.mapgrid import LogicalMap, WhiteLogicalMap
 import gui.parameters as guip
 import gui.elements as gui
 from rendering.camera import Camera
-import saveload.io as io
 import thornoise.purepython.noisegen as ng
 import saveload.io as io
 
@@ -20,9 +19,10 @@ def sgn(x):
     return 0.
 
 class MapEditor:
-    saved_attrs = ["zoom_cell_sizes", "nframes", "fps", "menu_width",
-                            "max_wanted_minimap_size", "world_size", "chunk",
-                            "persistance", "n_octaves"]
+##    saved_attrs = ["zoom_cell_sizes", "nframes", "fps", "menu_width",
+##                            "max_wanted_minimap_size", "world_size", "chunk",
+##                            "persistance", "n_octaves","show_grid_lines",
+##                            "box_hmap_margin"]
 
     def __init__(self, name="Unnamed map"):
         self.name = name

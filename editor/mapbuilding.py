@@ -7,6 +7,7 @@ from editor.mapeditor import MapEditor
 
 
 class MapInitializer:
+##    saved_attrs = ["name", "cell_radius_divider",water,sand,grass,grass2,rock,black,white,deep]
 
     def __init__(self, name):
         self.name = name #name of the map
@@ -20,6 +21,7 @@ class MapInitializer:
         self.nframes = 16 #number of frames per world cycle (impacts memory requirement!)
         self.fps = 60 #frame per second
         self.menu_width = 200 #width of the right menu in pixels
+        self.box_hmap_margin = 20 #padding of the minimap inside its box
         self.max_wanted_minimap_size = 64 #size of the MINIMAP in pixels
         ############ material options:
         #cell_radius = cell_size//radius_divider
@@ -110,8 +112,8 @@ class MapInitializer:
         self.max_river_length = 80
         self.max_number_of_rivers = 5
         ############ End of user-defined parameters
-        self.forest_map = None
-        self.layer2 = None
+        self._forest_map = None
+        self._static_objs_layer = None
 
 
     def get_image(self, me, name):
@@ -128,6 +130,7 @@ class MapInitializer:
         me.zoom_cell_sizes = self.zoom_cell_sizes
         me.nframes = self.nframes
         me.fps = self.fps
+        me.box_hmap_margin = self.box_hmap_margin
         me.menu_width = self.menu_width
         me.max_wanted_minimap_size = self.max_wanted_minimap_size
         me.world_size = self.world_size
@@ -195,13 +198,13 @@ class MapInitializer:
         #1) We use another hmap to decide where we want trees (or any other object)
     ##    S = len(me.lm) lerreur est ici!!!!
         S = len(me.hmap)
-        self.forest_map = ng.generate_terrain(S, n_octaves=self.static_objects_n_octaves,
+        self._forest_map = ng.generate_terrain(S, n_octaves=self.static_objects_n_octaves,
                                             persistance=self.static_objects_persistance,
                                             chunk=self.static_objects_chunk)
-        ng.normalize(self.forest_map)
+        ng.normalize(self._forest_map)
         #we can use as many layers as we want.
-        #self.layer2 is a superimposed map on which we decide to blit some static objects:
-        self.layer2 = me.add_layer()
+        #self._static_objs_layer is a superimposed map on which we decide to blit some static objects:
+        self._static_objs_layer = me.add_layer()
         #3) We build the objects that we want.
         # its up to you to decide what should be the size of the object (3rd arg)
         tree = MapObject(me,self.tree,self.forest_text,self.tree_size)
@@ -224,7 +227,7 @@ class MapInitializer:
         wood = MapObject(me,self.wood,"wooden bridge",self.wood_size)
         #
 ##        anim_tree = MapObject(me, [self.fir1]*3+[self.fir2]*3, "My animated tree",1.)
-##        anim_tree = objs.put_static_obj(anim_tree, me.lm, (12,12), self.layer2)
+##        anim_tree = objs.put_static_obj(anim_tree, me.lm, (12,12), self._static_objs_layer)
         #
         for v in[village1,village2,village3,village4]:
             v.max_relpos = [0., 0.]
@@ -232,45 +235,45 @@ class MapInitializer:
         #4) we add the objects via distributors, to add them randomly in a nice way
         #normal forest
         distributor = objs.get_distributor(me, [fir1, fir2, tree],
-                                            self.forest_map, ["Grass","Rock"])
+                                            self._forest_map, ["Grass","Rock"])
         distributor.max_density = self.forest_max_density
         distributor.homogeneity = self.forest_homogeneity
         distributor.zones_spread = self.forest_zones_spread
-        distributor.distribute_objects(self.layer2)
+        distributor.distribute_objects(self._static_objs_layer)
         #more trees in plains
-        distributor = objs.get_distributor(me, [tree], self.forest_map, ["Grass"])
+        distributor = objs.get_distributor(me, [tree], self._forest_map, ["Grass"])
         distributor.max_density = self.forest_max_density
         distributor.homogeneity = self.forest_homogeneity
         distributor.zones_spread = self.forest_zones_spread
-        distributor.distribute_objects(self.layer2)
+        distributor.distribute_objects(self._static_objs_layer)
         #snow forest
         distributor = objs.get_distributor(me, [firsnow, firsnow.flip()],
-                                        self.forest_map, ["Thin snow","Snow"])
+                                        self._forest_map, ["Thin snow","Snow"])
         distributor.max_density = self.forest_snow_max_density
         distributor.homogeneity = self.forest_snow_homogeneity
         distributor.zones_spread = self.forest_snow_zones_spread
-        distributor.distribute_objects(self.layer2)
+        distributor.distribute_objects(self._static_objs_layer)
         #palm forest
-        distributor = objs.get_distributor(me, [palm, palm.flip()], self.forest_map, ["Sand"])
+        distributor = objs.get_distributor(me, [palm, palm.flip()], self._forest_map, ["Sand"])
         distributor.max_density = self.palm_max_density
         distributor.homogeneity = self.palm_homogeneity
         distributor.zones_spread = self.palm_zones_spread
-        distributor.distribute_objects(self.layer2)
+        distributor.distribute_objects(self._static_objs_layer)
         #bushes
-        distributor = objs.get_distributor(me, [bush], self.forest_map, ["Grass"])
+        distributor = objs.get_distributor(me, [bush], self._forest_map, ["Grass"])
         distributor.max_density = 2
         distributor.homogeneity = 0.2
         distributor.zones_spread = [(0., 0.05), (0.3,0.05), (0.6,0.05)]
-        distributor.distribute_objects(self.layer2)
+        distributor.distribute_objects(self._static_objs_layer)
         #villages
         distributor = objs.get_distributor(me,
                                 [village1, village1.flip(), village2, village2.flip(),
                                  village3, village3.flip(), village4, village4.flip()],
-                                self.forest_map, ["Grass"], limit_relpos_y=False)
+                                self._forest_map, ["Grass"], limit_relpos_y=False)
         distributor.max_density = 1
         distributor.homogeneity = 0.05
         distributor.zones_spread = [(0.1, 0.05), (0.2,0.05), (0.4,0.05)]
-        distributor.distribute_objects(self.layer2, exclusive=True)
+        distributor.distribute_objects(self._static_objs_layer, exclusive=True)
 
         cobbles = [cobble, cobble.flip(True,False),
                     cobble.flip(False,True), cobble.flip(True,True)]
@@ -291,7 +294,7 @@ class MapInitializer:
         #Objects allowed
         possible_objects=[cobble.object_type, bush.object_type, village1.object_type]
         for i in range(self.max_number_of_roads): #now we add 5 roads
-            objs.add_random_road(me.lm, self.layer2, cobbles, [wood], costs_materials,
+            objs.add_random_road(me.lm, self._static_objs_layer, cobbles, [wood], costs_materials,
                                 costs_objects, possible_materials, possible_objects,
                                 min_length=self.min_road_length,
                                 max_length=self.max_road_length)

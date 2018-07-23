@@ -43,9 +43,12 @@ def to_file(me, fn):
 
 
 def from_file_base(f, me):
+    from editor.mapbuilding import MapInitializer
     print("Loading map")
+    mi = MapInitializer(me.name) #en fait, le mi prend tout et donne au me
     file_to_obj(f, me) #me
     me.refresh_derived_parameters()
+
 
 def from_file_cells(f, me):
     """Load cells and their logical content (names, properties, etc.)"""

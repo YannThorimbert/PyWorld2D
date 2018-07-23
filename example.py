@@ -10,11 +10,11 @@ from editor.mapeditor import MapEditor #base structure for a map
 from editor.mapbuilding import MapInitializer #configuration structure of a map
 import mymaps #store some pre-defined maps so you can play with
 
-##essayer en mode load : faire load et save du map_initializer...
-###tester save/load
 ###ne pas oublier d'ajouter thorpy
 
-#IMPORTANT : probably almost all you need is inside mymaps.py, which provide
+#on peut meme wrapper le file saving. je donne juste un savefile qui est none
+
+#IMPORTANT : probably almost all you need is inside mymaps.py, which provides
 #examples about map configuration.
 
 #At the end of this file, I provide some ways to do things like use a path finding
@@ -32,7 +32,7 @@ if not FROM_FILE: #use a map that I've set for you. Go and see how to tune it:
 else:
     me = MapEditor("My saved world")
     savefile = open(me.get_fn(), "rb")
-##    map_initializer = io.from_file_base(savefile, me, map_initializer) todo
+    map_initializer = io.from_file_base(savefile, me, map_initializer)
 
 #<fast> : quality a bit lower if true, loading time a bit faster.
 #<use_beach_tiler>: quality much better if true, loading buch slower. Req. Numpy!

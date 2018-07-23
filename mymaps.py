@@ -3,7 +3,7 @@ from editor.mapbuilding import MapInitializer
 #Here I simply define some properties of differnt maps. No programmation, just
 #configuration.
 
-#For a description of each parameter, please go the file editor/mapbuilding.py
+#For a description of each parameter, please go the file ./editor/mapbuilding.py
 #and have a look at the MapInitializer constructor
 
 demo_map1 = MapInitializer("First demo map")
