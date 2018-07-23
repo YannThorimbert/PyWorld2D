@@ -107,7 +107,7 @@ class MapInitializer:
         self.max_road_length = 40
         self.max_number_of_roads = 5
         self.min_river_length = 10
-        self.max_river_length = 60
+        self.max_river_length = 80
         self.max_number_of_rivers = 5
         ############ End of user-defined parameters
         self.forest_map = None
@@ -346,7 +346,7 @@ class MapInitializer:
             pygame.display.flip()
         self.add_static_objects(me)
         print("Adding dynamic objects")
-        add_dynamic_objects(me)
+##        add_dynamic_objects(me)
         #Now that we finished to add objects, we generate the pygame surface
         print("Building surfaces") #this is also a long process
         if graphical_load:

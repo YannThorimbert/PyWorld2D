@@ -297,7 +297,7 @@ def add_random_river(me, layer,
     else:
         return
     #3) verify distance
-    print("DISTANCE = ", cell_water.distance_to(cell_land))
+##    print("DISTANCE = ", cell_water.distance_to(cell_land))
     if min_length <=  cell_water.distance_to(cell_land) <= max_length:
         pass
     else:

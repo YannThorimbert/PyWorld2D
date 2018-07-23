@@ -20,9 +20,6 @@ import mymaps
 
 ##add dynamic objects
 
-###mymap 1 : tout par defaut, meme pas les appels a description.functions(). juste parametres de mymap.
-###mymap 2 : custom
-
 ##essayer en mode load : faire load et save du map_initializer...
 
 ###tester save/load
@@ -95,6 +92,13 @@ launched_menu.center()
 me.menu_button.user_func = thorpy.launch_blocking
 me.menu_button.user_params = {"element":launched_menu}
 # ##############################################################################
+
+#dynamic objects (you cann add them whenever you want:
+char1 = MapObject(me, "./mapobjects/images/char1.png", "My Unit", 1.)
+obj = me.add_unit(coord=(15,15), obj=char1, quantity=12)
+obj.name = "My first unit"
+obj = me.add_unit((13,13), char1, 1)
+obj.name = "My second unit"
 
 ###demo of how to access things:
 ##print("Demo for cell at 36;86:")
