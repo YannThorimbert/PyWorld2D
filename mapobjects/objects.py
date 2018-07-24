@@ -74,7 +74,10 @@ def remove_objects(cell, layer):
 
 class MapObject:
     current_id = 1
-    saved_attrs = ["name", "quantity", "fns", "factor", "new_type", "relpos", "build"]
+
+    @staticmethod
+    def get_saved_attributes():
+        return ["name", "quantity", "fns", "factor", "new_type", "relpos", "build"]
 
     def __init__(self, editor, fns, name="", factor=1., relpos=(0,0), build=True,
                  new_type=True):
@@ -183,6 +186,7 @@ class MapObject:
         return copy
 
     def add_unit_on_cell(self, cell):
+        print(cell.coord, cell.unit, cell.objects)
         assert cell.unit is None
         copy = self.copy()
         copy.cell = cell

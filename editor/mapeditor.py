@@ -18,6 +18,7 @@ def sgn(x):
         return 1.
     return 0.
 
+
 class MapEditor:
 ##    saved_attrs = ["zoom_cell_sizes", "nframes", "fps", "menu_width",
 ##                            "max_wanted_minimap_size", "world_size", "chunk",
@@ -73,6 +74,7 @@ class MapEditor:
         self.ap.add_alert_countdown(self.e_ap_move, guip.DELAY_HELP * self.fps)
         #
         self.primitive_types = {}
+        self.map_initializer = None
 
     def get_fn(self):
         return self.name.replace(" ","_")+".map"
@@ -435,6 +437,7 @@ class MapEditor:
 
     def refresh_derived_parameters(self):
         self.cell_size = self.zoom_cell_sizes[self.zoom_level]
+        print(self.zoom_cell_sizes)
         self.cell_rect = pygame.Rect(0,0,self.cell_size,self.cell_size)
         self.max_minimap_size = (self.max_wanted_minimap_size,)*2
         self.menu_size = (self.menu_width, self.H)

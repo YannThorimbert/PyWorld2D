@@ -7,7 +7,8 @@ from editor.mapbuilding import MapInitializer
 #and have a look at the MapInitializer constructor
 
 demo_map1 = MapInitializer("First demo map")
-demo_map1.max_river_length = 100
+demo_map1.world_size = (32,32)
+##demo_map1.max_river_length = 100
 
 demo_map2 = MapInitializer("Second demo map")
 demo_map2.world_size = (256, 128) #with big maps it is better to use lower persistance

@@ -7,13 +7,12 @@ from editor.mapeditor import MapEditor
 
 
 class MapInitializer:
-##    saved_attrs = ["name", "cell_radius_divider",water,sand,grass,grass2,rock,black,white,deep]
 
     def __init__(self, name):
         self.name = name #name of the map
         ############ terrain generation:
         self.world_size = (128,128) #in number of cells. Put a power of 2 for tilable maps
-        self.chunk = (1310,14) #Used for random generation. To give when saving. Neighboring chunk give tilable maps.
+        self.chunk = (1310,14) #Kind of seed. Neighboring chunk give tilable maps.
         self.persistance = 2. #parameter of the random terrain generation.
         self.n_octaves = "max" #parameter of the random terrain generation.
         ############ graphical options:
@@ -115,6 +114,10 @@ class MapInitializer:
         self._forest_map = None
         self._static_objs_layer = None
 
+    def get_saved_attributes(self):
+        attrs = [a for a in self.__dict__.keys() if not a.startswith("_")]
+        attrs.sort()
+        return attrs
 
     def get_image(self, me, name):
         value = getattr(self, name)
@@ -127,6 +130,8 @@ class MapInitializer:
     def configure_map_editor(self):
         """Set the properties of the map editor"""
         me = MapEditor(self.name)
+        me.map_initializer = self
+        me.box_hmap_margin = self.box_hmap_margin
         me.zoom_cell_sizes = self.zoom_cell_sizes
         me.nframes = self.nframes
         me.fps = self.fps
@@ -341,6 +346,7 @@ class MapInitializer:
         #Now that we finished to add objects, we generate the pygame surface
         update_loading_bar(loading_bar, "Building surfaces", 0.9, graphical_load)
         me.build_surfaces()
+        me.build_gui_elements()
 
 def update_loading_bar(loading_bar, text, progress, on):
     print(text)
