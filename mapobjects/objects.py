@@ -259,9 +259,12 @@ def add_random_road(lm, layer,
             if v2 is not v1:
                 if min_length <= c1.distance_to(v2.cell) <= max_length:
                     villages_at_right_distance.append(v2)
-        v2 = random.choice(villages_at_right_distance)
-        c2 = find_free_next_to(lm, v2.cell.coord)
-        # c2 = v2.cell
+        if villages_at_right_distance:
+            v2 = random.choice(villages_at_right_distance)
+            c2 = find_free_next_to(lm, v2.cell.coord)
+            # c2 = v2.cell
+        else:
+            return
         if c2:
             sp = BranchAndBoundForMap(lm, c1, c2,
                                     costs_materials, costs_objects,

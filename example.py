@@ -32,7 +32,7 @@ m.play()
 save_filename = load.var_text
 
 if not save_filename: #use a map that I've set for you. Go and see how to tune it:
-    map_initializer = mymaps.demo_map1 #go in mymaps.py and PLAY with PARAMS !!!
+    map_initializer = mymaps.demo_map2 #go in mymaps.py and PLAY with PARAMS !!!
     me = map_initializer.configure_map_editor() #me = "Map Editor"
 else:
     savefile = open(save_filename, "rb")
@@ -59,7 +59,7 @@ else:
     me.lm.get_cell_at(14,15).set_name("My left cell")
     me.lm.get_cell_at(15,14).set_name("My top cell")
     #we can get the objects belonging to a cell:
-    assert me.lm.get_cell_at(15,15).objects[1].name == "My first unit"
+    #assert me.lm.get_cell_at(15,15).objects[1].name == "My first unit"
 
 
 #### GUI and events part #######################################################
