@@ -2,14 +2,14 @@ import math, random, os
 import pygame
 from pygame.math import Vector2 as V2
 import thorpy
-import thornoise.purepython.noisegen as ng
-import rendering.tilers.tilemanager as tm
-from rendering.mapgrid import LogicalMap, WhiteLogicalMap
-import gui.parameters as guip
-import gui.elements as gui
-from rendering.camera import Camera
-import thornoise.purepython.noisegen as ng
-import saveload.io as io
+import PyWorld2D.thornoise.purepython.noisegen as ng
+import PyWorld2D.rendering.tilers.tilemanager as tm
+from PyWorld2D.rendering.mapgrid import LogicalMap, WhiteLogicalMap
+import PyWorld2D.gui.parameters as guip
+import PyWorld2D.gui.elements as gui
+from PyWorld2D.rendering.camera import Camera
+import PyWorld2D.thornoise.purepython.noisegen as ng
+import PyWorld2D.saveload.io as io
 
 def sgn(x):
     if x < 0:

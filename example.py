@@ -4,11 +4,12 @@ yann.thorimbert@gmail.com
 from __future__ import print_function, division
 import pygame
 import thorpy #for GUI and other graphics - see www.thorpy.org
-from mapobjects.objects import MapObject #to create objects to add to a map
-import saveload.io as io #handling save/load maps
-from editor.mapeditor import MapEditor #base structure for a map
-from editor.mapbuilding import MapInitializer #configuration structure of a map
-import mymaps #store some pre-defined maps so you can play with
+
+from PyWorld2D.mapobjects.objects import MapObject
+import PyWorld2D.saveload.io as io
+from PyWorld2D.editor.mapeditor import MapEditor #base structure for a map
+from PyWorld2D.editor.mapbuilding import MapInitializer #configuration structure of a map
+import PyWorld2D.mymaps as mymaps #store some pre-defined maps so you can play with
 
 ###ne pas oublier d'ajouter thorpy
 

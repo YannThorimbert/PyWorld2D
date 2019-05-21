@@ -1,9 +1,9 @@
 import pygame, thorpy
-import thornoise.purepython.noisegen as ng
-import rendering.tilers.tilemanager as tm
-from mapobjects.objects import MapObject
-import mapobjects.objects as objs
-from editor.mapeditor import MapEditor
+import PyWorld2D.thornoise.purepython.noisegen as ng
+import PyWorld2D.rendering.tilers.tilemanager as tm
+from PyWorld2D.mapobjects.objects import MapObject
+import PyWorld2D.mapobjects.objects as objs
+from PyWorld2D.editor.mapeditor import MapEditor
 
 
 class MapInitializer:
