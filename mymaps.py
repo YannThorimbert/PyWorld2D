@@ -1,14 +1,17 @@
-from PyWorld2D.editor.mapbuilding import MapInitializer
+from PyWorld2D.editor.mapbuilding import MapInitializer, terrain_plains
+from PyWorld2D.thornoise.purepython.noisegen import colorscale_plains
 
 #Here I simply define some properties of differnt maps. No programmation, just
 #configuration.
 
-#For a description of each parameter, please go the file ./editor/mapbuilding.py
+#For a description of each parameter, please go the file PyWorld2D/editor/mapbuilding.py
 #and have a look at the MapInitializer constructor
 
-demo_map1 = MapInitializer("First demo map")
-demo_map1.world_size = (32,32)
-##demo_map1.max_river_length = 100
+map1 = MapInitializer("First demo map")
+map1.chunk = (13,14)
+map1.reverse_hmap = True #reverse water/land
+map1.world_size = (32,32)
+map1.set_terrain_type(terrain_plains, colorscale_plains) #more grass than normal
 
 demo_map2 = MapInitializer("Second demo map")
 demo_map2.world_size = (256, 128) #with big maps it is better to use lower persistance

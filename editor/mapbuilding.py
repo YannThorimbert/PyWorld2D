@@ -6,6 +6,21 @@ import PyWorld2D.mapobjects.objects as objs
 from PyWorld2D.editor.mapeditor import MapEditor
 from PyWorld2D import PW_PATH
 
+terrain_normal = {  "hdeepwater": 0.4, #deep water only below 0.4
+                    "hwater": 0.55, #normal water between 0.4 and 0.55
+                    "hshore": 0.6, #shore water between 0.55 and 0.6
+                    "hsand": 0.62, #and so on...
+                    "hgrass": 0.8,
+                    "hrock": 0.83,
+                    "hthinsnow": 0.9}
+
+terrain_plains = {  "hdeepwater": 0.2, #deep water only below 0.4
+                    "hwater": 0.35, #normal water between 0.4 and 0.55
+                    "hshore": 0.4, #shore water between 0.55 and 0.6
+                    "hsand": 0.42, #and so on...
+                    "hgrass": 0.6,
+                    "hrock": 0.8,
+                    "hthinsnow": 0.85}
 
 class MapInitializer:
 
@@ -16,6 +31,8 @@ class MapInitializer:
         self.chunk = (1310,14) #Kind of seed. Neighboring chunk give tilable maps.
         self.persistance = 2. #parameter of the random terrain generation.
         self.n_octaves = "max" #parameter of the random terrain generation.
+        self.reverse_hmap = False #set to True to reverse height map
+        self.colorscale_hmap = None #colorscale to use for the minimap
         ############ graphical options:
         self.zoom_cell_sizes = [32, 16, 8] #size of one cell for the different zoom levels.
         self.nframes = 16 #number of frames per world cycle (impacts memory requirement!)
@@ -115,6 +132,11 @@ class MapInitializer:
         self._forest_map = None
         self._static_objs_layer = None
 
+    def set_terrain_type(self, terrain_type, colorscale):
+        for key in terrain_type:
+            setattr(self, key, terrain_type[key])
+        self.colorscale_hmap = colorscale
+
     def get_saved_attributes(self):
         attrs = [a for a in self.__dict__.keys() if not a.startswith("_")]
         attrs.sort()
@@ -143,6 +165,8 @@ class MapInitializer:
         me.chunk = self.chunk
         me.persistance = self.persistance
         me.n_octaves = self.n_octaves
+        me.reverse_hmap = self.reverse_hmap
+        me.colorscale_hmap = self.colorscale_hmap
         me.refresh_derived_parameters()
         return me
 
@@ -327,7 +351,7 @@ class MapInitializer:
         <load_tilers> : use precomputed textures from disk. Very slow but needed if
         you don't have Numpy but still want beach_tiler.
         """
-        if graphical_load: #just ignore this- nothing to do with map configuration
+        if graphical_load: #just ignore this - nothing to do with map configuration
             screen = thorpy.get_screen()
             screen.fill((255,255,255))
             loading_bar = thorpy.LifeBar.make(" ",
@@ -369,7 +393,7 @@ def build_hmap(me):
     hmap = me.build_hmap()
     ##hmap[2][1] = 0.7 #this is how you manually change the height of a given cell
     #Here we build the miniature map image
-    img_hmap = ng.build_surface(hmap)
+    img_hmap = ng.build_surface(hmap, me.colorscale_hmap)
     new_img_hmap = pygame.Surface(me.world_size)
     new_img_hmap.blit(img_hmap, (0,0))
     img_hmap = new_img_hmap
