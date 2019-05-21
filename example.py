@@ -5,6 +5,7 @@ from __future__ import print_function, division
 import pygame
 import thorpy #for GUI and other graphics - see www.thorpy.org
 
+from PyWorld2D import PW_PATH
 from PyWorld2D.mapobjects.objects import MapObject
 import PyWorld2D.saveload.io as io
 from PyWorld2D.editor.mapeditor import MapEditor #base structure for a map
@@ -51,7 +52,7 @@ if save_filename:
     savefile.close()
 else:
     #dynamic objects (you cann add them whenever you want):
-    character = MapObject(me, "./mapobjects/images/char1.png", "My Unit", factor=1.)
+    character = MapObject(me, PW_PATH+"/mapobjects/images/char1.png", "My Unit", factor=1.)
     obj = me.add_unit(coord=(15,15), obj=character, quantity=12)
     obj.name = "My first unit"
     obj = me.add_unit((13,14), obj=character, quantity=1)
