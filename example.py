@@ -1,4 +1,4 @@
-"""Yann Thorimbert - 2018
+"""Yann Thorimbert - 2019
 yann.thorimbert@gmail.com
 """
 from __future__ import print_function, division
@@ -127,6 +127,8 @@ app.quit()
 #pour fs : vu que statics prennet de la place, on considere qu'on est dans un village quand on est pres de lui ?
 # ou sinon relpos tres petit...
 
+#generateur de noms : reecrire propre ?
+#utiliser la liste des mots francais pour faire des composes
 
 #
 
